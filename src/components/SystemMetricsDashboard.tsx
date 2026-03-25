@@ -9,7 +9,8 @@ import {
   Server, 
   Clock,
   Wifi,
-  Thermometer
+  Thermometer,
+  Zap
 } from "lucide-react";
 
 interface SystemMetrics {
@@ -17,21 +18,44 @@ interface SystemMetrics {
     usage: number;
     cores: number;
     temperature: number | null;
+    speed: number;
+    loadAvg: [number, number, number];
   };
   memory: {
     total: number;
     used: number;
+    free: number;
     usage: number;
+    swapTotal: number;
+    swapUsed: number;
+    swapFree: number;
   };
   disk: {
     total: number;
     used: number;
+    free: number;
     usage: number;
   };
   gpu: {
     usage: number | null;
     temperature: number | null;
+    memory: {
+      total: number | null;
+      used: number | null;
+    };
   }[];
+  network: {
+    rxSec: number;
+    txSec: number;
+    rxTotal: number;
+    txTotal: number;
+  };
+  processes: {
+    running: number;
+    blocked: number;
+    sleeping: number;
+    total: number;
+  };
   uptime: number;
   hostname: string;
   platform: string;
@@ -130,6 +154,7 @@ export function SystemMetricsDashboard() {
 
   const formatGB = (gb: number) => `${gb.toFixed(1)} GB`;
   const formatTemp = (temp: number | null) => temp !== null ? `${temp}°C` : "N/A";
+  const formatSpeed = (kbps: number) => kbps > 1024 ? `${(kbps/1024).toFixed(1)} MB/s` : `${kbps} KB/s`;
 
   return (
     <div className="ui-panel ui-depth-workspace p-4 h-full overflow-y-auto">
@@ -143,13 +168,13 @@ export function SystemMetricsDashboard() {
         </span>
       </div>
 
-      { /* Metrics */ }
+      { /* Main Metrics */ }
       <div className="space-y-2">
         <MetricRow
           icon={Cpu}
           label="CPU"
           value={`${Math.round(metrics.cpu.usage)}%`}
-          subtext={`${metrics.cpu.cores} cores • ${formatTemp(metrics.cpu.temperature)}`}
+          subtext={`${metrics.cpu.cores} cores • Load: ${metrics.cpu.loadAvg[0].toFixed(2)} • ${formatTemp(metrics.cpu.temperature)}`}
           alert={metrics.cpu.usage > 80}
         />
 
@@ -157,7 +182,7 @@ export function SystemMetricsDashboard() {
           icon={MemoryStick}
           label="Memory"
           value={`${Math.round(metrics.memory.usage)}%`}
-          subtext={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)}`}
+          subtext={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)} • Swap: ${formatGB(metrics.memory.swapUsed)}`}
           alert={metrics.memory.usage > 80}
         />
 
@@ -169,15 +194,41 @@ export function SystemMetricsDashboard() {
           alert={metrics.disk.usage > 80}
         />
 
+        <MetricRow
+          icon={Wifi}
+          label="Network"
+          value={`${formatSpeed(metrics.network.rxSec + metrics.network.txSec)}`}
+          subtext={`↓ ${formatSpeed(metrics.network.rxSec)} / ↑ ${formatSpeed(metrics.network.txSec)} • Total: ${formatGB(metrics.network.rxTotal + metrics.network.txTotal)}`}
+        />
+
         {metrics.gpu.length > 0 && metrics.gpu[0]?.usage !== null && (
           <MetricRow
             icon={Activity}
             label="GPU"
             value={`${Math.round(metrics.gpu[0].usage || 0)}%`}
-            subtext={formatTemp(metrics.gpu[0]?.temperature)}
+            subtext={metrics.gpu[0]?.memory.used ? 
+              `${formatGB(metrics.gpu[0].memory.used)} / ${formatGB(metrics.gpu[0].memory.total || 0)} • ${formatTemp(metrics.gpu[0]?.temperature)}` :
+              formatTemp(metrics.gpu[0]?.temperature)
+            }
             alert={(metrics.gpu[0].usage || 0) > 80}
           />
         )}
+      </div>
+
+      { /* Processes */ }
+      <div className="mt-4 pt-4 border-t border-border">
+        <div className="flex items-center gap-2 mb-2">
+          <Zap className="w-3 h-3 text-muted-foreground" />
+          <h3 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            Processes
+          </h3>
+        </div>
+        <div className="ui-panel p-3">
+          <InfoRow label="Running" value={metrics.processes.running.toString()} />
+          <InfoRow label="Sleeping" value={metrics.processes.sleeping.toString()} />
+          <InfoRow label="Blocked" value={metrics.processes.blocked.toString()} />
+          <InfoRow label="Total" value={metrics.processes.total.toString()} />
+        </div>
       </div>
 
       { /* System Info */ }
