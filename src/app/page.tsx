@@ -14,6 +14,8 @@ import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnectScreen";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { SystemDashboard } from "@/components/SystemDashboard";
+import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
+import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
@@ -1766,19 +1768,14 @@ const AgentStudioPage = () => {
                 {/* Tokens Tab */}
                 {activeTabs.includes("tokens") ? (
                   <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <SystemDashboard />
+                    <TokenUsageDashboard />
                   </div>
                 ) : null}
 
                 {/* System Tab */}
                 {activeTabs.includes("system") ? (
-                  <div className="ui-panel ui-depth-workspace flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <EmptyStatePanel
-                      title="System Information"
-                      description="System metrics and health status will be displayed here."
-                      fillHeight
-                      className="items-center p-6 text-center text-sm"
-                    />
+                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                    <SystemMetricsDashboard />
                   </div>
                 ) : null}
 
