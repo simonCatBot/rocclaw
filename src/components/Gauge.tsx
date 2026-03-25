@@ -23,7 +23,6 @@ export function RetroSpeedometer({
 }: GaugeProps) {
   const [displayValue, setDisplayValue] = useState(0);
   
-  // Animate the value
   useEffect(() => {
     const duration = 600;
     const start = displayValue;
@@ -45,9 +44,8 @@ export function RetroSpeedometer({
   }, [value]);
 
   const percentage = Math.min(Math.max((displayValue - min) / (max - min), 0), 1);
-  const angle = percentage * 270 - 135; // -135 to 135 degrees
+  const angle = percentage * 270 - 135;
   
-  // Determine color based on value
   const getColorClass = () => {
     if (displayValue >= 90) return "text-red-500";
     if (displayValue >= 75) return "text-amber-500";
@@ -62,12 +60,10 @@ export function RetroSpeedometer({
     return "#22c55e";
   };
 
-  // Generate tick marks
   const ticks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
   
   return (
     <div className="relative rounded-xl border-2 border-slate-700 bg-slate-900 p-4 shadow-inner">
-      {/* Outer bezel effect */}
       <div className="absolute inset-0 rounded-xl border border-slate-600 opacity-50" />
       
       <div className="relative" style={{ width: size, height: size * 0.6 }}>
@@ -78,13 +74,11 @@ export function RetroSpeedometer({
           className="drop-shadow-lg"
         >
           <defs>
-            {/* Inner shadow gradient */}
             <radialGradient id="gaugeBg" cx="50%" cy="100%" r="80%">
               <stop offset="0%" stopColor="#1e293b" />
               <stop offset="100%" stopColor="#0f172a" />
             </radialGradient>
             
-            {/* Glow filter for needle */}
             <filter id="needleGlow">
               <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
               <feMerge>
@@ -94,7 +88,6 @@ export function RetroSpeedometer({
             </filter>
           </defs>
           
-          {/* Background arc */}
           <path
             d="M 20 80 A 60 60 0 0 1 140 80"
             fill="none"
@@ -103,8 +96,7 @@ export function RetroSpeedometer({
             strokeLinecap="round"
           />
           
-          {/* Colored zones */}
-          <!-- Green zone (0-50%) -->
+          { /* Green zone (0-50%) */ }
           <path
             d="M 20 80 A 60 60 0 0 1 50 28"
             fill="none"
@@ -113,7 +105,7 @@ export function RetroSpeedometer({
             strokeLinecap="round"
             opacity="0.6"
           />
-          <!-- Yellow zone (50-75%) -->
+          { /* Yellow zone (50-75%) */ }
           <path
             d="M 50 28 A 60 60 0 0 1 95 28"
             fill="none"
@@ -122,7 +114,7 @@ export function RetroSpeedometer({
             strokeLinecap="round"
             opacity="0.6"
           />
-          <!-- Amber zone (75-90%) -->
+          { /* Amber zone (75-90%) */ }
           <path
             d="M 95 28 A 60 60 0 0 1 125 50"
             fill="none"
@@ -131,7 +123,7 @@ export function RetroSpeedometer({
             strokeLinecap="round"
             opacity="0.6"
           />
-          <!-- Red zone (90-100%) -->
+          { /* Red zone (90-100%) */ }
           <path
             d="M 125 50 A 60 60 0 0 1 140 80"
             fill="none"
@@ -141,7 +133,6 @@ export function RetroSpeedometer({
             opacity="0.6"
           />
           
-          {/* Tick marks */}
           {ticks.map((tick) => {
             const tickAngle = (tick / 100) * 270 - 135;
             const rad = (tickAngle * Math.PI) / 180;
@@ -182,7 +173,6 @@ export function RetroSpeedometer({
             );
           })}
           
-          {/* Needle */}
           <g transform={`rotate(${angle} 80 80)`}>
             <polygon
               points="80,20 76,78 80,75 84,78"
@@ -193,7 +183,6 @@ export function RetroSpeedometer({
             <circle cx="80" cy="80" r="2" fill="#94a3b8" />
           </g>
           
-          {/* Glass reflection effect */}
           <defs>
             <linearGradient id="glass" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="white" stopOpacity="0.1" />
@@ -210,7 +199,6 @@ export function RetroSpeedometer({
           />
         </svg>
         
-        {/* Digital readout below */}
         <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center">
           <div className="bg-slate-800 border border-slate-600 rounded px-3 py-1 shadow-inner">
             <span className={`text-xl font-bold font-mono ${getColorClass()}`}>
@@ -231,7 +219,6 @@ export function RetroSpeedometer({
   );
 }
 
-// Simple retro circular gauge for smaller displays
 export function RetroCircularGauge({ 
   value, 
   size = 100,
@@ -264,10 +251,8 @@ export function RetroCircularGauge({
             </radialGradient>
           </defs>
           
-          {/* Background */}
           <circle cx="50" cy="50" r="45" fill="url(#retroGaugeBg)" />
           
-          {/* Outer ring */}
           <circle
             cx="50"
             cy="50"
@@ -277,7 +262,6 @@ export function RetroCircularGauge({
             strokeWidth="2"
           />
           
-          {/* Value arc */}
           <circle
             cx="50"
             cy="50"
@@ -291,7 +275,6 @@ export function RetroCircularGauge({
             className="transition-all duration-500"
           />
           
-          {/* Ticks */}
           {[0, 25, 50, 75, 100].map((tick) => {
             const tickAngle = (tick / 100) * 360 - 90;
             const rad = (tickAngle * Math.PI) / 180;
