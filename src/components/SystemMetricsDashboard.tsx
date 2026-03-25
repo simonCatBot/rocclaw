@@ -287,7 +287,7 @@ export function SystemMetricsDashboard() {
         </span>
       </div>
 
-      <!-- Retro Speedometer Gauges - CPU & Memory -->
+      { /* Retro Speedometer Gauges - CPU & Memory */ }
       <div className="grid grid-cols-2 gap-3 mb-4">
         <RetroSpeedometer
           value={metrics.cpu.usage}
@@ -310,7 +310,7 @@ export function SystemMetricsDashboard() {
         />
       </div>
 
-      <!-- Other Metrics -->
+      { /* Other Metrics */ }
       <div className="space-y-3 mb-4">
         {metrics.disk.map((disk, i) => (
           <MetricCard
@@ -350,7 +350,7 @@ export function SystemMetricsDashboard() {
         ))}
       </div>
 
-      <!-- System Information -->
+      { /* System Information */ }
       <div className="mt-4 pt-4 border-t border-border">
         <h3 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
           <Zap className="w-3 h-3" />
@@ -365,7 +365,7 @@ export function SystemMetricsDashboard() {
         </div>
       </div>
 
-      <!-- Thermal Information -->
+      { /* Thermal Information */ }
       {metrics.cpu.temperature !== null && (
         <div className="mt-4 pt-4 border-t border-border">
           <h3 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -386,7 +386,7 @@ export function SystemMetricsDashboard() {
         </div>
       )}
 
-      <!-- Live Status -->
+      { /* Live Status */ }
       <div className="mt-4 pt-3 border-t border-border">
         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
           <span>Last updated</span>
