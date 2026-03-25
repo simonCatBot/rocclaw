@@ -12,6 +12,7 @@ import {
   Zap,
   Thermometer
 } from "lucide-react";
+import { Speedometer } from "./Gauge";
 
 interface SystemMetrics {
   cpu: {
@@ -287,25 +288,31 @@ export function SystemMetricsDashboard() {
         </span>
       </div>
 
-      {/* Main Metrics Grid */}
-      <div className="space-y-3 mb-4">
-        <MetricCard
-          icon={Cpu}
-          title="CPU Usage"
-          usage={metrics.cpu.usage}
-          detail={`${metrics.cpu.cores} cores • Load: ${metrics.cpu.loadAvg[0].toFixed(2)} / ${metrics.cpu.loadAvg[1].toFixed(2)} / ${metrics.cpu.loadAvg[2].toFixed(2)} • ${formatTemp(metrics.cpu.temperature)}`}
+      {/* Speedometer Gauges - CPU & Memory */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <Speedometer
+          value={metrics.cpu.usage}
+          min={0}
+          max={100}
+          size={140}
           color="text-blue-500"
-          history={history.cpu}
+          label="CPU Usage"
+          detail={`${metrics.cpu.cores} cores • Load: ${metrics.cpu.loadAvg[0].toFixed(2)} • ${formatTemp(metrics.cpu.temperature)}`}
         />
-
-        <MetricCard
-          icon={MemoryStick}
-          title="Memory"
-          usage={metrics.memory.usage}
-          detail={`Used: ${formatGB(metrics.memory.used)} / Total: ${formatGB(metrics.memory.total)} • Swap: ${formatGB(metrics.memory.swapUsed)} / ${formatGB(metrics.memory.swapTotal)}`}
+        
+        <Speedometer
+          value={metrics.memory.usage}
+          min={0}
+          max={100}
+          size={140}
           color="text-green-500"
-          history={history.memory}
+          label="Memory"
+          detail={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)}`}
         />
+      </div>
+
+      {/* Other Metrics */}
+      <div className="space-y-3 mb-4">
 
         {metrics.disk.map((disk, i) => (
           <MetricCard
