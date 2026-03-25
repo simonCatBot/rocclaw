@@ -7,7 +7,6 @@ import {
   HardDrive, 
   Activity, 
   Server, 
-  TrendingUp,
   Clock
 } from "lucide-react";
 import { TokenUsage } from "./TokenUsage";
@@ -50,8 +49,8 @@ interface MetricsHistory {
   memory: number[];
 }
 
-function LineChart({ data, color, height = 60 }: { data: number[]; color: string; height?: number }) {
-  if (data.length < 2) return <div className="h-[60px] bg-surface-2/50 rounded" />;
+function LineChart({ data, color, height = 25 }: { data: number[]; color: string; height?: number }) {
+  if (data.length < 2) return <div style={{ height }} className="bg-surface-2/50 rounded" />;
   
   const max = Math.max(...data, 100);
   const min = Math.min(...data, 0);
@@ -106,24 +105,24 @@ function MetricCard({
   unit?: string;
 }) {
   return (
-    <div className="ui-panel p-3 space-y-2">
+    <div className="ui-panel p-2 space-y-1">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon className={`w-4 h-4 ${color}`} />
-          <span className="text-xs font-medium text-muted-foreground">{title}</span>
+          <Icon className={`w-3 h-3 ${color}`} />
+          <span className="text-[11px] font-medium text-muted-foreground">{title}</span>
         </div>
-        <span className="text-lg font-bold text-foreground">
+        <span className="text-base font-bold text-foreground">
           {Math.round(usage)}{unit}
         </span>
       </div>
       
       {history && (
-        <div className="h-[50px]">
+        <div className="h-[25px]">
           <LineChart data={history} color="currentColor" />
         </div>
       )}
       
-      <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
+      <div className="h-1 w-full bg-surface-2 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
             usage > 80 ? "bg-red-500" : usage > 60 ? "bg-yellow-500" : color.replace("text-", "bg-")
@@ -132,7 +131,7 @@ function MetricCard({
         />
       </div>
       
-      <span className="text-[10px] text-muted-foreground">{detail}</span>
+      <span className="text-[9px] text-muted-foreground">{detail}</span>
     </div>
   );
 }
@@ -159,7 +158,6 @@ export function SystemDashboard() {
         setMetrics(result.data);
         setError(null);
         
-        // Update history
         const now = new Date().toLocaleTimeString("en-US", { 
           hour12: false, 
           hour: "2-digit", 
@@ -189,10 +187,14 @@ export function SystemDashboard() {
 
   if (!metrics && !error) {
     return (
-      <div className="ui-panel p-4 h-full">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Activity className="w-4 h-4 animate-pulse" />
-          <span className="text-sm">Loading system metrics...</span>
+      <div className="ui-panel p-4 h-full overflow-y-auto">
+        <TokenUsage />
+        
+        <div className="mt-6 pt-6 border-t border-border">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Activity className="w-4 h-4 animate-pulse" />
+            <span className="text-sm">Loading system metrics...</span>
+          </div>
         </div>
       </div>
     );
@@ -200,10 +202,14 @@ export function SystemDashboard() {
 
   if (error) {
     return (
-      <div className="ui-panel p-4 h-full">
-        <div className="flex items-center gap-2 text-red-500">
-          <Activity className="w-4 h-4" />
-          <span className="text-sm">{error}</span>
+      <div className="ui-panel p-4 h-full overflow-y-auto">
+        <TokenUsage />
+        
+        <div className="mt-6 pt-6 border-t border-border">
+          <div className="flex items-center gap-2 text-red-500">
+            <Activity className="w-4 h-4" />
+            <span className="text-sm">{error}</span>
+          </div>
         </div>
       </div>
     );
@@ -217,67 +223,69 @@ export function SystemDashboard() {
 
   return (
     <div className="ui-panel ui-depth-workspace p-4 h-full overflow-y-auto">
-      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50">
-        <Server className="w-4 h-4 text-primary" />
-        <h2 className="text-sm font-semibold text-foreground">System Metrics</h2>
-        <span className="text-[10px] text-muted-foreground ml-auto">
-          {metrics.hostname}
-        </span>
-      </div>
+      {/* Token Usage Section - At Top */}
+      <TokenUsage />
 
-      <div className="space-y-3">
-        <MetricCard
-          icon={Cpu}
-          title="CPU"
-          usage={metrics.cpu.usage}
-          detail={`${metrics.cpu.cores} cores • ${formatTemp(metrics.cpu.temperature)}`}
-          color="text-blue-500"
-          history={history.cpu}
-        />
-
-        <MetricCard
-          icon={MemoryStick}
-          title="RAM"
-          usage={metrics.memory.usage}
-          detail={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)}`}
-          color="text-green-500"
-          history={history.memory}
-        />
-
-        <MetricCard
-          icon={HardDrive}
-          title="Disk"
-          usage={metrics.disk.usage}
-          detail={`${formatGB(metrics.disk.used)} / ${formatGB(metrics.disk.total)}`}
-          color="text-purple-500"
-        />
-
-        {metrics.gpu.length > 0 && metrics.gpu[0]?.usage !== null && (
-          <MetricCard
-            icon={Activity}
-            title="GPU"
-            usage={metrics.gpu[0]?.usage ?? 0}
-            detail={
-              metrics.gpu[0]?.memory.total
-                ? `${formatGB(metrics.gpu[0].memory.used ?? 0)} / ${formatGB(
-                    metrics.gpu[0].memory.total
-                  )}`
-                : formatTemp(metrics.gpu[0]?.temperature ?? null)
-            }
-            color="text-orange-500"
-          />
-        )}
-      </div>
-
-      <div className="mt-4 pt-3 border-t border-border/50">
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <Clock className="w-3 h-3" />
-          <span>Platform: {metrics.platform}</span>
-        </div>
-      </div>
-
+      {/* System Metrics Section - At Bottom */}
       <div className="mt-6 pt-6 border-t border-border">
-        <TokenUsage />
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+          <Server className="w-4 h-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">System Metrics</h2>
+          <span className="text-[10px] text-muted-foreground ml-auto">
+            {metrics.hostname}
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          <MetricCard
+            icon={Cpu}
+            title="CPU"
+            usage={metrics.cpu.usage}
+            detail={`${metrics.cpu.cores} cores • ${formatTemp(metrics.cpu.temperature)}`}
+            color="text-blue-500"
+            history={history.cpu}
+          />
+
+          <MetricCard
+            icon={MemoryStick}
+            title="RAM"
+            usage={metrics.memory.usage}
+            detail={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)}`}
+            color="text-green-500"
+            history={history.memory}
+          />
+
+          <MetricCard
+            icon={HardDrive}
+            title="Disk"
+            usage={metrics.disk.usage}
+            detail={`${formatGB(metrics.disk.used)} / ${formatGB(metrics.disk.total)}`}
+            color="text-purple-500"
+          />
+
+          {metrics.gpu.length > 0 && metrics.gpu[0]?.usage !== null && (
+            <MetricCard
+              icon={Activity}
+              title="GPU"
+              usage={metrics.gpu[0]?.usage ?? 0}
+              detail={
+                metrics.gpu[0]?.memory.total
+                  ? `${formatGB(metrics.gpu[0].memory.used ?? 0)} / ${formatGB(
+                      metrics.gpu[0].memory.total
+                    )}`
+                  : formatTemp(metrics.gpu[0]?.temperature ?? null)
+              }
+              color="text-orange-500"
+            />
+          )}
+        </div>
+
+        <div className="mt-3 pt-2 border-t border-border/50">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+            <Clock className="w-3 h-3" />
+            <span>Platform: {metrics.platform}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
