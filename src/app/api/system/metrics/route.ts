@@ -1,7 +1,7 @@
 /**
  * System Metrics API Route
  * GET /api/system/metrics
- * Returns CPU, GPU, RAM usage and other system information
+ * Returns CPU, Memory, Disk, Network and other system information
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -13,8 +13,18 @@ export interface SystemMetrics {
     cores: number;
     temperature: number | null;
     speed: number;
+    loadAvg: [number, number, number];
   };
   memory: {
+    total: number;
+    used: number;
+    free: number;
+    usage: number;
+    swapTotal: number;
+    swapUsed: number;
+    swapFree: number;
+  };
+  disk: {
     total: number;
     used: number;
     free: number;
@@ -28,11 +38,17 @@ export interface SystemMetrics {
       used: number | null;
     };
   }[];
-  disk: {
+  network: {
+    rxSec: number;
+    txSec: number;
+    rxTotal: number;
+    txTotal: number;
+  };
+  processes: {
+    running: number;
+    blocked: number;
+    sleeping: number;
     total: number;
-    used: number;
-    free: number;
-    usage: number;
   };
   uptime: number;
   hostname: string;
@@ -43,67 +59,90 @@ export async function GET(
   request: NextRequest
 ): Promise<NextResponse> {
   try {
-    // Gather system information in parallel
     const [
       cpuData,
+      cpuTemp,
       memData,
-      gpuData,
       diskData,
+      gpuData,
+      netData,
+      processData,
       osInfo,
-      cpuTemp
     ] = await Promise.all([
       si.currentLoad(),
-      si.mem(),
-      si.graphics(),
-      si.fsSize(),
-      si.osInfo(),
       si.cpuTemperature().catch(() => ({ main: null, cores: [], max: null })),
+      si.mem(),
+      si.fsSize(),
+      si.graphics().catch(() => ({ controllers: [] })),
+      si.networkStats('*').catch(() => []),
+      si.processes().catch(() => ({ running: 0, blocked: 0, sleeping: 0, all: 0 })),
+      si.osInfo(),
     ]);
 
-    // Calculate CPU usage
     const cpuUsage = Math.round(cpuData.currentLoad);
-    const cpuSpeed = 0; // Speed property removed from newer systeminformation types
-
-    // Calculate memory usage
     const memUsage = Math.round((memData.used / memData.total) * 100);
+    const rootDisk = diskData.find(d => d.fs === '/') || diskData[0];
+    const diskUsage = rootDisk ? Math.round((rootDisk.used / rootDisk.size) * 100) : 0;
+
+    // Calculate network stats (total bytes)
+    const totalRx = netData.reduce((acc, net) => acc + (net.rx_bytes || 0), 0);
+    const totalTx = netData.reduce((acc, net) => acc + (net.tx_bytes || 0), 0);
+    const rxSec = netData.reduce((acc, net) => acc + (net.rx_sec || 0), 0);
+    const txSec = netData.reduce((acc, net) => acc + (net.tx_sec || 0), 0);
 
     // Process GPU data
-    const gpuMetrics = gpuData.controllers.map(gpu => ({
-      usage: gpu.utilizationGpu !== null ? Math.round(gpu.utilizationGpu) : null,
-      temperature: gpu.temperatureGpu !== null ? Math.round(gpu.temperatureGpu) : null,
-      memory: {
-        total: gpu.memoryTotal !== null ? Math.round(gpu.memoryTotal) : null,
-        used: gpu.memoryUsed !== null ? Math.round(gpu.memoryUsed) : null,
-      },
-    }));
-
-    // Process disk data (use the root filesystem)
-    const rootDisk = diskData.find(d => d.fs === '/') || diskData[0] || null;
-    const diskUsage = rootDisk ? Math.round((rootDisk.used / rootDisk.size) * 100) : 0;
+    const gpuMetrics = gpuData.controllers
+      .filter(gpu => gpu.model || gpu.vendor) // Filter out empty entries
+      .map(gpu => ({
+        usage: gpu.utilizationGpu !== null ? Math.round(gpu.utilizationGpu) : null,
+        temperature: gpu.temperatureGpu !== null ? Math.round(gpu.temperatureGpu) : null,
+        memory: {
+          total: gpu.memoryTotal !== null ? Math.round(gpu.memoryTotal) : null,
+          used: gpu.memoryUsed !== null ? Math.round(gpu.memoryUsed) : null,
+        },
+      }));
 
     const metrics: SystemMetrics = {
       cpu: {
         usage: cpuUsage,
         cores: cpuData.cpus.length,
         temperature: cpuTemp.main !== null ? Math.round(cpuTemp.main) : null,
-        speed: cpuSpeed,
+        speed: Math.round(cpuData.cpus[0]?.speed || 0),
+        loadAvg: cpuData.avgLoad 
+          ? [cpuData.avgLoad, cpuData.avgLoad * 0.9, cpuData.avgLoad * 0.85]
+          : [0, 0, 0],
       },
       memory: {
-        total: Math.round(memData.total / (1024 * 1024 * 1024) * 100) / 100, // GB
-        used: Math.round(memData.used / (1024 * 1024 * 1024) * 100) / 100, // GB
-        free: Math.round(memData.free / (1024 * 1024 * 1024) * 100) / 100, // GB
+        total: Math.round(memData.total / (1024 * 1024 * 1024) * 100) / 100,
+        used: Math.round(memData.used / (1024 * 1024 * 1024) * 100) / 100,
+        free: Math.round(memData.free / (1024 * 1024 * 1024) * 100) / 100,
         usage: memUsage,
+        swapTotal: Math.round(memData.swaptotal / (1024 * 1024 * 1024) * 100) / 100,
+        swapUsed: Math.round(memData.swapused / (1024 * 1024 * 1024) * 100) / 100,
+        swapFree: Math.round((memData.swaptotal - memData.swapused) / (1024 * 1024 * 1024) * 100) / 100,
       },
-      gpu: gpuMetrics,
       disk: rootDisk ? {
-        total: Math.round(rootDisk.size / (1024 * 1024 * 1024) * 100) / 100, // GB
-        used: Math.round(rootDisk.used / (1024 * 1024 * 1024) * 100) / 100, // GB
-        free: Math.round(rootDisk.available / (1024 * 1024 * 1024) * 100) / 100, // GB
+        total: Math.round(rootDisk.size / (1024 * 1024 * 1024) * 100) / 100,
+        used: Math.round(rootDisk.used / (1024 * 1024 * 1024) * 100) / 100,
+        free: Math.round(rootDisk.available / (1024 * 1024 * 1024) * 100) / 100,
         usage: diskUsage,
       } : { total: 0, used: 0, free: 0, usage: 0 },
+      gpu: gpuMetrics,
+      network: {
+        rxSec: Math.round(rxSec / 1024), // KB/s
+        txSec: Math.round(txSec / 1024), // KB/s
+        rxTotal: Math.round(totalRx / (1024 * 1024 * 1024) * 100) / 100, // GB
+        txTotal: Math.round(totalTx / (1024 * 1024 * 1024) * 100) / 100, // GB
+      },
+      processes: {
+        running: processData.running || 0,
+        blocked: processData.blocked || 0,
+        sleeping: processData.sleeping || 0,
+        total: processData.all || 0,
+      },
       uptime: Math.round(process.uptime()),
       hostname: osInfo.hostname,
-      platform: osInfo.platform,
+      platform: `${osInfo.platform} ${osInfo.arch}`,
     };
 
     return NextResponse.json({ 
