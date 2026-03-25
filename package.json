@@ -1,5 +1,5 @@
 {
-  "name": "openclaw-studio",
+  "name": "rocclaw",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -37,6 +37,7 @@
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "systeminformation": "^5.31.5",
     "tailwind-merge": "^3.4.0",
     "ws": "^8.18.3"
   },
