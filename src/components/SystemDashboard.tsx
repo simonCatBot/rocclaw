@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Clock
 } from "lucide-react";
+import { TokenUsage } from "./TokenUsage";
 
 interface SystemMetrics {
   cpu: {
@@ -273,6 +274,10 @@ export function SystemDashboard() {
           <Clock className="w-3 h-3" />
           <span>Platform: {metrics.platform}</span>
         </div>
+      </div>
+
+      <div className="mt-6 pt-6 border-t border-border">
+        <TokenUsage />
       </div>
     </div>
   );
