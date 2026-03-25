@@ -14,6 +14,7 @@ import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnectScreen";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { SystemDashboard } from "@/components/SystemDashboard";
+import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
 } from "@/lib/text/message-extract";
@@ -118,8 +119,6 @@ import {
 } from "@/lib/controlplane/domain-runtime-client";
 import { useRuntimeEventStream } from "@/features/agents/state/useRuntimeEventStream";
 const PENDING_EXEC_APPROVAL_PRUNE_GRACE_MS = 500;
-
-type MobilePane = "fleet" | "chat";
 
 const RESERVED_MAIN_AGENT_ID = "main";
 
@@ -286,8 +285,9 @@ const AgentStudioPage = () => {
   const [createAgentBusy, setCreateAgentBusy] = useState(false);
   const [createAgentModalOpen, setCreateAgentModalOpen] = useState(false);
   const [createAgentModalError, setCreateAgentModalError] = useState<string | null>(null);
-  const [mobilePane, setMobilePane] = useState<MobilePane>("chat");
+  const [activeTabs, setActiveTabs] = useState<TabId[]>(getDefaultActiveTabs);
   const [inspectSidebar, setInspectSidebar] = useState<InspectSidebarState>(null);
+  const setMobilePaneChat = useCallback(() => {}, []);
   const [personalityHasUnsavedChanges, setPersonalityHasUnsavedChanges] = useState(false);
   const [createAgentBlock, setCreateAgentBlock] = useState<CreateAgentBlockState | null>(null);
   const [pendingExecApprovalsByAgentId, setPendingExecApprovalsByAgentId] = useState<
@@ -554,9 +554,7 @@ const AgentStudioPage = () => {
         patch,
       });
     },
-    setMobilePaneChat: () => {
-      setMobilePane("chat");
-    },
+    setMobilePaneChat,
     setError,
     useDomainIntents: true,
   });
@@ -881,9 +879,7 @@ const AgentStudioPage = () => {
     setInspectSidebarNull: () => {
       setInspectSidebar(null);
     },
-    setMobilePaneChat: () => {
-      setMobilePane("chat");
-    },
+    setMobilePaneChat,
   });
 
   const handleFocusFilterChange = useCallback(
@@ -916,9 +912,7 @@ const AgentStudioPage = () => {
       dispatch({ type: "selectAgent", agentId });
     },
     setInspectSidebar,
-    setMobilePaneChat: () => {
-      setMobilePane("chat");
-    },
+    setMobilePaneChat,
     setPersonalityHasUnsavedChanges,
     push: router.push,
     replace: router.replace,
@@ -1029,9 +1023,7 @@ const AgentStudioPage = () => {
               setInspectSidebarCapabilities: (agentId) => {
                 setInspectSidebar({ agentId, tab: "capabilities" });
               },
-              setMobilePaneChat: () => {
-                setMobilePane("chat");
-              },
+              setMobilePaneChat,
             });
           },
           setCreateAgentModalError,
@@ -1479,6 +1471,16 @@ const AgentStudioPage = () => {
           status={gatewayStatus}
           onConnectionSettings={() => setShowConnectionPanel(true)}
         />
+        <TabBar activeTabs={activeTabs} onTabToggle={(tabId) => {
+          setActiveTabs((current) => {
+            if (current.includes(tabId)) {
+              // Don't allow deselecting the last tab
+              if (current.length === 1) return current;
+              return current.filter((t) => t !== tabId);
+            }
+            return [...current, tabId];
+          });
+        }} />
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 md:px-5 md:pb-5 md:pt-3">
           {connectionPanelVisible ? (
             <div className="fixed inset-0 z-[140]" data-testid="gateway-connection-overlay">
@@ -1670,124 +1672,131 @@ const AgentStudioPage = () => {
               </div>
             </div>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
-              <div className="glass-panel ui-panel p-2 xl:hidden" data-testid="mobile-pane-toggle">
-                <div className="ui-segment grid-cols-3">
-                  <button
-                    type="button"
-                    className="ui-segment-item px-2 py-2 font-mono text-[12px] font-medium tracking-[0.02em]"
-                    data-active={mobilePane === "fleet" ? "true" : "false"}
-                    onClick={() => setMobilePane("fleet")}
-                  >
-                    Fleet
-                  </button>
-                  <button
-                    type="button"
-                    className="ui-segment-item px-2 py-2 font-mono text-[12px] font-medium tracking-[0.02em]"
-                    data-active={mobilePane === "chat" ? "true" : "false"}
-                    onClick={() => setMobilePane("chat")}
-                  >
-                    Chat
-                  </button>
-                  <button
-                    type="button"
-                    className="ui-segment-item px-2 py-2 font-mono text-[12px] font-medium tracking-[0.02em]"
-                    data-active={mobilePane === "metrics" ? "true" : "false"}
-                    onClick={() => setMobilePane("metrics")}
-                  >
-                    Metrics
-                  </button>
-                </div>
-              </div>
-              <div
-                className={`${mobilePane === "fleet" ? "block" : "hidden"} min-h-0 xl:block xl:min-h-0`}
-              >
-                <FleetSidebar
-                  agents={filteredAgents}
-                  selectedAgentId={focusedAgent?.agentId ?? state.selectedAgentId}
-                  filter={focusFilter}
-                  onFilterChange={handleFocusFilterChange}
-                  onCreateAgent={() => {
-                    handleOpenCreateAgentModal();
-                  }}
-                  createDisabled={!gatewayConnected || createAgentBusy || state.loading}
-                  createBusy={createAgentBusy}
-                  onSelectAgent={handleFleetSelectAgent}
-                />
-              </div>
-              <div
-                className={`${mobilePane === "chat" ? "flex" : "hidden"} ui-panel ui-depth-workspace min-h-0 flex-1 overflow-hidden xl:flex`}
-                data-testid="focused-agent-panel"
-              >
-                {focusedAgent ? (
-                  <div className="flex min-h-0 flex-1 flex-col">
-                    <div className="min-h-0 flex-1">
-                      <AgentChatPanel
-                        agent={focusedAgent}
-                        isSelected={false}
-                        canSend={gatewayConnected}
-                        models={gatewayModels}
-                        stopBusy={stopBusyAgentId === focusedAgent.agentId}
-                        stopDisabledReason={focusedAgentStopDisabledReason}
-                        onLoadMoreHistory={() => loadMoreAgentHistory(focusedAgent.agentId)}
-                        onOpenSettings={() => handleOpenAgentSettingsRoute(focusedAgent.agentId)}
-                        onRename={(name) =>
-                          settingsMutationController.handleRenameAgent(focusedAgent.agentId, name)
-                        }
-                        onNewSession={() => handleNewSession(focusedAgent.agentId)}
-                        onModelChange={(value) =>
-                          handleModelChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
-                        }
-                        onThinkingChange={(value) =>
-                          handleThinkingChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
-                        }
-                        onToolCallingToggle={(enabled) =>
-                          handleToolCallingToggle(focusedAgent.agentId, enabled)
-                        }
-                        onThinkingTracesToggle={(enabled) =>
-                          handleThinkingTracesToggle(focusedAgent.agentId, enabled)
-                        }
-                        onDraftChange={(value) => handleDraftChange(focusedAgent.agentId, value)}
-                        onSend={(message) =>
-                          handleSend(focusedAgent.agentId, focusedAgent.sessionKey, message)
-                        }
-                        onRemoveQueuedMessage={(index) =>
-                          removeQueuedMessage(focusedAgent.agentId, index)
-                        }
-                        onStopRun={() =>
-                          handleStopRun(
-                            focusedAgent.agentId,
-                            focusedAgent.sessionKey,
-                            focusedAgent.runId
-                          )
-                        }
-                        onAvatarShuffle={() => handleAvatarShuffle(focusedAgent.agentId)}
-                        pendingExecApprovals={focusedPendingExecApprovals}
-                        onResolveExecApproval={(id, decision) => {
-                          void handleResolveExecApproval(id, decision);
-                        }}
-                      />
-                    </div>
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex min-h-0 flex-1 flex-row gap-4">
+                {/* Agents Tab */}
+                {activeTabs.includes("agents") ? (
+                  <div className="min-h-0 flex-1 overflow-hidden">
+                    <FleetSidebar
+                      agents={filteredAgents}
+                      selectedAgentId={focusedAgent?.agentId ?? state.selectedAgentId}
+                      filter={focusFilter}
+                      onFilterChange={handleFocusFilterChange}
+                      onCreateAgent={() => {
+                        handleOpenCreateAgentModal();
+                      }}
+                      createDisabled={!gatewayConnected || createAgentBusy || state.loading}
+                      createBusy={createAgentBusy}
+                      onSelectAgent={handleFleetSelectAgent}
+                    />
                   </div>
-                ) : (
-                  <EmptyStatePanel
-                    title={hasAnyAgents ? "No agents match this filter." : "No agents available."}
-                    description={
-                      hasAnyAgents
-                        ? undefined
-                        : gatewayConnected
-                          ? "Use New Agent in the sidebar to add your first agent."
-                          : "Connect to your gateway to load agents into the studio."
-                    }
-                    fillHeight
-                    className="items-center p-6 text-center text-sm"
-                  />
-                )}
-              </div>
-              <div
-                className={`${mobilePane === "metrics" ? "block" : "hidden"} min-h-0 xl:block xl:min-h-0 xl:w-[320px]`}
-              >
-                <SystemDashboard />
+                ) : null}
+
+                {/* Chat Tab */}
+                {activeTabs.includes("chat") ? (
+                  <div
+                    className="ui-panel ui-depth-workspace min-h-0 flex-1 overflow-hidden"
+                    data-testid="focused-agent-panel"
+                  >
+                    {focusedAgent ? (
+                      <div className="flex min-h-0 flex-1 flex-col">
+                        <div className="min-h-0 flex-1">
+                          <AgentChatPanel
+                            agent={focusedAgent}
+                            isSelected={false}
+                            canSend={gatewayConnected}
+                            models={gatewayModels}
+                            stopBusy={stopBusyAgentId === focusedAgent.agentId}
+                            stopDisabledReason={focusedAgentStopDisabledReason}
+                            onLoadMoreHistory={() => loadMoreAgentHistory(focusedAgent.agentId)}
+                            onOpenSettings={() => handleOpenAgentSettingsRoute(focusedAgent.agentId)}
+                            onRename={(name) =>
+                              settingsMutationController.handleRenameAgent(focusedAgent.agentId, name)
+                            }
+                            onNewSession={() => handleNewSession(focusedAgent.agentId)}
+                            onModelChange={(value) =>
+                              handleModelChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
+                            }
+                            onThinkingChange={(value) =>
+                              handleThinkingChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
+                            }
+                            onToolCallingToggle={(enabled) =>
+                              handleToolCallingToggle(focusedAgent.agentId, enabled)
+                            }
+                            onThinkingTracesToggle={(enabled) =>
+                              handleThinkingTracesToggle(focusedAgent.agentId, enabled)
+                            }
+                            onDraftChange={(value) => handleDraftChange(focusedAgent.agentId, value)}
+                            onSend={(message) =>
+                              handleSend(focusedAgent.agentId, focusedAgent.sessionKey, message)
+                            }
+                            onRemoveQueuedMessage={(index) =>
+                              removeQueuedMessage(focusedAgent.agentId, index)
+                            }
+                            onStopRun={() =>
+                              handleStopRun(
+                                focusedAgent.agentId,
+                                focusedAgent.sessionKey,
+                                focusedAgent.runId
+                              )
+                            }
+                            onAvatarShuffle={() => handleAvatarShuffle(focusedAgent.agentId)}
+                            pendingExecApprovals={focusedPendingExecApprovals}
+                            onResolveExecApproval={(id, decision) => {
+                              void handleResolveExecApproval(id, decision);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <EmptyStatePanel
+                        title={hasAnyAgents ? "No agents match this filter." : "No agents available."}
+                        description={
+                          hasAnyAgents
+                            ? undefined
+                            : gatewayConnected
+                              ? "Use New Agent in the sidebar to add your first agent."
+                              : "Connect to your gateway to load agents into the studio."
+                        }
+                        fillHeight
+                        className="items-center p-6 text-center text-sm"
+                      />
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Tokens Tab */}
+                {activeTabs.includes("tokens") ? (
+                  <div className="min-h-0 flex-1 overflow-hidden">
+                    <SystemDashboard />
+                  </div>
+                ) : null}
+
+                {/* System Tab */}
+                {activeTabs.includes("system") ? (
+                  <div className="ui-panel ui-depth-workspace min-h-0 flex-1 overflow-hidden"
+                  >
+                    <EmptyStatePanel
+                      title="System Information"
+                      description="System metrics and health status will be displayed here."
+                      fillHeight
+                      className="items-center p-6 text-center text-sm"
+                    />
+                  </div>
+                ) : null}
+
+                {/* Settings Tab */}
+                {activeTabs.includes("settings") ? (
+                  <div className="ui-panel ui-depth-workspace min-h-0 flex-1 overflow-hidden"
+                  >
+                    <EmptyStatePanel
+                      title="Settings"
+                      description="Configure your workspace settings here."
+                      fillHeight
+                      className="items-center p-6 text-center text-sm"
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
           )}
