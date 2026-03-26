@@ -148,7 +148,6 @@ export async function GET(
         blocked: processData.blocked || 0,
         sleeping: processData.sleeping || 0,
         total: processData.all || 0,
-        topProcesses,
       },
       uptime: Math.round(process.uptime()),
       hostname: osInfo.hostname,
