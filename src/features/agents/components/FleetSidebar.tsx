@@ -143,17 +143,20 @@ export const FleetSidebar = ({
                     />
                   </div>
                   
-                  {/* Soul Name (if exists) - ABOVE agent name */}
-                  {soulName && (
-                    <div className="flex items-center justify-center gap-1 text-[13px] text-primary font-semibold truncate w-full mb-2">
-                      <Ghost className="w-3.5 h-3.5" />
-                      <span className="truncate max-w-[160px]">{soulName}</span>
-                    </div>
+                  {/* Identity Name (Soul Name) - PRIMARY, BOLD, FIRST */}
+                  {soulName ? (
+                    <p className="font-bold text-primary text-lg truncate w-full mb-1">
+                      {soulName}
+                    </p>
+                  ) : (
+                    <p className="font-bold text-primary text-lg truncate w-full mb-1">
+                      {agent.name}
+                    </p>
                   )}
                   
-                  {/* Agent Name */}
-                  <p className="font-semibold text-foreground text-base truncate w-full mb-1">
-                    {agent.name}
+                  {/* Agent Name - below identity */}
+                  <p className="font-semibold text-muted-foreground text-sm truncate w-full mb-2">
+                    {agent.agentId}
                   </p>
                   
                   {/* Model & Status - Push to bottom */}
