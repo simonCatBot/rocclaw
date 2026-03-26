@@ -41,24 +41,16 @@ export const HeaderBar = ({
     <div className="ui-topbar relative z-[180]">
       <div className="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-3 sm:px-4 md:px-5">
         <div aria-hidden="true" />
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg shadow-md">
+        <div className="flex items-center justify-center">
+          <div className="relative flex h-14 w-auto items-center justify-center overflow-hidden">
             <Image
               src="/logo.png"
-              alt="rocCLAW Logo"
-              width={48}
-              height={48}
-              className="h-full w-full object-cover"
+              alt="rocCLAW control"
+              width={200}
+              height={56}
+              className="h-14 w-auto object-contain"
               priority
             />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              rocCLAW
-            </h1>
-            <span className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-              System Control
-            </span>
           </div>
         </div>
         <div className="flex items-center justify-end gap-2">
