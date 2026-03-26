@@ -1689,7 +1689,12 @@ const AgentStudioPage = () => {
                       }}
                       createDisabled={!gatewayConnected || createAgentBusy || state.loading}
                       createBusy={createAgentBusy}
-                      onSelectAgent={handleFleetSelectAgent}
+                      onSelectAgent={(agentId) => {
+                        handleFleetSelectAgent(agentId);
+                        if (!activeTabs.includes("chat")) {
+                          setActiveTabs((prev) => [...prev, "chat"]);
+                        }
+                      }}
                     />
                   </div>
                 ) : null}
