@@ -7,7 +7,7 @@ import {
   resolveAgentStatusLabel,
 } from "./colorSemantics";
 import { EmptyStatePanel } from "./EmptyStatePanel";
-import { Plus, Cpu } from "lucide-react";
+import { Plus, Cpu, Ghost } from "lucide-react";
 
 type FleetSidebarProps = {
   agents: AgentState[];
@@ -68,7 +68,6 @@ export const FleetSidebar = ({
     if (!agent.model) return "default";
     const parts = agent.model.split('/');
     const name = parts[parts.length - 1];
-    // Shorten common model names
     if (name.includes('kimi')) return 'kimi';
     if (name.includes('qwen')) return 'qwen';
     if (name.includes('deepseek')) return 'deepseek';
@@ -76,26 +75,33 @@ export const FleetSidebar = ({
     return name.length > 8 ? name.substring(0, 8) : name;
   };
 
+  // Get soul name from agent
+  const getSoulName = (agent: AgentState) => {
+    // Check various properties that might hold soul/personality info
+    return agent.soulName || agent.personality || null;
+  };
+
   return (
     <aside
       className={`glass-panel fade-up-delay ui-panel ui-depth-sidepanel relative flex h-full flex-1 flex-col gap-3 bg-sidebar p-3 border-r border-sidebar-border ${className || ""}`}
       data-testid="fleet-sidebar"
     >
-      { /* Header */ }
-      <div className="flex items-center justify-between gap-2 px-1">
-        <p className="console-title type-page-title text-foreground">Agents ({agents.length})</p>
+      { /* Header - Centered */ }
+      <div className="flex items-center justify-center gap-2 px-1">
+        <p className="console-title type-page-title text-foreground text-center">Agents ({agents.length})</p>
       </div>
 
-      { /* Agent Grid - Responsive */ }
+      { /* Agent Grid - Responsive with larger cards */ }
       <div ref={scrollContainerRef} className="ui-scroll min-h-0 flex-1 overflow-auto">
         {agents.length === 0 ? (
           <EmptyStatePanel title="No agents available." compact className="p-3 text-xs" />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
             {agents.map((agent) => {
               const selected = selectedAgentId === agent.agentId;
               const avatarSeed = agent.avatarSeed ?? agent.agentId;
               const modelName = getModelName(agent);
+              const soulName = getSoulName(agent);
               
               return (
                 <button
@@ -109,9 +115,9 @@ export const FleetSidebar = ({
                   }}
                   type="button"
                   data-testid={`fleet-agent-row-${agent.agentId}`}
-                  className={`group relative ui-card flex flex-col items-center p-3 text-center border transition-colors ${
+                  className={`group relative ui-card flex flex-col items-center p-4 text-center border transition-colors min-h-[200px] ${
                     selected
-                      ? "ui-card-selected ring-2 ring-primary"
+                      ? "ui-card-selected ring-2 ring-primary bg-primary/5"
                       : "hover:bg-surface-2/45"
                   }`}
                   onClick={() => onSelectAgent(agent.agentId)}
@@ -119,7 +125,7 @@ export const FleetSidebar = ({
                   { /* Status Dot */ }
                   <span
                     aria-hidden="true"
-                    className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full border-2 border-background ${
+                    className={`absolute top-3 right-3 w-3 h-3 rounded-full border-2 border-background ${
                       agent.status === "running" ? "bg-green-500" :
                       agent.status === "error" ? "bg-red-500" :
                       agent.status === "idle" ? "bg-slate-400" :
@@ -127,36 +133,44 @@ export const FleetSidebar = ({
                     }`}
                   />
                   
-                  { /* Avatar - Square size */ }
-                  <div className="relative mb-2">
+                  { /* Avatar - Square */ }
+                  <div className="relative mb-3">
                     <AgentAvatar
                       seed={avatarSeed}
                       name={agent.name}
                       avatarUrl={agent.avatarUrl ?? null}
-                      size={64}
+                      size={80}
                       isSelected={selected}
                     />
                   </div>
                   
                   { /* Agent Name */ }
-                  <p className="font-semibold text-foreground text-sm truncate w-full mb-1">
+                  <p className="font-semibold text-foreground text-base truncate w-full mb-1">
                     {agent.name}
                   </p>
                   
-                  { /* Model Tag */ }
-                  <div className="flex items-center justify-center gap-1.5 mt-auto w-full">
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-surface-2 px-1.5 py-0.5 rounded">
+                  { /* Soul Name (if exists) */ }
+                  {soulName && (
+                    <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground truncate w-full mb-2">
+                      <Ghost className="w-3 h-3" />
+                      <span className="truncate max-w-[140px]">{soulName}</span>
+                    </div>
+                  )}
+                  
+                  { /* Model & Status - Push to bottom */ }
+                  <div className="flex items-center justify-center gap-2 mt-auto w-full">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-surface-2 px-2 py-1 rounded-md">
                       <Cpu className="w-3 h-3" />
                       {modelName}
                     </span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${resolveAgentStatusBadgeClass(agent.status)}`}>
+                    <span className={`text-[10px] px-2 py-1 rounded-md ${resolveAgentStatusBadgeClass(agent.status)}`}>
                       {resolveAgentStatusLabel(agent.status)}
                     </span>
                   </div>
                   
                   { /* Approval Badge */ }
                   {agent.awaitingUserInput ? (
-                    <span className={`absolute bottom-2 left-2 right-2 text-[9px] ${NEEDS_APPROVAL_BADGE_CLASS} py-0.5 rounded`} data-status="approval">
+                    <span className={`absolute bottom-3 left-3 right-3 text-[10px] ${NEEDS_APPROVAL_BADGE_CLASS} py-1 rounded-md`} data-status="approval">
                       Needs Approval
                     </span>
                   ) : null}
