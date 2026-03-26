@@ -7,7 +7,7 @@ import {
   resolveAgentStatusLabel,
 } from "./colorSemantics";
 import { EmptyStatePanel } from "./EmptyStatePanel";
-import { Plus } from "lucide-react";
+import { Plus, Cpu } from "lucide-react";
 
 type FleetSidebarProps = {
   agents: AgentState[];
@@ -63,6 +63,19 @@ export const FleetSidebar = ({
     previousTopByAgentIdRef.current = nextTopByAgentId;
   }, [agentOrderKey]);
 
+  // Get short model name
+  const getModelName = (agent: AgentState) => {
+    if (!agent.model) return "default";
+    const parts = agent.model.split('/');
+    const name = parts[parts.length - 1];
+    // Shorten common model names
+    if (name.includes('kimi')) return 'kimi';
+    if (name.includes('qwen')) return 'qwen';
+    if (name.includes('deepseek')) return 'deepseek';
+    if (name.includes('glm')) return 'glm';
+    return name.length > 8 ? name.substring(0, 8) : name;
+  };
+
   return (
     <aside
       className={`glass-panel fade-up-delay ui-panel ui-depth-sidepanel relative flex h-full flex-1 flex-col gap-3 bg-sidebar p-3 border-r border-sidebar-border ${className || ""}`}
@@ -73,15 +86,17 @@ export const FleetSidebar = ({
         <p className="console-title type-page-title text-foreground">Agents ({agents.length})</p>
       </div>
 
-      { /* Agent Grid - 2 columns */ }
+      { /* Agent Grid - Responsive */ }
       <div ref={scrollContainerRef} className="ui-scroll min-h-0 flex-1 overflow-auto">
         {agents.length === 0 ? (
           <EmptyStatePanel title="No agents available." compact className="p-3 text-xs" />
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
             {agents.map((agent) => {
               const selected = selectedAgentId === agent.agentId;
               const avatarSeed = agent.avatarSeed ?? agent.agentId;
+              const modelName = getModelName(agent);
+              
               return (
                 <button
                   key={agent.agentId}
@@ -94,43 +109,57 @@ export const FleetSidebar = ({
                   }}
                   type="button"
                   data-testid={`fleet-agent-row-${agent.agentId}`}
-                  className={`group relative ui-card flex flex-col items-center justify-center gap-2 p-3 text-center border transition-colors aspect-square ${
+                  className={`group relative ui-card flex flex-col items-center p-3 text-center border transition-colors ${
                     selected
-                      ? "ui-card-selected"
+                      ? "ui-card-selected ring-2 ring-primary"
                       : "hover:bg-surface-2/45"
                   }`}
                   onClick={() => onSelectAgent(agent.agentId)}
                 >
+                  { /* Status Dot */ }
                   <span
                     aria-hidden="true"
-                    className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
+                    className={`absolute top-2 right-2 w-2.5 h-2.5 rounded-full border-2 border-background ${
                       agent.status === "running" ? "bg-green-500" :
                       agent.status === "error" ? "bg-red-500" :
                       agent.status === "idle" ? "bg-slate-400" :
                       "bg-amber-500"
                     }`}
                   />
-                  <AgentAvatar
-                    seed={avatarSeed}
-                    name={agent.name}
-                    avatarUrl={agent.avatarUrl ?? null}
-                    size={48}
-                    isSelected={selected}
-                  />
-                  <div className="min-w-0 w-full">
-                    <p className="type-secondary-heading truncate text-foreground text-sm">
-                      {agent.name}
-                    </p>                    
-                    {agent.awaitingUserInput ? (
-                      <span className={`ui-badge ${NEEDS_APPROVAL_BADGE_CLASS} text-[10px] mt-1`} data-status="approval">
-                        Needs approval
-                      </span>
-                    ) : (
-                      <span className={`text-[10px] text-muted-foreground mt-1 ${resolveAgentStatusBadgeClass(agent.status)}`}>
-                        {resolveAgentStatusLabel(agent.status)}
-                      </span>
-                    )}
+                  
+                  { /* Avatar - Square size */ }
+                  <div className="relative mb-2">
+                    <AgentAvatar
+                      seed={avatarSeed}
+                      name={agent.name}
+                      avatarUrl={agent.avatarUrl ?? null}
+                      size={64}
+                      isSelected={selected}
+                    />
                   </div>
+                  
+                  { /* Agent Name */ }
+                  <p className="font-semibold text-foreground text-sm truncate w-full mb-1">
+                    {agent.name}
+                  </p>
+                  
+                  { /* Model Tag */ }
+                  <div className="flex items-center justify-center gap-1.5 mt-auto w-full">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-surface-2 px-1.5 py-0.5 rounded">
+                      <Cpu className="w-3 h-3" />
+                      {modelName}
+                    </span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${resolveAgentStatusBadgeClass(agent.status)}`}>
+                      {resolveAgentStatusLabel(agent.status)}
+                    </span>
+                  </div>
+                  
+                  { /* Approval Badge */ }
+                  {agent.awaitingUserInput ? (
+                    <span className={`absolute bottom-2 left-2 right-2 text-[9px] ${NEEDS_APPROVAL_BADGE_CLASS} py-0.5 rounded`} data-status="approval">
+                      Needs Approval
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
