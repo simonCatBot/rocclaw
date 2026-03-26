@@ -19,18 +19,13 @@ interface TabConfig {
   defaultActive: boolean;
 }
 
-const VISIBLE_TABS: TabConfig[] = [
+const AVAILABLE_TABS: TabConfig[] = [
   { id: "agents", label: "Agents", icon: Users, defaultActive: true },
+  { id: "chat", label: "Chat", icon: MessageSquare, defaultActive: true },
   { id: "system", label: "System Metrics", icon: Server, defaultActive: true },
-];
-
-const HIDDEN_TABS: TabConfig[] = [
-  { id: "chat", label: "Chat", icon: MessageSquare, defaultActive: false },
   { id: "tokens", label: "Token Usage", icon: Coins, defaultActive: false },
   { id: "settings", label: "Settings", icon: Settings, defaultActive: false },
 ];
-
-const AVAILABLE_TABS: TabConfig[] = [...VISIBLE_TABS, ...HIDDEN_TABS];
 
 interface TabBarProps {
   activeTabs: TabId[];
@@ -41,7 +36,7 @@ export function TabBar({ activeTabs, onTabToggle }: TabBarProps) {
   return (
     <div className="border-b border-border bg-surface-1/50 px-3 py-2 sm:px-4 md:px-5">
       <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-        {VISIBLE_TABS.map((tab) => {
+        {AVAILABLE_TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTabs.includes(tab.id);
           
@@ -70,7 +65,7 @@ export function TabBar({ activeTabs, onTabToggle }: TabBarProps) {
 }
 
 export function getDefaultActiveTabs(): TabId[] {
-  return VISIBLE_TABS
+  return AVAILABLE_TABS
     .filter(tab => tab.defaultActive)
     .map(tab => tab.id);
 }
