@@ -152,13 +152,13 @@ export const FleetSidebar = ({
                     />
                   </div>
                   
-                  {/* Identity Name - PRIMARY, BOLD, FIRST (no emoji) */}
+                  {/* Identity Name - BOLD, FIRST (no emoji, normal color) */}
                   {soulName ? (
-                    <p className="font-bold text-primary text-lg truncate w-full mb-1">
+                    <p className="font-bold text-foreground text-lg truncate w-full mb-1">
                       {soulName}
                     </p>
                   ) : (
-                    <p className="font-bold text-primary text-lg truncate w-full mb-1">
+                    <p className="font-bold text-foreground text-lg truncate w-full mb-1">
                       {agent.name}
                     </p>
                   )}
