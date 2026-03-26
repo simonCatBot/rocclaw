@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
-import { Plug, Terminal } from "lucide-react";
+import { Plug } from "lucide-react";
 import { resolveGatewayStatusBadgeClass, resolveGatewayStatusLabel } from "./colorSemantics";
+import Image from "next/image";
 
 type HeaderBarProps = {
   status: GatewayStatus;
@@ -41,8 +42,15 @@ export const HeaderBar = ({
       <div className="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-3 sm:px-4 md:px-5">
         <div aria-hidden="true" />
         <div className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
-            <Terminal className="h-5 w-5 text-white" />
+          <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg shadow-md">
+            <Image
+              src="/logo.png"
+              alt="rocCLAW Logo"
+              width={48}
+              height={48}
+              className="h-full w-full object-cover"
+              priority
+            />
           </div>
           <div className="flex flex-col">
             <h1 className="text-xl font-bold tracking-tight text-foreground">
