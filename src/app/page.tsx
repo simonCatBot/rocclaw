@@ -2,7 +2,6 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import { AgentCreateModal } from "@/features/agents/components/AgentCreateModal";
 import {
   AgentBrainPanel,
@@ -15,7 +14,6 @@ import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnec
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { SystemDashboard } from "@/components/SystemDashboard";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
-import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
@@ -1691,82 +1689,8 @@ const AgentStudioPage = () => {
                       createBusy={createAgentBusy}
                       onSelectAgent={(agentId) => {
                         handleFleetSelectAgent(agentId);
-                        if (!activeTabs.includes("chat")) {
-                          setActiveTabs((prev) => [...prev, "chat"]);
-                        }
                       }}
                     />
-                  </div>
-                ) : null}
-
-                {/* Chat Tab */}
-                {activeTabs.includes("chat") ? (
-                  <div
-                    className="ui-panel ui-depth-workspace flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-                    data-testid="focused-agent-panel"
-                  >
-                    {focusedAgent ? (
-                      <div className="flex h-full min-h-0 flex-1 flex-col">
-                        <AgentChatPanel
-                            agent={focusedAgent}
-                            isSelected={false}
-                            canSend={gatewayConnected}
-                            models={gatewayModels}
-                            stopBusy={stopBusyAgentId === focusedAgent.agentId}
-                            stopDisabledReason={focusedAgentStopDisabledReason}
-                            onLoadMoreHistory={() => loadMoreAgentHistory(focusedAgent.agentId)}
-                            onOpenSettings={() => handleOpenAgentSettingsRoute(focusedAgent.agentId)}
-                            onRename={(name) =>
-                              settingsMutationController.handleRenameAgent(focusedAgent.agentId, name)
-                            }
-                            onNewSession={() => handleNewSession(focusedAgent.agentId)}
-                            onModelChange={(value) =>
-                              handleModelChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
-                            }
-                            onThinkingChange={(value) =>
-                              handleThinkingChange(focusedAgent.agentId, focusedAgent.sessionKey, value)
-                            }
-                            onToolCallingToggle={(enabled) =>
-                              handleToolCallingToggle(focusedAgent.agentId, enabled)
-                            }
-                            onThinkingTracesToggle={(enabled) =>
-                              handleThinkingTracesToggle(focusedAgent.agentId, enabled)
-                            }
-                            onDraftChange={(value) => handleDraftChange(focusedAgent.agentId, value)}
-                            onSend={(message) =>
-                              handleSend(focusedAgent.agentId, focusedAgent.sessionKey, message)
-                            }
-                            onRemoveQueuedMessage={(index) =>
-                              removeQueuedMessage(focusedAgent.agentId, index)
-                            }
-                            onStopRun={() =>
-                              handleStopRun(
-                                focusedAgent.agentId,
-                                focusedAgent.sessionKey,
-                                focusedAgent.runId
-                              )
-                            }
-                            onAvatarShuffle={() => handleAvatarShuffle(focusedAgent.agentId)}
-                            pendingExecApprovals={focusedPendingExecApprovals}
-                            onResolveExecApproval={(id, decision) => {
-                              void handleResolveExecApproval(id, decision);
-                            }}
-                          />
-                      </div>
-                    ) : (
-                      <EmptyStatePanel
-                        title={hasAnyAgents ? "No agents match this filter." : "No agents available."}
-                        description={
-                          hasAnyAgents
-                            ? undefined
-                            : gatewayConnected
-                              ? "Use New Agent in the sidebar to add your first agent."
-                              : "Connect to your gateway to load agents into the studio."
-                        }
-                        fillHeight
-                        className="items-center p-6 text-center text-sm"
-                      />
-                    )}
                   </div>
                 ) : null}
 
@@ -1774,25 +1698,6 @@ const AgentStudioPage = () => {
                 {activeTabs.includes("system") ? (
                   <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                     <SystemMetricsDashboard />
-                  </div>
-                ) : null}
-
-                {/* Tokens Tab */}
-                {activeTabs.includes("tokens") ? (
-                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <TokenUsageDashboard />
-                  </div>
-                ) : null}
-
-                {/* Settings Tab */}
-                {activeTabs.includes("settings") ? (
-                  <div className="ui-panel ui-depth-workspace flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <EmptyStatePanel
-                      title="Settings"
-                      description="Configure your workspace settings here."
-                      fillHeight
-                      className="items-center p-6 text-center text-sm"
-                    />
                   </div>
                 ) : null}
               </div>

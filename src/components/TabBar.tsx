@@ -3,14 +3,11 @@
 import { useState } from "react";
 import { 
   Users, 
-  MessageSquare, 
-  Server, 
-  Coins,
-  Settings,
+  Server,
   type LucideIcon
 } from "lucide-react";
 
-export type TabId = "agents" | "chat" | "system" | "tokens" | "settings";
+export type TabId = "agents" | "system";
 
 interface TabConfig {
   id: TabId;
@@ -21,10 +18,7 @@ interface TabConfig {
 
 const AVAILABLE_TABS: TabConfig[] = [
   { id: "agents", label: "Agents", icon: Users, defaultActive: true },
-  { id: "chat", label: "Chat", icon: MessageSquare, defaultActive: true },
   { id: "system", label: "System Metrics", icon: Server, defaultActive: true },
-  { id: "tokens", label: "Token Usage", icon: Coins, defaultActive: false },
-  { id: "settings", label: "Settings", icon: Settings, defaultActive: false },
 ];
 
 interface TabBarProps {
