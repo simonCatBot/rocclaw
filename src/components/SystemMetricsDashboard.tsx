@@ -261,7 +261,9 @@ export function SystemMetricsDashboard() {
         <div className="ui-panel p-3">
           <InfoRow label="Hostname" value={metrics.hostname} />
           <InfoRow label="Platform" value={metrics.platform} />
-          <InfoRow label="CPU Cores" value={`${metrics.cpu.cores}`} />
+          {metrics.gpu.length > 0 && metrics.gpu[0]?.name && (
+            <InfoRow label="GPU" value={metrics.gpu[0].name} />
+          )}
         </div>
       </div>
     </div>
