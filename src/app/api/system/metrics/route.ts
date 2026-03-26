@@ -96,7 +96,7 @@ export async function GET(
 
     // Process GPU data
     const gpuMetrics = gpuData.controllers
-      .filter(gpu => gpu.model || gpu.vendor) // Filter out empty entries
+      .filter(gpu => gpu.model || gpu.vendor)
       .map(gpu => ({
         name: gpu.model || gpu.vendor || 'Unknown GPU',
         usage: gpu.utilizationGpu !== null ? Math.round(gpu.utilizationGpu) : null,
@@ -148,6 +148,7 @@ export async function GET(
         blocked: processData.blocked || 0,
         sleeping: processData.sleeping || 0,
         total: processData.all || 0,
+        topProcesses,
       },
       uptime: Math.round(process.uptime()),
       hostname: osInfo.hostname,

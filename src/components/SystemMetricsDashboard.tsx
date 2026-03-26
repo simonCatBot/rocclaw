@@ -65,39 +65,32 @@ interface SystemMetrics {
 function MetricRow({ 
   icon: Icon, 
   label, 
-  name,
   value, 
   subtext,
   alert 
 }: { 
   icon: React.ComponentType<{ className?: string }>; 
   label: string;
-  name?: string;
   value: string; 
   subtext: string;
   alert?: boolean;
 }) {
   return (
-    <div className={`p-3 rounded-lg border ${
+    <div className={`flex items-center justify-between p-3 rounded-lg border ${
       alert ? "bg-red-500/10 border-red-500/30" : "bg-surface-1 border-border"
     }`}>
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-md ${alert ? "bg-red-500/20" : "bg-surface-2"}`}>
-            <Icon className={`w-4 h-4 ${alert ? "text-red-500" : "text-primary"}`} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-foreground">{label}</p>
-            {name && (
-              <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{name}</p>
-            )}
-          </div>
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-md ${alert ? "bg-red-500/20" : "bg-surface-2"}`}>
+          <Icon className={`w-4 h-4 ${alert ? "text-red-500" : "text-primary"}`} />
         </div>
-        <div className="text-right">
-          <p className={`text-lg font-bold ${alert ? "text-red-500" : "text-foreground"}`}>{value}</p>
+        <div>
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="text-xs text-muted-foreground">{subtext}</p>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground mt-2">{subtext}</p>
+      <div className="text-right">
+        <p className={`text-lg font-bold ${alert ? "text-red-500" : "text-foreground"}`}>{value}</p>
+      </div>
     </div>
   );
 }
@@ -164,12 +157,6 @@ export function SystemMetricsDashboard() {
   const formatTemp = (temp: number | null) => temp !== null ? `${temp}°C` : "N/A";
   const formatSpeed = (kbps: number) => kbps > 1024 ? `${(kbps/1024).toFixed(1)} MB/s` : `${kbps} KB/s`;
 
-  // Truncate CPU name for display
-  const truncateName = (name: string, maxLen: number = 25) => {
-    if (name.length <= maxLen) return name;
-    return name.substring(0, maxLen) + '...';
-  };
-
   return (
     <div className="ui-panel ui-depth-workspace p-4 h-full overflow-y-auto">
       { /* Header */ }
@@ -182,12 +169,31 @@ export function SystemMetricsDashboard() {
         </span>
       </div>
 
+      { /* Processor Info - Prominent Display */ }
+      <div className="mb-4 p-4 bg-surface-1 border border-border rounded-lg">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-primary/20 rounded-md">
+            <Cpu className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Processor</p>
+            <p className="text-sm font-semibold text-foreground">{metrics.cpu.name}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span>{metrics.cpu.cores} Cores</span>
+          <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
+          <span>{Math.round(metrics.cpu.speed)} MHz</span>
+          <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
+          <span>Load: {metrics.cpu.loadAvg[0].toFixed(2)}</span>
+        </div>
+      </div>
+
       { /* Main Metrics */ }
       <div className="space-y-2">
         <MetricRow
           icon={Cpu}
-          label="CPU"
-          name={truncateName(metrics.cpu.name)}
+          label="CPU Usage"
           value={`${Math.round(metrics.cpu.usage)}%`}
           subtext={`${metrics.cpu.cores} cores • Load: ${metrics.cpu.loadAvg[0].toFixed(2)} • ${formatTemp(metrics.cpu.temperature)}`}
           alert={metrics.cpu.usage > 80}
