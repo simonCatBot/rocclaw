@@ -22,8 +22,8 @@ interface TabConfig {
 const AVAILABLE_TABS: TabConfig[] = [
   { id: "agents", label: "Agents", icon: Users, defaultActive: true },
   { id: "chat", label: "Chat", icon: MessageSquare, defaultActive: true },
-  { id: "tokens", label: "Token Usage", icon: Coins, defaultActive: true },
-  { id: "system", label: "System Metrics", icon: Server, defaultActive: false },
+  { id: "system", label: "System Metrics", icon: Server, defaultActive: true },
+  { id: "tokens", label: "Token Usage", icon: Coins, defaultActive: false },
   { id: "settings", label: "Settings", icon: Settings, defaultActive: false },
 ];
 

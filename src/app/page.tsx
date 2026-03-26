@@ -1765,17 +1765,17 @@ const AgentStudioPage = () => {
                   </div>
                 ) : null}
 
-                {/* Tokens Tab */}
-                {activeTabs.includes("tokens") ? (
-                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <TokenUsageDashboard />
-                  </div>
-                ) : null}
-
                 {/* System Tab */}
                 {activeTabs.includes("system") ? (
                   <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                     <SystemMetricsDashboard />
+                  </div>
+                ) : null}
+
+                {/* Tokens Tab */}
+                {activeTabs.includes("tokens") ? (
+                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                    <TokenUsageDashboard />
                   </div>
                 ) : null}
 
