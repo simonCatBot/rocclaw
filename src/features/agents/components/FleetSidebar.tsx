@@ -77,7 +77,6 @@ export const FleetSidebar = ({
 
   // Get soul name from agent
   const getSoulName = (agent: AgentState) => {
-    // Check various properties that might hold soul/personality info
     return agent.soulName || agent.personality || null;
   };
 
@@ -144,18 +143,18 @@ export const FleetSidebar = ({
                     />
                   </div>
                   
-                  { /* Agent Name */ }
-                  <p className="font-semibold text-foreground text-base truncate w-full mb-1">
-                    {agent.name}
-                  </p>
-                  
-                  { /* Soul Name (if exists) */ }
+                  { /* Soul Name (if exists) - ABOVE agent name */ }
                   {soulName && (
-                    <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground truncate w-full mb-2">
+                    <div className="flex items-center justify-center gap-1 text-[11px] text-primary font-medium truncate w-full mb-1">
                       <Ghost className="w-3 h-3" />
                       <span className="truncate max-w-[140px]">{soulName}</span>
                     </div>
                   )}
+                  
+                  { /* Agent Name */ }
+                  <p className="font-semibold text-foreground text-base truncate w-full mb-1">
+                    {agent.name}
+                  </p>
                   
                   { /* Model & Status - Push to bottom */ }
                   <div className="flex items-center justify-center gap-2 mt-auto w-full">
@@ -181,17 +180,19 @@ export const FleetSidebar = ({
         )}
       </div>
 
-      { /* New Agent Button - Bottom */ }
-      <button
-        type="button"
-        data-testid="fleet-new-agent-button"
-        className="ui-btn-primary flex items-center justify-center gap-2 px-3 py-3 font-mono text-[12px] font-medium tracking-[0.02em] disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground mt-auto"
-        onClick={onCreateAgent}
-        disabled={createDisabled || createBusy}
-      >
-        <Plus className="w-4 h-4" />
-        {createBusy ? "Creating..." : "New Agent"}
-      </button>
+      { /* New Agent Button - Centered, 1/3 width */ }
+      <div className="flex justify-center w-full mt-auto px-4">
+        <button
+          type="button"
+          data-testid="fleet-new-agent-button"
+          className="ui-btn-primary flex items-center justify-center gap-2 px-4 py-3 font-mono text-[12px] font-medium tracking-[0.02em] disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-muted-foreground w-1/3 min-w-[120px]"
+          onClick={onCreateAgent}
+          disabled={createDisabled || createBusy}
+        >
+          <Plus className="w-4 h-4" />
+          {createBusy ? "Creating..." : "New Agent"}
+        </button>
+      </div>
     </aside>
   );
 };
