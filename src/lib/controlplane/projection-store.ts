@@ -41,12 +41,16 @@ type OutboxColumnInfo = {
   name: string;
 };
 
-type BetterSqlite3Factory = typeof BetterSqlite3;
-type BetterSqlite3Database = BetterSqlite3.Database;
-type BetterSqlite3Statement<BindParams extends unknown[] = unknown[], Result = unknown> =
-  BetterSqlite3.Statement<BindParams, Result>;
+type BetterSqlite3Database = ReturnType<typeof BetterSqlite3>;
 
-const loadBetterSqlite3 = (): BetterSqlite3Factory => BetterSqlite3;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type BetterSqlite3Statement<BindParams extends unknown[] = unknown[], Result = any> = {
+  get: (...params: BindParams) => Result | undefined;
+  all: (...params: BindParams) => Result[];
+  run: (...params: BindParams) => { changes?: number; lastInsertRowid?: number | bigint };
+};
+
+const loadBetterSqlite3 = (): typeof BetterSqlite3 => BetterSqlite3;
 
 const parseDomainEvent = (raw: string): ControlPlaneDomainEvent => {
   return JSON.parse(raw) as ControlPlaneDomainEvent;
