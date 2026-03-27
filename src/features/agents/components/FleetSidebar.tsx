@@ -63,16 +63,9 @@ export const FleetSidebar = ({
     previousTopByAgentIdRef.current = nextTopByAgentId;
   }, [agentOrderKey]);
 
-  // Get short model name
+  // Get full model name
   const getModelName = (agent: AgentState) => {
-    if (!agent.model) return "default";
-    const parts = agent.model.split('/');
-    const name = parts[parts.length - 1];
-    if (name.includes('kimi')) return 'kimi';
-    if (name.includes('qwen')) return 'qwen';
-    if (name.includes('deepseek')) return 'deepseek';
-    if (name.includes('glm')) return 'glm';
-    return name.length > 8 ? name.substring(0, 8) : name;
+    return agent.model || "default";
   };
 
   // Get soul name from agent identity
