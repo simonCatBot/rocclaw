@@ -22,7 +22,7 @@ type RateLimitKey = string;
 type SlidingWindow = Map<number, number>;
 
 const DEFAULT_WINDOW_MS = 1_000; // 1 second
-const DEFAULT_MAX_REQUESTS = 60; // 60 req/s per key (matches typical SSE keep-alive)
+export const DEFAULT_MAX_REQUESTS = 60; // 60 req/s per key (matches typical SSE keep-alive)
 
 const globalState = new Map<RateLimitKey, SlidingWindow>();
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
