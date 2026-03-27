@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { deriveRuntimeFreshness } from "@/lib/controlplane/degraded-read";
 import { peekControlPlaneRuntime } from "@/lib/controlplane/runtime";
-import { applyStudioSettingsPatch } from "@/lib/studio/settings-store";
+import { applyStudioSettingsPatch } from "@/lib/rocclaw/settings-store";
 
 export const runtime = "nodejs";
 

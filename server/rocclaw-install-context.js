@@ -3,7 +3,7 @@ const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
 
 const { resolveHosts, isPublicHost } = require("./network-policy");
-const { readOpenclawGatewayDefaults } = require("./studio-settings");
+const { readOpenclawGatewayDefaults } = require("./rocclaw-settings");
 
 const execFileAsync = promisify(execFile);
 const OPENCLAW_PROBE_TIMEOUT_MS = 1_500;

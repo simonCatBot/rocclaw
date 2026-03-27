@@ -8,14 +8,14 @@ import { fetchJson } from "@/lib/http";
 import {
   defaultStudioInstallContext,
   type StudioInstallContext,
-} from "@/lib/studio/install-context";
+} from "@/lib/rocclaw/install-context";
 import {
   defaultStudioSettings,
   type StudioGatewaySettings,
   type StudioSettings,
   type StudioSettingsPatch,
-} from "@/lib/studio/settings";
-import type { StudioSettingsResponse } from "@/lib/studio/coordinator";
+} from "@/lib/rocclaw/settings";
+import type { StudioSettingsResponse } from "@/lib/rocclaw/coordinator";
 
 const DEFAULT_UPSTREAM_GATEWAY_URL =
   process.env.NEXT_PUBLIC_GATEWAY_URL || "ws://localhost:18789";
@@ -347,7 +347,7 @@ export const useStudioGatewaySettings = (
           ? { url: trimmedGatewayUrl, token: trimmedToken }
           : { url: trimmedGatewayUrl },
       };
-      const envelope = await fetchJson<StudioSettingsResponse>("/api/studio", {
+      const envelope = await fetchJson<StudioSettingsResponse>("/api/rocclaw", {
         method: "PUT",
         keepalive: true,
         headers: { "Content-Type": "application/json" },
@@ -392,7 +392,7 @@ export const useStudioGatewaySettings = (
     setActionError(null);
     setTestResult(null);
     try {
-      const response = await fetchJson<TestConnectionResponse>("/api/studio/test-connection", {
+      const response = await fetchJson<TestConnectionResponse>("/api/rocclaw/test-connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AgentStoreSeed } from "@/features/agents/state/store";
 import type { GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import type { StudioSettingsPatch } from "@/lib/studio/settings";
+import type { StudioSettingsPatch } from "@/lib/rocclaw/settings";
 import { fetchJson } from "@/lib/http";
 
 vi.mock("@/lib/http", () => ({
@@ -18,11 +18,11 @@ import {
   runStudioFocusedPreferenceLoadOperation,
   runStudioFocusedSelectionPersistenceOperation,
   type StudioBootstrapLoadCommand,
-} from "@/features/agents/operations/studioBootstrapOperation";
+} from "@/features/agents/operations/bootstrapOperation";
 
 const fetchJsonMock = vi.mocked(fetchJson);
 
-describe("studioBootstrapOperation", () => {
+describe("bootstrapOperation", () => {
   beforeEach(() => {
     fetchJsonMock.mockReset();
   });

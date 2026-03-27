@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { type StudioSettingsPatch } from "@/lib/studio/settings";
-import { defaultStudioInstallContext } from "@/lib/studio/install-context";
+import { type StudioSettingsPatch } from "@/lib/rocclaw/settings";
+import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
 import {
   getControlPlaneRuntime,
   isStudioDomainApiModeEnabled,
@@ -13,7 +13,7 @@ import {
   loadStudioSettings,
   redactLocalGatewayDefaultsSecrets,
   redactStudioSettingsSecrets,
-} from "@/lib/studio/settings-store";
+} from "@/lib/rocclaw/settings-store";
 import { detectInstallContext } from "../../../../server/install-context";
 
 export const runtime = "nodejs";

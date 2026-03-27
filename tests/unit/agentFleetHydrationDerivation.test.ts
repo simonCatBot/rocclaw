@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { deriveHydrateAgentFleetResult } from "@/features/agents/operations/agentFleetHydrationDerivation";
-import type { StudioSettings } from "@/lib/studio/settings";
+import type { StudioSettings } from "@/lib/rocclaw/settings";
 
 describe("deriveHydrateAgentFleetResult", () => {
   it("derives_seeds_and_sync_sets_from_snapshots", () => {

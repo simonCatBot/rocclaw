@@ -29,7 +29,7 @@ describe("createAccessGate", () => {
     };
 
     const handled = gate.handleHttp(
-      { url: "/api/studio", headers: { host: "example.test" } },
+      { url: "/api/rocclaw", headers: { host: "example.test" } },
       res
     );
 

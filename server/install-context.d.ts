@@ -1,4 +1,4 @@
-import type { StudioInstallContext } from "../src/lib/studio/install-context";
+import type { StudioInstallContext } from "../src/lib/rocclaw/install-context";
 
 export type InstallContextCommandRunner = (
   file: string,

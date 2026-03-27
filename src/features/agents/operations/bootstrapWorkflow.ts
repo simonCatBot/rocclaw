@@ -3,7 +3,7 @@ import {
   resolveFocusedPreference,
   type StudioSettings,
   type StudioSettingsPatch,
-} from "@/lib/studio/settings";
+} from "@/lib/rocclaw/settings";
 
 const FOCUSED_PATCH_DEBOUNCE_MS = 300;
 

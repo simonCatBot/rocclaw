@@ -7,7 +7,7 @@ import type { ControlPlaneOutboxEntry, ControlPlaneRuntimeSnapshot } from "@/lib
 import { serializeRuntimeInitFailure } from "@/lib/controlplane/runtime-init-errors";
 import { ControlPlaneGatewayError } from "@/lib/controlplane/openclaw-adapter";
 import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstrap";
-import { loadStudioSettings } from "@/lib/studio/settings-store";
+import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
 
 export const runtime = "nodejs";
 

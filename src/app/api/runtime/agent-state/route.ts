@@ -10,7 +10,7 @@ import {
   restoreAgentStateOverSsh,
   trashAgentStateOverSsh,
 } from "@/lib/ssh/agent-state";
-import { loadStudioSettings } from "@/lib/studio/settings-store";
+import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
 
 export const runtime = "nodejs";
 

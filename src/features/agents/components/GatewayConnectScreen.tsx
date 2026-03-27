@@ -8,8 +8,8 @@ import {
   type StudioConnectionWarning,
   type StudioInstallContext,
   type StudioSetupScenario,
-} from "@/lib/studio/install-context";
-import type { StudioGatewaySettings } from "@/lib/studio/settings";
+} from "@/lib/rocclaw/install-context";
+import type { StudioGatewaySettings } from "@/lib/rocclaw/settings";
 import { resolveGatewayStatusBadgeClass, resolveGatewayStatusLabel } from "./colorSemantics";
 
 type GatewayConnectScreenProps = {
@@ -137,32 +137,32 @@ export const GatewayConnectScreen = ({
   }, [installContext]);
   const statusCopy = useMemo(() => {
     if (status === "connected") {
-      return "Studio is connected to OpenClaw.";
+      return "rocCLAW is connected to OpenClaw.";
     }
     if (status === "connecting") {
-      return "Studio is connecting to OpenClaw…";
+      return "rocCLAW is connecting to OpenClaw…";
     }
     if (status === "reconnecting") {
-      return "Studio lost the gateway connection and is retrying…";
+      return "rocCLAW lost the gateway connection and is retrying…";
     }
     if (status === "error") {
-      return "Studio could not connect to the saved gateway settings.";
+      return "rocCLAW could not connect to the saved gateway settings.";
     }
-    return "Choose how this Studio should reach OpenClaw.";
+    return "Choose how this rocCLAW should reach OpenClaw.";
   }, [status]);
   const statusSubcopy = useMemo(() => {
     const normalizedReason = statusReason?.trim() ?? "";
     if (normalizedReason === "gateway_closed") {
-      return "The gateway socket closed. Studio will keep retrying until it reconnects.";
+      return "The gateway socket closed. rocCLAW will keep retrying until it reconnects.";
     }
     if (normalizedReason) return normalizedReason;
     if (selectedScenario === "same-cloud-host") {
-      return "Separate the two links: how you open Studio, and how Studio reaches OpenClaw.";
+      return "Separate the two links: how you open rocCLAW, and how rocCLAW reaches OpenClaw.";
     }
     if (selectedScenario === "remote-gateway") {
-      return "On your laptop, Studio stays local. Only the upstream gateway needs to be remote.";
+      return "On your laptop, rocCLAW stays local. Only the upstream gateway needs to be remote.";
     }
-    return "When Studio and OpenClaw share a host, the upstream should usually stay on localhost.";
+    return "When rocCLAW and OpenClaw share a host, the upstream should usually stay on localhost.";
   }, [selectedScenario, statusReason]);
   const actionBusy = saving || testing || disconnecting;
   const saveLabel = saving ? "Saving…" : "Save settings";
@@ -175,10 +175,10 @@ export const GatewayConnectScreen = ({
         ? "ui-dot-status-connecting"
         : "ui-dot-status-disconnected";
   const tokenHelper = hasStoredToken
-    ? "A token is already stored on this Studio host. Leave this blank to keep it."
+    ? "A token is already stored on this rocCLAW host. Leave this blank to keep it."
     : localGatewayDefaultsHasToken
       ? "A local OpenClaw token is available on this host. Leave this blank to use it."
-      : "Enter the gateway token Studio should use.";
+      : "Enter the gateway token rocCLAW should use.";
   const remoteStudio = isStudioLikelyRemote(installContext);
 
   const setScenario = (value: StudioSetupScenario) => {
@@ -252,10 +252,10 @@ export const GatewayConnectScreen = ({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-mono text-[10px] font-semibold tracking-[0.06em] text-muted-foreground">
-            Studio to OpenClaw
+            rocCLAW to OpenClaw
           </p>
           <p className="mt-1 text-sm text-foreground/85">
-            Save a gateway URL and token for this Studio host.
+            Save a gateway URL and token for this rocCLAW host.
           </p>
         </div>
         <span
@@ -366,23 +366,23 @@ export const GatewayConnectScreen = ({
             Everything on this computer
           </p>
           <p className="mt-2 text-sm text-foreground/85">
-            Studio and OpenClaw both run on the same machine.
+            rocCLAW and OpenClaw both run on the same machine.
           </p>
         </button>
         <button type="button" className={scenarioButtonClass("remote-gateway")} onClick={() => setScenario("remote-gateway")}>
           <p className="font-mono text-[10px] font-semibold tracking-[0.06em] text-muted-foreground">
-            Studio here, OpenClaw in the cloud
+            rocCLAW here, OpenClaw in the cloud
           </p>
           <p className="mt-2 text-sm text-foreground/85">
-            Keep Studio on your laptop and point it at a remote gateway.
+            Keep rocCLAW on your laptop and point it at a remote gateway.
           </p>
         </button>
         <button type="button" className={scenarioButtonClass("same-cloud-host")} onClick={() => setScenario("same-cloud-host")}>
           <p className="font-mono text-[10px] font-semibold tracking-[0.06em] text-muted-foreground">
-            Studio and OpenClaw on the same cloud machine
+            rocCLAW and OpenClaw on the same cloud machine
           </p>
           <p className="mt-2 text-sm text-foreground/85">
-            Use localhost for the upstream, then solve how you open Studio.
+            Use localhost for the upstream, then solve how you open rocCLAW.
           </p>
         </button>
       </div>
@@ -390,7 +390,7 @@ export const GatewayConnectScreen = ({
       <div className="grid gap-4 xl:grid-cols-2">
         <div className="ui-card px-4 py-4 sm:px-5">
           <p className="font-mono text-[10px] font-semibold tracking-[0.06em] text-muted-foreground">
-            How you open Studio
+            How you open rocCLAW
           </p>
           {selectedScenario === "same-computer" || selectedScenario === "remote-gateway" ? (
             <div className="mt-3 space-y-3">
@@ -398,13 +398,13 @@ export const GatewayConnectScreen = ({
                 Open <span className="font-mono">http://localhost:3000</span> on this computer.
               </p>
               <p className="text-xs leading-snug text-muted-foreground">
-                Only the OpenClaw upstream changes in this setup. Studio itself stays local.
+                Only the OpenClaw upstream changes in this setup. rocCLAW itself stays local.
               </p>
             </div>
           ) : (
             <div className="mt-3 space-y-3">
               <p className="text-sm text-foreground/85">
-                Studio is on a remote host. <span className="font-mono">http://localhost:3000</span> only opens on that machine.
+                rocCLAW is on a remote host. <span className="font-mono">http://localhost:3000</span> only opens on that machine.
               </p>
               {commandField({
                 value: studioServeCommand,
@@ -418,12 +418,12 @@ export const GatewayConnectScreen = ({
               })}
               {remoteStudio && installContext.tailscale.loggedIn === false ? (
                 <div className="ui-card rounded-md px-3 py-3 text-sm text-muted-foreground">
-                  Tailscale was not detected on this Studio host. Beginners will usually have a much easier time with Tailscale Serve than with public binds.
+                  Tailscale was not detected on this rocCLAW host. Beginners will usually have a much easier time with Tailscale Serve than with public binds.
                 </div>
               ) : null}
               {installContext.studioHost.publicHosts.length > 0 ? (
                 <div className="ui-card rounded-md px-3 py-3 text-sm text-muted-foreground">
-                  This Studio is already bound beyond loopback. If you keep it public, <span className="font-mono">STUDIO_ACCESS_TOKEN</span> is required and each browser must open <span className="font-mono">/?access_token=...</span> once.
+                  This rocCLAW is already bound beyond loopback. If you keep it public, <span className="font-mono">STUDIO_ACCESS_TOKEN</span> is required and each browser must open <span className="font-mono">/?access_token=...</span> once.
                 </div>
               ) : null}
             </div>
@@ -432,7 +432,7 @@ export const GatewayConnectScreen = ({
 
         <div className="ui-card px-4 py-4 sm:px-5">
           <p className="font-mono text-[10px] font-semibold tracking-[0.06em] text-muted-foreground">
-            How Studio reaches OpenClaw
+            How rocCLAW reaches OpenClaw
           </p>
           {selectedScenario === "remote-gateway" ? (
             <div className="mt-3 space-y-3">
@@ -442,12 +442,12 @@ export const GatewayConnectScreen = ({
               {commandField({
                 value: gatewayServeCommand,
                 label: "On the gateway host",
-                helper: "In Studio, use wss://<gateway-host>.ts.net plus your gateway token.",
+                helper: "In rocCLAW, use wss://<gateway-host>.ts.net plus your gateway token.",
               })}
               {commandField({
                 value: gatewayTunnelCommand,
                 label: "Fallback: SSH tunnel",
-                helper: `Then point Studio to ws://localhost:${localPort}.`,
+                helper: `Then point rocCLAW to ws://localhost:${localPort}.`,
               })}
               <div className="flex flex-wrap gap-2">
                 <button
@@ -462,7 +462,7 @@ export const GatewayConnectScreen = ({
           ) : (
             <div className="mt-3 space-y-3">
               <p className="text-sm text-foreground/85">
-                Keep the upstream local to the Studio host:{" "}
+                Keep the upstream local to the rocCLAW host:{" "}
                 <span className="font-mono">{`ws://localhost:${localPort}`}</span>.
               </p>
               {commandField({
@@ -490,7 +490,7 @@ export const GatewayConnectScreen = ({
               </div>
               {localGatewayDefaults ? (
                 <div className="ui-card rounded-md px-3 py-3 text-sm text-muted-foreground">
-                  Local OpenClaw settings were detected at <span className="font-mono">~/.openclaw/openclaw.json</span>. Studio can reuse that local URL and token.
+                  Local OpenClaw settings were detected at <span className="font-mono">~/.openclaw/openclaw.json</span>. rocCLAW can reuse that local URL and token.
                 </div>
               ) : null}
             </div>

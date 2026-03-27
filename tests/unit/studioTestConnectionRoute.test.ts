@@ -9,9 +9,9 @@ describe("studio test-connection route", () => {
   });
 
   it("returns 400 when the gateway URL is missing", async () => {
-    const { POST } = await import("@/app/api/studio/test-connection/route");
+    const { POST } = await import("@/app/api/rocclaw/test-connection/route");
     const response = await POST(
-      new Request("http://localhost/api/studio/test-connection", {
+      new Request("http://localhost/api/rocclaw/test-connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ gateway: { token: "secret" } }),
@@ -56,9 +56,9 @@ describe("studio test-connection route", () => {
       }),
     }));
 
-    const { POST } = await import("@/app/api/studio/test-connection/route");
+    const { POST } = await import("@/app/api/rocclaw/test-connection/route");
     const response = await POST(
-      new Request("http://localhost/api/studio/test-connection", {
+      new Request("http://localhost/api/rocclaw/test-connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

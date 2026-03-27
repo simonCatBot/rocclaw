@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { hydrateAgentFleetFromGateway } from "@/features/agents/operations/agentFleetHydration";
-import type { StudioSettings } from "@/lib/studio/settings";
+import type { StudioSettings } from "@/lib/rocclaw/settings";
 
 describe("hydrateAgentFleetFromGateway", () => {
   it("maps_gateway_results_into_seeds_and_selects_latest_assistant_agent", async () => {

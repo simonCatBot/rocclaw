@@ -4,11 +4,11 @@ import {
   planFocusedFilterPatch,
   planFocusedPreferenceRestore,
   planFocusedSelectionPatch,
-} from "@/features/agents/operations/studioBootstrapWorkflow";
+} from "@/features/agents/operations/bootstrapWorkflow";
 import type { AgentState, AgentStoreSeed, FocusFilter } from "@/features/agents/state/store";
 import { fetchJson } from "@/lib/http";
 import type { GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import type { StudioSettings, StudioSettingsPatch } from "@/lib/studio/settings";
+import type { StudioSettings, StudioSettingsPatch } from "@/lib/rocclaw/settings";
 
 export type StudioBootstrapLoadCommand =
   | { kind: "set-gateway-config-snapshot"; snapshot: GatewayModelPolicySnapshot }

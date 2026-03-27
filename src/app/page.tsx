@@ -20,7 +20,7 @@ import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
 } from "@/lib/text/message-extract";
-import { useStudioGatewaySettings } from "@/lib/studio/useStudioGatewaySettings";
+import { useStudioGatewaySettings } from "@/lib/rocclaw/useStudioGatewaySettings";
 import { isGatewayConnected, type GatewayStatus } from "@/lib/gateway/gateway-status";
 import type { ControlPlaneOutboxEntry } from "@/lib/controlplane/contracts";
 import {
@@ -47,7 +47,7 @@ import {
   slugifyAgentName,
 } from "@/lib/gateway/agentConfig";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
-import { createStudioSettingsCoordinator } from "@/lib/studio/coordinator";
+import { createStudioSettingsCoordinator } from "@/lib/rocclaw/coordinator";
 import { applySessionSettingMutation } from "@/features/agents/state/sessionSettingsMutations";
 import type { AgentCreateModalSubmitPayload } from "@/features/agents/creation/types";
 import {
@@ -88,8 +88,8 @@ import {
   runStudioFocusFilterPersistenceOperation,
   runStudioFocusedPreferenceLoadOperation,
   runStudioFocusedSelectionPersistenceOperation,
-} from "@/features/agents/operations/studioBootstrapOperation";
-import { planStartupFleetBootstrapIntent } from "@/features/agents/operations/studioBootstrapWorkflow";
+} from "@/features/agents/operations/bootstrapOperation";
+import { planStartupFleetBootstrapIntent } from "@/features/agents/operations/bootstrapWorkflow";
 import {
   CREATE_AGENT_DEFAULT_PERMISSIONS,
   applyCreateAgentBootstrapPermissions,
@@ -344,7 +344,7 @@ const AgentStudioPage = () => {
     if (focusedAgent.status !== "running") return null;
     const lastMessage = focusedAgent.lastUserMessage?.trim() ?? "";
     if (!lastMessage || !isHeartbeatPrompt(lastMessage)) return null;
-    return "This task is running as an automatic heartbeat check. Stopping heartbeat runs from Studio isn't available yet (coming soon).";
+    return "This task is running as an automatic heartbeat check. Stopping heartbeat runs from rocCLAW isn't available yet (coming soon).";
   }, [focusedAgent]);
   const inspectSidebarAgentId = inspectSidebar?.agentId ?? null;
   const inspectSidebarTab = inspectSidebar?.tab ?? null;
@@ -1450,7 +1450,7 @@ const AgentStudioPage = () => {
         <div className="flex min-h-dvh items-center justify-center px-6">
           <div className="glass-panel ui-panel w-full max-w-md px-6 py-6 text-center">
             <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              OpenClaw Studio
+              rocCLAW
             </div>
             <div className="mt-3 text-sm text-muted-foreground">Loading agents…</div>
           </div>
@@ -1761,7 +1761,7 @@ const AgentStudioPage = () => {
                             ? undefined
                             : gatewayConnected
                               ? "Use New Agent in the sidebar to add your first agent."
-                              : "Connect to your gateway to load agents into the studio."
+                              : "Connect to your gateway to load agents into rocCLAW."
                         }
                         fillHeight
                         className="items-center p-6 text-center text-sm"

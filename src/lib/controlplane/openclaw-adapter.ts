@@ -16,7 +16,7 @@ import {
   type GatewaySocketOptions,
   shouldFallbackToLegacyControlUi,
 } from "@/lib/controlplane/gateway-connect-profile";
-import { loadStudioSettings } from "@/lib/studio/settings-store";
+import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
 
 const CONNECT_TIMEOUT_MS = 8_000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;

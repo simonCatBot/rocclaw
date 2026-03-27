@@ -4,8 +4,8 @@ import type {
   StudioGatewaySettings,
   StudioSettings,
   StudioSettingsPatch,
-} from "@/lib/studio/settings";
-import type { StudioInstallContext } from "@/lib/studio/install-context";
+} from "@/lib/rocclaw/settings";
+import type { StudioInstallContext } from "@/lib/rocclaw/install-context";
 
 export type StudioSettingsResponse = {
   settings: StudioSettings;
@@ -171,13 +171,13 @@ export class StudioSettingsCoordinator {
 }
 
 const fetchStudioSettings = async (): Promise<StudioSettingsResponse> => {
-  return fetchJson<StudioSettingsResponse>("/api/studio", { cache: "no-store" });
+  return fetchJson<StudioSettingsResponse>("/api/rocclaw", { cache: "no-store" });
 };
 
 const updateStudioSettings = async (
   patch: StudioSettingsPatch
 ): Promise<StudioSettingsResponse> => {
-  return fetchJson<StudioSettingsResponse>("/api/studio", {
+  return fetchJson<StudioSettingsResponse>("/api/rocclaw", {
     method: "PUT",
     keepalive: true,
     headers: { "Content-Type": "application/json" },
