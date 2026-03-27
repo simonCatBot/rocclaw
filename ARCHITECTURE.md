@@ -1,90 +1,109 @@
 # Architecture
 
 ## Overview
-OpenClaw Studio now uses a single runtime architecture:
 
-1. Browser -> Studio domain APIs (`/api/runtime/*`, `/api/intents/*`)
-2. Browser -> Studio SSE stream (`/api/runtime/stream`)
-3. Studio server -> OpenClaw Gateway (server-owned WebSocket adapter)
+rocCLAW uses a single-runtime architecture:
 
-The browser no longer opens a direct gateway transport and no `/api/gateway/ws` bridge exists in production runtime.
+1. Browser → Studio HTTP APIs (`/api/runtime/*`, `/api/intents/*`)
+2. Browser → Studio SSE stream (`/api/runtime/stream`)
+3. Studio server → OpenClaw Gateway (server-owned WebSocket adapter)
+
+The browser never opens a direct gateway transport.
 
 ## Core boundaries
 
 ### Browser boundary
-- UI state and orchestration live under `src/features/agents` and `src/app/page.tsx`.
-- Browser reads and writes only through Studio HTTP routes and SSE.
-- Runtime events are consumed from `/api/runtime/stream` and funneled through `gatewayRuntimeEventHandler` and approval ingress workflows.
+
+- UI state lives in `src/features/agents` and `src/app/page.tsx`.
+- The browser communicates only through Studio HTTP routes and SSE.
+- Events from `/api/runtime/stream` flow through `gatewayRuntimeEventHandler` and the approval ingress workflows.
 
 ### Server-owned control plane
-- Control plane runtime modules: `src/lib/controlplane/*`
-  - `openclaw-adapter.ts`: upstream websocket lifecycle, handshake, request allowlist, reconnect policy.
-  - `runtime.ts`: process-local singleton runtime, subscription fanout, gateway call boundary.
-  - `projection-store.ts`: SQLite projection + outbox (`runtime.db`).
-- Runtime read routes:
-  - `/api/runtime/summary`
-  - `/api/runtime/fleet`
-  - `/api/runtime/agents/[agentId]/history`
-  - `/api/runtime/stream`
-  - `/api/runtime/config`, `/api/runtime/models`, `/api/runtime/sessions`, `/api/runtime/chat-history`, `/api/runtime/cron`, `/api/runtime/skills/status`, `/api/runtime/agent-file`, `/api/runtime/agent-state`, `/api/runtime/media`
-- Intent routes:
-  - `/api/intents/chat-send`, `/api/intents/chat-abort`, `/api/intents/sessions-reset`
-  - `/api/intents/agent-create`, `/api/intents/agent-rename`, `/api/intents/agent-delete`, `/api/intents/agent-wait`
-  - `/api/intents/agent-permissions-update`, `/api/intents/exec-approval-resolve`, `/api/intents/exec-approvals-set`
-  - `/api/intents/session-settings-sync`
-  - `/api/intents/cron-add`, `/api/intents/cron-run`, `/api/intents/cron-remove`, `/api/intents/cron-remove-agent`, `/api/intents/cron-restore`
-  - `/api/intents/skills-install`, `/api/intents/skills-update`, `/api/intents/skills-remove`, `/api/intents/agent-skills-allowlist`, `/api/intents/agent-file-set`
 
-### Settings boundary
-- Studio settings route: `src/app/api/studio/route.ts`
-- Persisted file: `~/.openclaw/openclaw-studio/settings.json`
-- Gateway token is server-custodied and redacted from API responses.
-- Gateway URL/token changes trigger deterministic control-plane reconnect via `runtime.reconnectForGatewaySettingsChange()`.
+Runtime modules under `src/lib/controlplane/`:
+
+| Module | Responsibility |
+|--------|---------------|
+| `openclaw-adapter.ts` | Gateway WebSocket lifecycle, handshake, reconnect with exponential back-off, explicit method allowlist |
+| `runtime.ts` | Process-local singleton; fanouts events to subscribers |
+| `projection-store.ts` | SQLite outbox; idempotent event application, deduplication, replay cursor |
+
+### Runtime read routes
+
+```
+/api/runtime/summary
+/api/runtime/fleet
+/api/runtime/agents/<agentId>/history
+/api/runtime/stream
+/api/runtime/config
+/api/runtime/models
+/api/runtime/sessions
+/api/runtime/chat-history
+/api/runtime/cron
+/api/runtime/skills/status
+/api/runtime/agent-file
+/api/runtime/agent-state
+/api/runtime/media
+```
+
+### Intent routes
+
+```
+/api/intents/chat-send        /api/intents/chat-abort        /api/intents/sessions-reset
+/api/intents/agent-create     /api/intents/agent-rename      /api/intents/agent-delete     /api/intents/agent-wait
+/api/intents/agent-permissions-update
+/api/intents/exec-approval-resolve    /api/intents/exec-approvals-set
+/api/intents/session-settings-sync
+/api/intents/cron-add         /api/intents/cron-run         /api/intents/cron-remove     /api/intents/cron-remove-agent    /api/intents/cron-restore
+/api/intents/skills-install   /api/intents/skills-update     /api/intents/skills-remove
+/api/intents/agent-skills-allowlist   /api/intents/agent-file-set
+```
+
+## Settings boundary
+
+- Route: `src/app/api/studio/route.ts`
+- Persisted to: `~/.openclaw/openclaw-studio/settings.json`
+- Gateway token is stored server-side and **redacted from all browser-facing responses**
+- Gateway URL or token changes trigger a deterministic reconnect via `runtime.reconnectForGatewaySettingsChange()`
 
 ## Runtime durability model
-- SQLite DB path: `${resolveStateDir()}/openclaw-studio/runtime.db`
-- Projection store responsibilities:
-  - apply domain events idempotently
-  - persist ordered outbox rows
-  - serve replay/history windows
-- SSE replay behavior:
-  - With `Last-Event-ID`: replay forward from that id.
-  - Without `Last-Event-ID`: replay recent tail window from outbox head.
+
+**DB path:** `~/.openclaw/openclaw-studio/runtime.db`
+
+The projection store:
+- Applies domain events **idempotently** (same event keyed twice → same result, no duplicates)
+- Persists ordered outbox rows to SQLite (WAL mode)
+- Serves replay and history windows on demand
+
+**SSE replay behavior:**
+- With `Last-Event-ID`: replay forward from that ID
+- Without `Last-Event-ID`: replay a recent tail window from the outbox head
 
 ## History model
-- Route: `/api/runtime/agents/[agentId]/history`
-- Query:
-  - `limit`
-  - `beforeOutboxId` (exclusive cursor)
-- Response:
-  - `entries`
-  - `hasMore`
-  - `nextBeforeOutboxId`
-- Client side (`useRuntimeSyncController`) ingests fetched outbox rows into the same event pipeline as live SSE and dedupes by outbox id/time key.
 
-## UI orchestration notes
-- `src/app/page.tsx` remains top-level wiring:
-  - settings load
-  - fleet bootstrap
-  - stream subscription
-  - runtime sync polling/history load-more
-  - mutation controller wiring
-- `runtimeWriteTransport` is intent-route based for runtime mutations.
-- Settings/skills/cron/personality flows use domain clients in `src/lib/controlplane/domain-runtime-client.ts`.
+```
+GET /api/runtime/agents/<agentId>/history?limit=<n>&beforeOutboxId=<cursor>
+```
 
-## Removed legacy surfaces
-- Browser gateway WS transport and vendored browser gateway client are removed from production runtime.
-- Server gateway WS proxy bridge (`server/gateway-proxy.js`) is removed.
-- Legacy `/api/gateway/*` route namespace was re-homed to `/api/runtime/*` and `/api/intents/*`.
+Returns `{ entries, hasMore, nextBeforeOutboxId }` — newest entries first.
+
+The client-side `useRuntimeSyncController` feeds fetched entries through the **same event pipeline** as live SSE and deduplicates by outbox ID.
 
 ## Error semantics
-- Gateway unavailable: deterministic `GATEWAY_UNAVAILABLE` shape from intent/runtime bootstrap helpers.
-- Startup/read degradation: runtime read routes can return projection/probe-backed degraded responses with freshness metadata.
-- Config/approvals conflict paths keep explicit conflict handling (base-hash retry where supported).
 
-## Guardrails
-- Do not reintroduce browser direct gateway transport.
-- Do not add new `/api/gateway/*` routes.
-- Keep gateway method allowlist explicit in `openclaw-adapter.ts`.
-- Keep settings token redaction server-side.
-- Keep migrations additive for `runtime.db`.
+| Situation | Behavior |
+|----------|----------|
+| Gateway unavailable | Intent routes return `GATEWAY_UNAVAILABLE` with status `503` |
+| Startup / read degradation | Runtime reads return projection-backed data with freshness metadata |
+| Config conflict | Base-hash retry loop (up to 1 retry) before surfacing the error |
+| Rate limited | Intent routes return `429` with `Retry-After` and `X-RateLimit-*` headers |
+
+## Design guardrails
+
+These are intentional constraints, not historical notes:
+
+- **No direct browser-to-gateway transport.** The browser must not open its own WebSocket to the gateway.
+- **No new `/api/gateway/*` routes.** All browser-to-gateway traffic goes through `/api/runtime/*` or `/api/intents/*`.
+- **Explicit method allowlist.** Only gateway methods listed in `openclaw-adapter.ts` are callable from the browser. No wildcard.
+- **Token redaction is server-side.** The browser never sees the raw gateway token.
+- **Additive SQLite migrations only.** The outbox schema must only add columns/tables — no destructive migrations.
