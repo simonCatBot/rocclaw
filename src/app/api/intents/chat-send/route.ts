@@ -5,6 +5,14 @@ import { executeGatewayIntent, parseIntentBody } from "@/lib/controlplane/intent
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const rateLimitCheck = await import("@/lib/controlplane/intent-route").then(
+    (m) => m.checkIntentRateLimit
+  );
+  const rateLimited = rateLimitCheck(request, "chat.send");
+  if (rateLimited) {
+    return rateLimited;
+  }
+
   const bodyOrError = await parseIntentBody(request);
   if (bodyOrError instanceof Response) {
     return bodyOrError as NextResponse;

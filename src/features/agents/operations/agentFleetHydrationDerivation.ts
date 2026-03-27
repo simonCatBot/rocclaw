@@ -17,6 +17,8 @@ type AgentsListResult = {
   agents: Array<{
     id: string;
     name?: string;
+    identityName?: string | null;
+    identityEmoji?: string | null;
     identity?: {
       name?: string;
       theme?: string;
@@ -241,7 +243,8 @@ export const deriveHydrateAgentFleetResult = (
     return {
       agentId: agent.id,
       name,
-      identityName: agent.identity?.name || null,
+      identityName: agent.identityName || agent.identity?.name || null,
+      identityEmoji: agent.identityEmoji || agent.identity?.emoji || null,
       sessionKey: buildAgentMainSessionKey(agent.id, mainKey),
       avatarSeed,
       avatarUrl,

@@ -1,31 +1,36 @@
-# PI Chat Streaming
+# Chat Streaming
 
-## Current transport model
-PI/chat runtime streaming is server-owned control plane only.
+How real-time chat events flow from the OpenClaw gateway to the rocCLAW browser.
 
-- Browser subscribes to `GET /api/runtime/stream` (SSE).
-- Studio server maintains the upstream gateway websocket.
-- Browser never opens a direct gateway websocket.
+## Transport model
 
-## Event flow
-1. User sends message via `POST /api/intents/chat-send`.
-2. Server forwards intent through control-plane adapter (`chat.send`).
-3. Gateway emits runtime events; adapter projects them to outbox.
-4. `/api/runtime/stream` emits ordered `gateway.event` frames with monotonic outbox ids.
-5. Browser ingests events through existing runtime/approval handlers.
+The browser never connects directly to the gateway.
 
-## Replay and resume
-- If client reconnects with `Last-Event-ID`, stream replays forward from that id.
-- If client connects fresh (no `Last-Event-ID`), stream replays a recent tail window from outbox head.
-- Live subscription and replay are sequenced to avoid replay/live gaps and duplicate terminal effects.
+1. User sends a message via `POST /api/intents/chat-send`
+2. rocCLAW's server forwards it over the server-owned WebSocket connection to the gateway
+3. The gateway emits runtime events (stream chunks, tool calls, run state changes)
+4. rocCLAW's server projects each event into its SQLite outbox
+5. The SSE stream `/api/runtime/stream` emits ordered `gateway.event` frames with monotonic outbox IDs
+6. The browser renders events as they arrive
 
-## History backfill
-- `GET /api/runtime/agents/[agentId]/history?limit=<n>&beforeOutboxId=<id>`
-- Returns newest window first and cursor metadata:
-  - `hasMore`
-  - `nextBeforeOutboxId`
-- Browser applies history entries through the same event pipeline as live stream and dedupes outbox ids.
+## Reconnect and replay
 
-## Freshness/degraded behavior
-- Runtime reads expose freshness metadata when gateway is unavailable.
-- Projection-backed data can still render while writes fail fast with deterministic gateway-unavailable errors.
+**Reconnect:** If the browser disconnects and reconnects with a `Last-Event-ID` header, the server replays all events after that ID.
+
+**Fresh connect (no `Last-Event-ID`):** The server replays a recent tail window from the outbox so the browser doesn't start completely blank.
+
+Live events and replayed events are sequenced together to avoid gaps and duplicate terminal effects.
+
+## History
+
+For older messages not in the live buffer, rocCLAW fetches paginated history:
+
+```
+GET /api/runtime/agents/<agentId>/history?limit=50&beforeOutboxId=<cursor>
+```
+
+Returns `{ entries, hasMore, nextBeforeOutboxId }` — newest first. History entries are fed through the same event pipeline as live SSE and deduplicated by outbox ID.
+
+## When the gateway is unavailable
+
+Runtime reads return **degraded responses** — data is served from the SQLite projection if it's available, and the response includes a freshness timestamp. Writes fail immediately with `GATEWAY_UNAVAILABLE`. The UI stays renderable rather than blanking out.

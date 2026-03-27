@@ -1,8 +1,7 @@
 import fs from "node:fs";
-import { createRequire } from "node:module";
 import path from "node:path";
 
-import type BetterSqlite3 from "better-sqlite3";
+import BetterSqlite3 from "@/lib/controlplane/_better-sqlite3-require";
 
 import type {
   ControlPlaneDomainEvent,
@@ -11,8 +10,6 @@ import type {
 } from "@/lib/controlplane/contracts";
 import { deriveControlPlaneEventKey } from "@/lib/controlplane/outbox";
 import { resolveStateDir } from "@/lib/clawdbot/paths";
-
-const require = createRequire(import.meta.url);
 
 const RUNTIME_DB_DIRNAME = "openclaw-studio";
 const RUNTIME_DB_FILENAME = "runtime.db";
@@ -49,8 +46,7 @@ type BetterSqlite3Database = BetterSqlite3.Database;
 type BetterSqlite3Statement<BindParams extends unknown[] = unknown[], Result = unknown> =
   BetterSqlite3.Statement<BindParams, Result>;
 
-const loadBetterSqlite3 = (): BetterSqlite3Factory =>
-  require("better-sqlite3") as BetterSqlite3Factory;
+const loadBetterSqlite3 = (): BetterSqlite3Factory => BetterSqlite3;
 
 const parseDomainEvent = (raw: string): ControlPlaneDomainEvent => {
   return JSON.parse(raw) as ControlPlaneDomainEvent;

@@ -14,12 +14,12 @@
     "dev": "node server/index.js --dev",
     "dev:turbo": "node server/index.js --dev",
     "build": "next build",
-    "start": "node server/index.js",
+    "start": "next build && node server/index.js",
     "lint": "eslint .",
     "probe:agent-latency": "node scripts/probe-agent-history-latency.mjs",
     "probe:fleet-latency": "node scripts/probe-fleet-latency.mjs",
     "cleanup:ux-artifacts": "node scripts/cleanup-ux-artifacts.mjs",
-    "studio:setup": "node scripts/studio-setup.js",
+    "rocclaw:setup": "node scripts/rocclaw-setup.js",
     "smoke:dev-server": "node scripts/smoke-dev-server.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
@@ -27,7 +27,7 @@
     "pw:open:max": "bash scripts/playwright-open-maximized.sh"
   },
   "dependencies": {
-    "@multiavatar/multiavatar": "github:multiavatar/Multiavatar",
+    "@multiavatar/multiavatar": "github:multiavatar/Multiavatar#a938f6febe5e992dce0d728269a22b2b74db8d979",
     "@vercel/otel": "^2.1.0",
     "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",

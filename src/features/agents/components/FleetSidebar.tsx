@@ -63,21 +63,23 @@ export const FleetSidebar = ({
     previousTopByAgentIdRef.current = nextTopByAgentId;
   }, [agentOrderKey]);
 
-  // Get short model name
+  // Get full model name
   const getModelName = (agent: AgentState) => {
-    if (!agent.model) return "default";
-    const parts = agent.model.split('/');
-    const name = parts[parts.length - 1];
-    if (name.includes('kimi')) return 'kimi';
-    if (name.includes('qwen')) return 'qwen';
-    if (name.includes('deepseek')) return 'deepseek';
-    if (name.includes('glm')) return 'glm';
-    return name.length > 8 ? name.substring(0, 8) : name;
+    return agent.model || "default";
   };
 
   // Get soul name from agent identity
   const getSoulName = (agent: AgentState) => {
-    return agent.identityName || null;
+    // DEBUG: Force identity names based on agent ID
+    const forcedNames: Record<string, string> = {
+      developer: "Kapu",
+      main: "Simon", 
+      work: "Miaman",
+      coding: "Ahan",
+      social: "Salma",
+      "new-agent": "Debbie"
+    };
+    return forcedNames[agent.agentId] || agent.identityName || null;
   };
 
   return (
@@ -143,16 +145,19 @@ export const FleetSidebar = ({
                     />
                   </div>
                   
-                  {/* Soul Name (if exists) - ABOVE agent name */}
-                  {soulName && (
-                    <div className="flex items-center justify-center gap-1 text-[13px] text-primary font-semibold truncate w-full mb-2">
-                      <Ghost className="w-3.5 h-3.5" />
-                      <span className="truncate max-w-[160px]">{soulName}</span>
-                    </div>
+                  {/* Identity Name - BOLD, FIRST (no emoji, normal color) */}
+                  {soulName ? (
+                    <p className="font-bold text-foreground text-lg truncate w-full mb-1">
+                      {soulName}
+                    </p>
+                  ) : (
+                    <p className="font-bold text-foreground text-lg truncate w-full mb-1">
+                      {agent.name}
+                    </p>
                   )}
                   
-                  {/* Agent Name */}
-                  <p className="font-semibold text-foreground text-base truncate w-full mb-1">
+                  {/* Agent Name - below identity, muted, smaller */}
+                  <p className="text-muted-foreground text-sm truncate w-full mb-2">
                     {agent.name}
                   </p>
                   

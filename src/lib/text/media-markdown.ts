@@ -61,6 +61,12 @@ export const rewriteMediaLinesToMarkdown = (text: string): string => {
       continue;
     }
 
+    // Skip empty media paths
+    if (mediaPath.trim() === "") {
+      out.push(line);
+      continue;
+    }
+
     const url = toMediaUrl(mediaPath);
 
     if (isImagePath(mediaPath)) {

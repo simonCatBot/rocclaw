@@ -14,8 +14,11 @@ about: Report a bug or request a change
 
 ## Environment
 - OS:
-- Node:
-- UI version/commit:
+- Node:              <!-- node --version -->
+- UI version/commit: <!-- git log -1 --oneline -->
+- Gateway version:   <!-- openclaw --version or openclaw config get gateway.version -->
 - Gateway running? (yes/no)
 
 ## Logs/screenshots
+```
+```
