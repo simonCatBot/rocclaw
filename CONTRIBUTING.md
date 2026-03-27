@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve OpenClaw Studio.
+Thanks for helping improve rocCLAW.
 
 - For external bugs and feature requests: please use GitHub Issues.
 - For repo work tracked by our on-host agent squad: we use Notion.
@@ -12,8 +12,8 @@ Thanks for helping improve OpenClaw Studio.
 
 ## Local setup
 ```bash
-git clone https://github.com/grp06/openclaw-studio.git
-cd openclaw-studio
+git clone https://github.com/grp06/rocclaw.git
+cd rocclaw
 npm install
 cp .env.example .env
 npm run dev
@@ -29,6 +29,15 @@ npm run dev
 - For `localhost-ux-improvement` runs, always clean generated UX artifacts before committing:
   - `npm run cleanup:ux-artifacts`
 - This clears `output/playwright/ux-audit/`, `.agent/ux-audit.md`, and `.agent/execplan-pending.md`.
+
+## Commit Message Convention
+We follow conventional commits to keep history clean:
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `chore:` - Maintenance tasks
+- `refactor:` - Code refactoring
+- `test:` - Test changes
 
 ## Task tracking
 
