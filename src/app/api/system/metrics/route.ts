@@ -83,27 +83,27 @@ export async function GET(
       si.osInfo(),
     ]);
 
-    const cpuUsage = Math.round(cpuData.currentLoad);
-    const memUsage = Math.round((memData.used / memData.total) * 100);
+    const cpuUsage = Math.round(cpuData.currentLoad ?? 0);
+    const memUsage = memData.total > 0 ? Math.round((memData.used / memData.total) * 100) : 0;
     const rootDisk = diskData.find(d => d.fs === '/') || diskData[0];
-    const diskUsage = rootDisk ? Math.round((rootDisk.used / rootDisk.size) * 100) : 0;
+    const diskUsage = rootDisk && rootDisk.size > 0 ? Math.round((rootDisk.used / rootDisk.size) * 100) : 0;
 
     // Calculate network stats (total bytes)
-    const totalRx = netData.reduce((acc, net) => acc + (net.rx_bytes || 0), 0);
-    const totalTx = netData.reduce((acc, net) => acc + (net.tx_bytes || 0), 0);
-    const rxSec = netData.reduce((acc, net) => acc + (net.rx_sec || 0), 0);
-    const txSec = netData.reduce((acc, net) => acc + (net.tx_sec || 0), 0);
+    const totalRx = netData.reduce((acc, net) => acc + (net.rx_bytes ?? 0), 0);
+    const totalTx = netData.reduce((acc, net) => acc + (net.tx_bytes ?? 0), 0);
+    const rxSec = netData.reduce((acc, net) => acc + (net.rx_sec ?? 0), 0);
+    const txSec = netData.reduce((acc, net) => acc + (net.tx_sec ?? 0), 0);
 
     // Process GPU data
     const gpuMetrics = gpuData.controllers
       .filter(gpu => gpu.model || gpu.vendor)
       .map(gpu => ({
         name: gpu.model || gpu.vendor || 'Unknown GPU',
-        usage: gpu.utilizationGpu !== null ? Math.round(gpu.utilizationGpu) : null,
-        temperature: gpu.temperatureGpu !== null ? Math.round(gpu.temperatureGpu) : null,
+        usage: gpu.utilizationGpu != null ? Math.round(gpu.utilizationGpu) : null,
+        temperature: gpu.temperatureGpu != null ? Math.round(gpu.temperatureGpu) : null,
         memory: {
-          total: gpu.memoryTotal !== null ? Math.round(gpu.memoryTotal) : null,
-          used: gpu.memoryUsed !== null ? Math.round(gpu.memoryUsed) : null,
+          total: gpu.memoryTotal != null ? Math.round(gpu.memoryTotal) : null,
+          used: gpu.memoryUsed != null ? Math.round(gpu.memoryUsed) : null,
         },
       }));
 
@@ -114,12 +114,12 @@ export async function GET(
       cpu: {
         name: cpuName,
         usage: cpuUsage,
-        cores: cpuData.cpus.length,
+        cores: cpuData.cpus?.length ?? 0,
         temperature: cpuTemp.main !== null ? Math.round(cpuTemp.main) : null,
-        speed: Math.round(cpuData.cpus[0]?.speed || 0),
+        speed: Math.round(((cpuData.cpus && cpuData.cpus[0] && (cpuData.cpus[0] as unknown as { speed?: number }).speed) ?? 0) as number),
         loadAvg: cpuData.avgLoad 
-          ? [cpuData.avgLoad, cpuData.avgLoad * 0.9, cpuData.avgLoad * 0.85]
-          : [0, 0, 0],
+          ? [cpuData.avgLoad, cpuData.avgLoad * 0.9, cpuData.avgLoad * 0.85] as [number, number, number]
+          : [0, 0, 0] as [number, number, number],
       },
       memory: {
         total: Math.round(memData.total / (1024 * 1024 * 1024) * 100) / 100,

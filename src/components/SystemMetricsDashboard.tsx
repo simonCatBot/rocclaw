@@ -225,8 +225,7 @@ export function SystemMetricsDashboard() {
         {metrics.gpu.length > 0 && metrics.gpu[0]?.usage !== null && (
           <MetricRow
             icon={Activity}
-            label="GPU"
-            name={truncateName(metrics.gpu[0].name)}
+            label={metrics.gpu[0].name.length > 25 ? `${metrics.gpu[0].name.slice(0, 22)}...` : metrics.gpu[0].name}
             value={`${Math.round(metrics.gpu[0].usage || 0)}%`}
             subtext={metrics.gpu[0]?.memory.used ? 
               `${formatGB(metrics.gpu[0].memory.used)} / ${formatGB(metrics.gpu[0].memory.total || 0)} • ${formatTemp(metrics.gpu[0]?.temperature)}` :
