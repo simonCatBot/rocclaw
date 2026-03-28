@@ -1,4 +1,5 @@
 const { URL } = require("node:url");
+const crypto = require("crypto");
 
 const parseCookies = (header) => {
   const raw = typeof header === "string" ? header : "";
@@ -24,10 +25,50 @@ const buildRedirectUrl = (req, nextPathWithQuery) => {
   return `${proto}://${host}${nextPathWithQuery}`;
 };
 
+/**
+ * Generate a CSRF token for state-changing request protection
+ * @returns {string} A random CSRF token
+ */
+const generateCsrfToken = () => {
+  return crypto.randomBytes(32).toString("hex");
+};
+
+/**
+ * Hash a CSRF token for cookie storage
+ * @param {string} token - The raw token
+ * @returns {string} SHA-256 hash of the token
+ */
+const hashCsrfToken = (token) => {
+  return crypto.createHash("sha256").update(token).digest("hex");
+};
+
+/**
+ * Get CSRF cookie settings
+ * @param {string} token - The hashed token value
+ * @param {boolean} isProduction - Whether in production mode
+ * @returns {string} Cookie header value
+ */
+const getCsrfCookieSettings = (token, isProduction) => {
+  const secure = isProduction ? "; Secure" : "";
+  return `__Host-csrf_token=${token}${secure}; HttpOnly; Path=/; SameSite=Strict; Max-Age=86400`;
+};
+
+/**
+ * Get readable CSRF token cookie settings
+ * @param {string} token - The raw token value (not hashed)
+ * @param {boolean} isProduction - Whether in production mode
+ * @returns {string} Cookie header value
+ */
+const getReadableCsrfCookieSettings = (token, isProduction) => {
+  const secure = isProduction ? "; Secure" : "";
+  return `csrf_token_readable=${token}${secure}; Path=/; SameSite=Strict; Max-Age=86400`;
+};
+
 function createAccessGate(options) {
   const token = String(options?.token ?? "").trim();
   const cookieName = String(options?.cookieName ?? "studio_access").trim() || "studio_access";
   const queryParam = String(options?.queryParam ?? "access_token").trim() || "access_token";
+  const isProduction = process.env.NODE_ENV === "production";
 
   const enabled = Boolean(token);
 
@@ -53,9 +94,20 @@ function createAccessGate(options) {
       }
 
       url.searchParams.delete(queryParam);
-      const cookieValue = `${cookieName}=${token}; HttpOnly; Path=/; SameSite=Lax`;
+      
+      // Generate CSRF token for security
+      const csrfToken = generateCsrfToken();
+      const csrfHashed = hashCsrfToken(csrfToken);
+      
+      // Set multiple cookies: access token, CSRF token, and readable CSRF
+      const cookies = [
+        `${cookieName}=${token}; HttpOnly; Path=/; SameSite=Strict${isProduction ? "; Secure" : ""}`,
+        getCsrfCookieSettings(csrfHashed, isProduction),
+        getReadableCsrfCookieSettings(csrfToken, isProduction),
+      ];
+      
       res.statusCode = 302;
-      res.setHeader("Set-Cookie", cookieValue);
+      res.setHeader("Set-Cookie", cookies);
       res.setHeader("Location", buildRedirectUrl(req, url.pathname + url.search));
       res.end();
       return true;

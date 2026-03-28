@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import {
   ensureDomainIntentRuntime,
@@ -10,6 +11,12 @@ import {
 } from "@/lib/controlplane/exec-approvals";
 import { ControlPlaneGatewayError } from "@/lib/controlplane/openclaw-adapter";
 import type { ControlPlaneRuntime } from "@/lib/controlplane/runtime";
+import {
+  agentIdSchema,
+  sessionKeySchema,
+  validateInput,
+  createValidationErrorResponse,
+} from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
@@ -25,6 +32,16 @@ type GatewayAgentToolsOverrides = {
   alsoAllow?: string[];
   deny?: string[];
 };
+
+const commandModeSchema = z.enum(["off", "ask", "auto"]);
+
+const agentPermissionsUpdateSchema = z.object({
+  agentId: agentIdSchema,
+  sessionKey: sessionKeySchema,
+  commandMode: commandModeSchema,
+  webAccess: z.boolean(),
+  fileTools: z.boolean(),
+});
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -237,22 +254,16 @@ export async function POST(request: Request) {
     return bodyOrError as NextResponse;
   }
 
-  const agentId = typeof bodyOrError.agentId === "string" ? bodyOrError.agentId.trim() : "";
-  const sessionKey =
-    typeof bodyOrError.sessionKey === "string" ? bodyOrError.sessionKey.trim() : "";
-  const commandMode =
-    typeof bodyOrError.commandMode === "string" ? bodyOrError.commandMode.trim() : "";
-  const webAccess = typeof bodyOrError.webAccess === "boolean" ? bodyOrError.webAccess : null;
-  const fileTools = typeof bodyOrError.fileTools === "boolean" ? bodyOrError.fileTools : null;
-  if (!agentId || !sessionKey) {
-    return NextResponse.json({ error: "agentId and sessionKey are required." }, { status: 400 });
+  // Validate input with Zod
+  const validation = validateInput(agentPermissionsUpdateSchema, bodyOrError);
+  if (!validation.success) {
+    return NextResponse.json(
+      createValidationErrorResponse(validation.error, validation.issues),
+      { status: 400 }
+    );
   }
-  if (commandMode !== "off" && commandMode !== "ask" && commandMode !== "auto") {
-    return NextResponse.json({ error: "commandMode must be one of: off, ask, auto." }, { status: 400 });
-  }
-  if (webAccess === null || fileTools === null) {
-    return NextResponse.json({ error: "webAccess and fileTools must be boolean values." }, { status: 400 });
-  }
+
+  const { agentId, sessionKey, commandMode, webAccess, fileTools } = validation.data;
 
   const runtimeOrError = await ensureDomainIntentRuntime();
   if (runtimeOrError instanceof Response) {
@@ -260,7 +271,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const role = resolveRoleForCommandMode(commandMode as CommandModeId);
+    const role = resolveRoleForCommandMode(commandMode);
     const snapshot = await runtimeOrError.callGateway<GatewayConfigSnapshot>("config.get", {});
     const baseConfig = isRecord(snapshot.config) ? (snapshot.config as Record<string, unknown>) : {};
     const list = readConfigAgentList(baseConfig);

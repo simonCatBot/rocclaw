@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { executeGatewayIntent, parseIntentBody } from "@/lib/controlplane/intent-route";
+import {
+  agentRenameSchema,
+  validateInput,
+  createValidationErrorResponse,
+} from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
@@ -9,10 +14,16 @@ export async function POST(request: Request) {
   if (bodyOrError instanceof Response) {
     return bodyOrError as NextResponse;
   }
-  const agentId = typeof bodyOrError.agentId === "string" ? bodyOrError.agentId.trim() : "";
-  const name = typeof bodyOrError.name === "string" ? bodyOrError.name.trim() : "";
-  if (!agentId || !name) {
-    return NextResponse.json({ error: "agentId and name are required." }, { status: 400 });
+
+  // Validate input with Zod
+  const validation = validateInput(agentRenameSchema, bodyOrError);
+  if (!validation.success) {
+    return NextResponse.json(
+      createValidationErrorResponse(validation.error, validation.issues),
+      { status: 400 }
+    );
   }
-  return await executeGatewayIntent("agents.update", { agentId, name });
+
+  const { agentId, newName } = validation.data;
+  return await executeGatewayIntent("agents.update", { agentId, name: newName });
 }

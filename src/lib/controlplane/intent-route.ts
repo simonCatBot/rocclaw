@@ -33,14 +33,23 @@ const isConfigConflict = (error: ControlPlaneGatewayError): boolean => {
 };
 
 const resolveRateLimitKey = (request: Request): string => {
-  // Use x-forwarded-for header if behind a proxy, otherwise fall back to
-  // the direct remote address. In production this should be set correctly
-  // by your reverse proxy (nginx, cloudflare, etc.).
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    "anonymous"
-  );
+  // SECURITY: Only trust X-Forwarded-For/X-Real-IP when TRUST_PROXY is explicitly enabled.
+  // This prevents IP spoofing attacks where clients can set these headers themselves
+  // to bypass rate limiting.
+  const trustProxy = process.env.TRUST_PROXY === "true";
+
+  if (trustProxy) {
+    // When behind a trusted reverse proxy (nginx, cloudflare, etc.), use the forwarded headers
+    return (
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      request.headers.get("x-real-ip") ??
+      "anonymous"
+    );
+  }
+
+  // In development or without a trusted proxy, use "anonymous" to avoid spoofing
+  // The actual client IP isn't available in serverless/edge environments without trust
+  return "anonymous";
 };
 
 const rateLimitHeaders = (request: Request, limit: number) => {

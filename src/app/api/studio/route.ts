@@ -15,11 +15,13 @@ import {
   redactStudioSettingsSecrets,
 } from "@/lib/studio/settings-store";
 import { detectInstallContext } from "../../../../server/install-context";
+import {
+  studioSettingsSchema,
+  validateInput,
+  createValidationErrorResponse,
+} from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
-
-const isPatch = (value: unknown): value is StudioSettingsPatch =>
-  Boolean(value && typeof value === "object");
 
 type RuntimeReconnectMetadata = {
   attempted: boolean;
@@ -158,14 +160,22 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const body = (await request.json()) as unknown;
-    if (!isPatch(body)) {
-      return NextResponse.json({ error: "Invalid settings payload." }, { status: 400 });
+
+    // Validate input with Zod
+    const validation = validateInput(studioSettingsSchema, body);
+    if (!validation.success) {
+      return NextResponse.json(
+        createValidationErrorResponse(validation.error, validation.issues),
+        { status: 400 }
+      );
     }
+
     const previousSettings = loadStudioSettings();
-    const nextSettings = applyStudioSettingsPatch({
-      ...body,
+    const patch: StudioSettingsPatch = {
+      gateway: validation.data.gateway,
       gatewayAutoStart: true,
-    });
+    };
+    const nextSettings = applyStudioSettingsPatch(patch);
     const runtimeReconnect = await reconnectRuntimeForGatewaySettingsChange(
       previousSettings,
       nextSettings

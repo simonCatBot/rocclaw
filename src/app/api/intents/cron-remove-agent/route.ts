@@ -4,6 +4,7 @@ import { ensureDomainIntentRuntime, parseIntentBody } from "@/lib/controlplane/i
 import { ControlPlaneGatewayError } from "@/lib/controlplane/openclaw-adapter";
 import type { CronDelivery, CronJobRestoreInput, CronPayload, CronSchedule } from "@/lib/cron/types";
 import type { ControlPlaneRuntime } from "@/lib/controlplane/runtime";
+import { cronRemoveAgentSchema, validateInput, createValidationErrorResponse } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
@@ -125,10 +126,16 @@ export async function POST(request: Request) {
     return bodyOrError as NextResponse;
   }
 
-  const agentId = typeof bodyOrError.agentId === "string" ? bodyOrError.agentId.trim() : "";
-  if (!agentId) {
-    return NextResponse.json({ error: "agentId is required." }, { status: 400 });
+  // Validate input with Zod
+  const validation = validateInput(cronRemoveAgentSchema, bodyOrError);
+  if (!validation.success) {
+    return NextResponse.json(
+      createValidationErrorResponse(validation.error, validation.issues),
+      { status: 400 }
+    );
   }
+
+  const { agentId } = validation.data;
 
   const runtimeOrError = await ensureDomainIntentRuntime();
   if (runtimeOrError instanceof Response) {

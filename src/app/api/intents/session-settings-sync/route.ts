@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { executeGatewayIntent, parseIntentBody } from "@/lib/controlplane/intent-route";
+import {
+  sessionKeySchema,
+  validateInput,
+  createValidationErrorResponse,
+  modelSchema,
+  thinkingLevelSchema,
+  execHostSchema,
+  execSecuritySchema,
+} from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
-const hasOwn = (value: Record<string, unknown>, key: string) =>
-  Object.prototype.hasOwnProperty.call(value, key);
+const sessionSettingsSyncSchema = z.object({
+  sessionKey: sessionKeySchema,
+  model: modelSchema.optional(),
+  thinkingLevel: thinkingLevelSchema.optional(),
+  execHost: execHostSchema.optional(),
+  execSecurity: execSecuritySchema.optional(),
+  execAsk: z.boolean().optional(),
+});
 
 export async function POST(request: Request) {
   const bodyOrError = await parseIntentBody(request);
@@ -13,36 +29,24 @@ export async function POST(request: Request) {
     return bodyOrError as NextResponse;
   }
 
-  const sessionKey =
-    typeof bodyOrError.sessionKey === "string" ? bodyOrError.sessionKey.trim() : "";
-  if (!sessionKey) {
-    return NextResponse.json({ error: "sessionKey is required." }, { status: 400 });
-  }
-
-  const includeModel = hasOwn(bodyOrError, "model");
-  const includeThinkingLevel = hasOwn(bodyOrError, "thinkingLevel");
-  const includeExecHost = hasOwn(bodyOrError, "execHost");
-  const includeExecSecurity = hasOwn(bodyOrError, "execSecurity");
-  const includeExecAsk = hasOwn(bodyOrError, "execAsk");
-  if (
-    !includeModel &&
-    !includeThinkingLevel &&
-    !includeExecHost &&
-    !includeExecSecurity &&
-    !includeExecAsk
-  ) {
+  // Validate input with Zod
+  const validation = validateInput(sessionSettingsSyncSchema, bodyOrError);
+  if (!validation.success) {
     return NextResponse.json(
-      { error: "At least one session setting field is required." },
+      createValidationErrorResponse(validation.error, validation.issues),
       { status: 400 }
     );
   }
 
-  return await executeGatewayIntent("sessions.patch", {
-    key: sessionKey,
-    ...(includeModel ? { model: bodyOrError.model ?? null } : {}),
-    ...(includeThinkingLevel ? { thinkingLevel: bodyOrError.thinkingLevel ?? null } : {}),
-    ...(includeExecHost ? { execHost: bodyOrError.execHost ?? null } : {}),
-    ...(includeExecSecurity ? { execSecurity: bodyOrError.execSecurity ?? null } : {}),
-    ...(includeExecAsk ? { execAsk: bodyOrError.execAsk ?? null } : {}),
-  });
+  const { sessionKey, model, thinkingLevel, execHost, execSecurity, execAsk } = validation.data;
+
+  // Build the params object with only provided values
+  const params: Record<string, unknown> = { key: sessionKey };
+  if (model !== undefined) params.model = model ?? null;
+  if (thinkingLevel !== undefined) params.thinkingLevel = thinkingLevel ?? null;
+  if (execHost !== undefined) params.execHost = execHost ?? null;
+  if (execSecurity !== undefined) params.execSecurity = execSecurity ?? null;
+  if (execAsk !== undefined) params.execAsk = execAsk ?? null;
+
+  return await executeGatewayIntent("sessions.patch", params);
 }

@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { ensureDomainIntentRuntime, parseIntentBody } from "@/lib/controlplane/intent-route";
 import { ControlPlaneGatewayError } from "@/lib/controlplane/openclaw-adapter";
 import { slugifyAgentName } from "@/lib/gateway/agentConfig";
+import {
+  agentCreateSchema,
+  validateInput,
+  createValidationErrorResponse,
+} from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
@@ -30,10 +35,16 @@ export async function POST(request: Request) {
     return bodyOrError as NextResponse;
   }
 
-  const name = typeof bodyOrError.name === "string" ? bodyOrError.name.trim() : "";
-  if (!name) {
-    return NextResponse.json({ error: "name is required." }, { status: 400 });
+  // Validate input with Zod
+  const validation = validateInput(agentCreateSchema, bodyOrError);
+  if (!validation.success) {
+    return NextResponse.json(
+      createValidationErrorResponse(validation.error, validation.issues),
+      { status: 400 }
+    );
   }
+
+  const { name } = validation.data;
 
   const runtimeOrError = await ensureDomainIntentRuntime();
   if (runtimeOrError instanceof Response) {
