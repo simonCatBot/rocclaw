@@ -64,7 +64,7 @@ export function GpuMetricsPanel({ gpus }: GpuMetricsPanelProps) {
   );
 }
 
-function GpuCard({ gpu, index }: { gpu: GPUMetric; index: number }) {
+function GpuCard({ gpu }: { gpu: GPUMetric; index: number }) {
   const isRocm = gpu.gfxVersion !== undefined;
   const memoryUsagePercent = gpu.memory.total && gpu.memory.used
     ? Math.round((gpu.memory.used / gpu.memory.total) * 100)
