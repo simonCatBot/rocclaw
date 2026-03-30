@@ -52,10 +52,10 @@ export const ConnectionPanel = ({
 }: ConnectionPanelProps) => {
   const actionBusy = saving || testing || disconnecting;
   const tokenHelper = hasStoredToken
-    ? "Stored token available on this Studio host. Leave blank to keep it."
+    ? "Stored token available on this rocCLAW host. Leave blank to keep it."
     : localGatewayDefaultsHasToken
       ? "A local OpenClaw token is available on this host. Leave blank to use it."
-      : "Enter the token Studio should use for this upstream.";
+      : "Enter the token rocCLAW should use for this upstream.";
 
   return (
     <div className="fade-up-delay flex flex-col gap-3">

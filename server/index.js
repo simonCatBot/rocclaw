@@ -7,7 +7,7 @@ const { spawnSync } = require("node:child_process");
 const next = require("next");
 
 const { createAccessGate } = require("./access-gate");
-const { detectInstallContext, buildStartupGuidance } = require("./install-context");
+const { detectInstallContext, buildStartupGuidance } = require("./rocclaw-install-context");
 const { assertPublicHostAllowed, resolveHosts } = require("./network-policy");
 
 const resolvePort = () => {

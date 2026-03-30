@@ -57,7 +57,7 @@ describe("studio settings route reconnect behavior", () => {
       }),
     }));
 
-    const { PUT } = await import("@/app/api/studio/route");
+    const { PUT } = await import("@/app/api/rocclaw/route");
     const response = await PUT({
       json: async () => ({
         gateway: { url: "ws://remote.example:18789" },
@@ -147,7 +147,7 @@ describe("studio settings route reconnect behavior", () => {
       }),
     }));
 
-    const { PUT } = await import("@/app/api/studio/route");
+    const { PUT } = await import("@/app/api/rocclaw/route");
     const response = await PUT({
       json: async () => ({
         gateway: { url: "ws://remote.example:18789" },

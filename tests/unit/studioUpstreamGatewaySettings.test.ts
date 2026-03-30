@@ -28,7 +28,7 @@ describe("server studio upstream gateway settings", () => {
       "utf8"
     );
 
-    const { loadUpstreamGatewaySettings } = await import("../../server/studio-settings");
+    const { loadUpstreamGatewaySettings } = await import("../../server/rocclaw-settings");
     const settings = loadUpstreamGatewaySettings(process.env);
     expect(settings.url).toBe("ws://localhost:18790");
     expect(settings.token).toBe("tok");
@@ -50,7 +50,7 @@ describe("server studio upstream gateway settings", () => {
       "utf8"
     );
 
-    const { loadUpstreamGatewaySettings } = await import("../../server/studio-settings");
+    const { loadUpstreamGatewaySettings } = await import("../../server/rocclaw-settings");
     const settings = loadUpstreamGatewaySettings(process.env);
     expect(settings.url).toBe("ws://gateway.example:18789");
     expect(settings.token).toBe("tok-local");

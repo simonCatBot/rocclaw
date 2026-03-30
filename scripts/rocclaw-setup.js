@@ -3,7 +3,7 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const readline = require("node:readline/promises");
 
-const { resolveStudioSettingsPath } = require("../server/studio-settings");
+const { resolveStudioSettingsPath } = require("../server/rocclaw-settings");
 
 const DEFAULT_GATEWAY_URL = "ws://127.0.0.1:18789";
 

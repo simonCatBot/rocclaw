@@ -4,7 +4,7 @@ import {
   OpenClawGatewayAdapter,
   serializeControlPlaneGatewayConnectFailure,
 } from "@/lib/controlplane/openclaw-adapter";
-import { loadStudioSettings } from "@/lib/studio/settings-store";
+import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
 import {
   testConnectionSchema,
   validateInput,

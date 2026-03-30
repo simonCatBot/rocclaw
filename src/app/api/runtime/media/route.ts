@@ -6,7 +6,7 @@ import {
   resolveGatewaySshTargetFromGatewayUrl,
   runSshJson,
 } from "@/lib/ssh/gateway-host";
-import { loadStudioSettings } from "@/lib/studio/settings-store";
+import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";

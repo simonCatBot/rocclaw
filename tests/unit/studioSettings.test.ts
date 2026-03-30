@@ -4,7 +4,7 @@ import {
   mergeStudioSettings,
   normalizeStudioSettings,
   resolveFocusedPreference,
-} from "@/lib/studio/settings";
+} from "@/lib/rocclaw/settings";
 
 describe("studio settings normalization", () => {
   it("returns defaults for empty input", () => {

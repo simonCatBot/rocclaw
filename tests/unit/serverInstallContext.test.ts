@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 describe("server install context detector", () => {
   it("detects a remote shell with local OpenClaw defaults and tailscale", async () => {
-    const { detectInstallContext } = await import("../../server/install-context");
+    const { detectInstallContext } = await import("../../server/rocclaw-install-context");
 
     const runCommand = async (file: string, args: string[]) => {
       if (file === "openclaw" && args[0] === "status") {
@@ -52,7 +52,7 @@ describe("server install context detector", () => {
   });
 
   it("falls back cleanly when openclaw and tailscale are missing", async () => {
-    const { detectInstallContext } = await import("../../server/install-context");
+    const { detectInstallContext } = await import("../../server/rocclaw-install-context");
 
     const runCommand = async () => {
       throw Object.assign(new Error("not found"), { code: "ENOENT" });
@@ -81,7 +81,7 @@ describe("server install context detector", () => {
   });
 
   it("uses a placeholder ssh target when no reachable host is known", async () => {
-    const { buildStartupGuidance } = await import("../../server/install-context");
+    const { buildStartupGuidance } = await import("../../server/rocclaw-install-context");
 
     const lines = buildStartupGuidance({
       port: 3000,

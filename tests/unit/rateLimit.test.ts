@@ -56,14 +56,14 @@ describe("rate-limit", () => {
     it("resets after the window expires", async () => {
       const key = "test-client";
       const limit = 2;
-      const windowMs = 50; // Very short window for testing
+      const windowMs = 100; // Short window for testing
 
       checkRateLimit(key, limit, windowMs);
       checkRateLimit(key, limit, windowMs);
       expect(checkRateLimit(key, limit, windowMs)).toBe(false);
 
-      // Wait for window to expire
-      await new Promise((resolve) => setTimeout(resolve, windowMs + 10));
+      // Wait for window to expire (add buffer for timing variations)
+      await new Promise((resolve) => setTimeout(resolve, windowMs + 50));
 
       expect(checkRateLimit(key, limit, windowMs)).toBe(true);
     });

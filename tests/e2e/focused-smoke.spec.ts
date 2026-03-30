@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { stubStudioRoute } from "./helpers/studioRoute";
+import { stubRocclawRoute } from "./helpers/rocclawRoute";
 import { stubRuntimeRoutes } from "./helpers/runtimeRoute";
 
 test("loads focused studio empty state", async ({ page }) => {
-  await stubStudioRoute(page);
+  await stubRocclawRoute(page);
   await stubRuntimeRoutes(page);
 
   await page.goto("/");

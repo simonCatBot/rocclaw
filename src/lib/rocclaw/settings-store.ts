@@ -8,7 +8,7 @@ import {
   normalizeStudioSettings,
   type StudioSettings,
   type StudioSettingsPatch,
-} from "@/lib/studio/settings";
+} from "@/lib/rocclaw/settings";
 
 const SETTINGS_DIRNAME = "openclaw-studio";
 const SETTINGS_FILENAME = "settings.json";

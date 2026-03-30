@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 describe("studio setup paths", () => {
   it("resolves settings path under OPENCLAW_STATE_DIR when set", async () => {
-    const { resolveStudioSettingsPath } = await import("../../server/studio-settings");
+    const { resolveStudioSettingsPath } = await import("../../server/rocclaw-settings");
     const settingsPath = resolveStudioSettingsPath({
       OPENCLAW_STATE_DIR: "/tmp/openclaw-state",
     } as unknown as NodeJS.ProcessEnv);
@@ -14,7 +14,7 @@ describe("studio setup paths", () => {
   });
 
   it("resolves settings path under ~/.openclaw by default", async () => {
-    const { resolveStudioSettingsPath } = await import("../../server/studio-settings");
+    const { resolveStudioSettingsPath } = await import("../../server/rocclaw-settings");
     const settingsPath = resolveStudioSettingsPath({} as NodeJS.ProcessEnv);
     expect(settingsPath).toBe(
       path.join(os.homedir(), ".openclaw", "openclaw-studio", "settings.json")

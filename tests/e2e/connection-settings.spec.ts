@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { stubStudioRoute } from "./helpers/studioRoute";
+import { stubRocclawRoute } from "./helpers/rocclawRoute";
 import { stubRuntimeRoutes } from "./helpers/runtimeRoute";
-import { defaultStudioInstallContext } from "@/lib/studio/install-context";
+import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
 
 test("connection settings save to the studio settings API", async ({ page }) => {
-  await stubStudioRoute(page);
+  await stubRocclawRoute(page);
   await stubRuntimeRoutes(page);
 
   await page.goto("/");
@@ -16,7 +16,7 @@ test("connection settings save to the studio settings API", async ({ page }) => 
   await page.getByLabel("Upstream token").fill("token-123");
 
   const requestPromise = page.waitForRequest((req) => {
-    if (!req.url().includes("/api/studio") || req.method() !== "PUT") {
+    if (!req.url().includes("/api/rocclaw") || req.method() !== "PUT") {
       return false;
     }
     const payload = JSON.parse(req.postData() ?? "{}") as Record<string, unknown>;
@@ -39,7 +39,7 @@ test("same-host cloud onboarding keeps the upstream on localhost", async ({ page
   installContext.tailscale.loggedIn = true;
   installContext.tailscale.dnsName = "studio-host.tailnet.ts.net";
 
-  await stubStudioRoute(
+  await stubRocclawRoute(
     page,
     {
       version: 1,
@@ -62,13 +62,13 @@ test("same-host cloud onboarding keeps the upstream on localhost", async ({ page
     summary: {
       status: "disconnected",
       reason: null,
-      error: "Control-plane start failed: Studio gateway token is not configured.",
+      error: "Control-plane start failed: rocCLAW gateway token is not configured.",
     },
   });
 
   await page.goto("/");
-  await expect(page.getByText("Studio and OpenClaw on the same cloud machine")).toBeVisible();
-  await page.getByRole("button", { name: /Studio and OpenClaw on the same cloud machine/i }).click();
+  await expect(page.getByText("rocCLAW and OpenClaw on the same cloud machine")).toBeVisible();
+  await page.getByRole("button", { name: /rocCLAW and OpenClaw on the same cloud machine/i }).click();
   await expect(page.getByText(/Studio is on a remote host\./i)).toBeVisible();
   await expect(
     page.getByText("tailscale serve --yes --bg --https 443 http://127.0.0.1:3000")
@@ -78,12 +78,12 @@ test("same-host cloud onboarding keeps the upstream on localhost", async ({ page
 });
 
 test("remote gateway onboarding warns about ws tailscale urls", async ({ page }) => {
-  await stubStudioRoute(page);
+  await stubRocclawRoute(page);
   await stubRuntimeRoutes(page, {
     summary: {
       status: "disconnected",
       reason: null,
-      error: "Control-plane start failed: Studio gateway token is not configured.",
+      error: "Control-plane start failed: rocCLAW gateway token is not configured.",
     },
   });
 

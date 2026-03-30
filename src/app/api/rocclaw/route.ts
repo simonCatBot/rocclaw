@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { type StudioSettingsPatch } from "@/lib/studio/settings";
-import { defaultStudioInstallContext } from "@/lib/studio/install-context";
+import { type StudioSettingsPatch } from "@/lib/rocclaw/settings";
+import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
 import {
   getControlPlaneRuntime,
   isStudioDomainApiModeEnabled,
@@ -13,8 +13,8 @@ import {
   loadStudioSettings,
   redactLocalGatewayDefaultsSecrets,
   redactStudioSettingsSecrets,
-} from "@/lib/studio/settings-store";
-import { detectInstallContext } from "../../../../server/install-context";
+} from "@/lib/rocclaw/settings-store";
+import { detectInstallContext } from "../../../../server/rocclaw-install-context";
 import {
   studioSettingsSchema,
   validateInput,
@@ -22,6 +22,9 @@ import {
 } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
+
+const isPatch = (value: unknown): value is StudioSettingsPatch =>
+  Boolean(value && typeof value === "object");
 
 type RuntimeReconnectMetadata = {
   attempted: boolean;
