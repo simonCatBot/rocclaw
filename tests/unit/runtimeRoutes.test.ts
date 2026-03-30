@@ -1229,7 +1229,7 @@ describe("runtime routes", () => {
         callGateway,
       }),
     }));
-    vi.doMock("@/lib/studio/settings-store", () => ({
+    vi.doMock("@/lib/rocclaw/settings-store", () => ({
       loadStudioSettings: () => ({
         version: 1,
         gateway: { url: "ws://localhost:3000/ws", token: "" },
@@ -1381,7 +1381,7 @@ describe("runtime routes", () => {
         callGateway: vi.fn(),
       }),
     }));
-    vi.doMock("@/lib/studio/settings-store", () => ({
+    vi.doMock("@/lib/rocclaw/settings-store", () => ({
       loadStudioSettings: () => ({
         version: 1,
         gateway: { url: "ws://localhost:3000/ws", token: "" },

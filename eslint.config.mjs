@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-require-imports": "off",
     },
   },
+  {
+    files: ["src/components/SystemDashboard.tsx", "src/components/SystemInfo.tsx", "src/components/SystemMetricsDashboard.tsx", "src/components/TokenUsage.tsx"],
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

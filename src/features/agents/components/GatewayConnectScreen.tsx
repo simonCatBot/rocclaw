@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Eye, EyeOff, Loader2 } from "lucide-react";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import {
@@ -92,6 +92,7 @@ export const GatewayConnectScreen = ({
     if (scenarioTouched) return;
     if (inferredScenario !== prevInferredScenarioRef.current) {
       prevInferredScenarioRef.current = inferredScenario;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- This is intentional: syncing derived state when parent data changes
       setSelectedScenario(inferredScenario);
     }
   }, [inferredScenario, scenarioTouched]);

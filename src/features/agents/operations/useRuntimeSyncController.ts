@@ -919,10 +919,12 @@ export function useRuntimeSyncController(
     };
     historyPrefetchRef.current.set(sessionKey, scheduled);
     return () => {
-      const current = historyPrefetchRef.current.get(sessionKey) ?? null;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      const ref = historyPrefetchRef.current;
+      const current = ref.get(sessionKey) ?? null;
       if (!current || current.targetLimit !== nextLimit) return;
       cancelIdlePrefetch(current.handle);
-      historyPrefetchRef.current.delete(sessionKey);
+      ref.delete(sessionKey);
     };
   }, [
     agents,

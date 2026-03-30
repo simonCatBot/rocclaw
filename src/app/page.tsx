@@ -13,7 +13,6 @@ import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnectScreen";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
-import { SystemDashboard } from "@/components/SystemDashboard";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
@@ -1052,6 +1051,7 @@ const AgentStudioPage = () => {
       refreshGatewayConfigSnapshot,
       runtimeWriteTransport,
       setError,
+      setMobilePaneChat,
       gatewayConnectionStatus,
     ]
   );

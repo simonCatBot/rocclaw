@@ -3,7 +3,7 @@ import { stubRocclawRoute } from "./helpers/rocclawRoute";
 import { stubRuntimeRoutes } from "./helpers/runtimeRoute";
 import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
 
-test("connection settings save to the studio settings API", async ({ page }) => {
+test("connection settings save to the rocclaw settings API", async ({ page }) => {
   await stubRocclawRoute(page);
   await stubRuntimeRoutes(page);
 
@@ -69,7 +69,7 @@ test("same-host cloud onboarding keeps the upstream on localhost", async ({ page
   await page.goto("/");
   await expect(page.getByText("rocCLAW and OpenClaw on the same cloud machine")).toBeVisible();
   await page.getByRole("button", { name: /rocCLAW and OpenClaw on the same cloud machine/i }).click();
-  await expect(page.getByText(/Studio is on a remote host\./i)).toBeVisible();
+  await expect(page.getByText(/rocCLAW is on a remote host\./i)).toBeVisible();
   await expect(
     page.getByText("tailscale serve --yes --bg --https 443 http://127.0.0.1:3000")
   ).toBeVisible();
@@ -88,7 +88,7 @@ test("remote gateway onboarding warns about ws tailscale urls", async ({ page })
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /Studio here, OpenClaw in the cloud/i }).click();
+  await page.getByRole("button", { name: /rocCLAW here, OpenClaw in the cloud/i }).click();
   await page.getByLabel("Upstream URL").fill("ws://gateway-host.ts.net");
   await expect(
     page.getByText(/Use wss:\/\/ for \.ts\.net gateway URLs\./i)

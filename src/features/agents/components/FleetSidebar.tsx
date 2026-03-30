@@ -7,7 +7,7 @@ import {
   resolveAgentStatusLabel,
 } from "./colorSemantics";
 import { EmptyStatePanel } from "./EmptyStatePanel";
-import { Plus, Cpu, Ghost } from "lucide-react";
+import { Plus, Cpu } from "lucide-react";
 
 type FleetSidebarProps = {
   agents: AgentState[];

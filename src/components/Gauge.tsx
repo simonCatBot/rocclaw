@@ -12,40 +12,43 @@ interface GaugeProps {
   detail: string;
 }
 
-export function RetroSpeedometer({ 
-  value, 
-  min = 0, 
-  max = 100, 
+export function RetroSpeedometer({
+  value,
+  min = 0,
+  max = 100,
   size = 160,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   color = "text-primary",
   label,
   detail
 }: GaugeProps) {
   const [displayValue, setDisplayValue] = useState(0);
-  
+
   useEffect(() => {
     const duration = 600;
     const start = displayValue;
     const end = value;
     const startTime = performance.now();
-    
+
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const easeOutBack = 1 - Math.pow(1 - progress, 3);
       setDisplayValue(Math.round(start + (end - start) * easeOutBack));
-      
+
       if (progress < 1) {
         requestAnimationFrame(animate);
       }
     };
-    
+
     requestAnimationFrame(animate);
+    // displayValue is intentionally omitted from deps; animation interpolates from current position
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const percentage = Math.min(Math.max((displayValue - min) / (max - min), 0), 1);
   const angle = percentage * 270 - 135;
-  
+
   const getColorClass = () => {
     if (displayValue >= 90) return "text-red-500";
     if (displayValue >= 75) return "text-amber-500";
@@ -61,11 +64,11 @@ export function RetroSpeedometer({
   };
 
   const ticks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-  
+
   return (
     <div className="relative rounded-xl border-2 border-slate-700 bg-slate-900 p-4 shadow-inner">
       <div className="absolute inset-0 rounded-xl border border-slate-600 opacity-50" />
-      
+
       <div className="relative" style={{ width: size, height: size * 0.6 }}>
         <svg
           width={size}
@@ -78,7 +81,7 @@ export function RetroSpeedometer({
               <stop offset="0%" stopColor="#1e293b" />
               <stop offset="100%" stopColor="#0f172a" />
             </radialGradient>
-            
+
             <filter id="needleGlow">
               <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
               <feMerge>
@@ -87,7 +90,7 @@ export function RetroSpeedometer({
               </feMerge>
             </filter>
           </defs>
-          
+
           <path
             d="M 20 80 A 60 60 0 0 1 140 80"
             fill="none"
@@ -95,7 +98,7 @@ export function RetroSpeedometer({
             strokeWidth="12"
             strokeLinecap="round"
           />
-          
+
           { /* Green zone (0-50%) */ }
           <path
             d="M 20 80 A 60 60 0 0 1 50 28"
@@ -132,7 +135,7 @@ export function RetroSpeedometer({
             strokeLinecap="round"
             opacity="0.6"
           />
-          
+
           {ticks.map((tick) => {
             const tickAngle = (tick / 100) * 270 - 135;
             const rad = (tickAngle * Math.PI) / 180;
@@ -145,7 +148,7 @@ export function RetroSpeedometer({
             const labelR = 45;
             const lx = 80 + labelR * Math.cos(rad);
             const ly = 80 + labelR * Math.sin(rad);
-            
+
             return (
               <g key={tick}>
                 <line
@@ -172,7 +175,7 @@ export function RetroSpeedometer({
               </g>
             );
           })}
-          
+
           <g transform={`rotate(${angle} 80 80)`}>
             <polygon
               points="80,20 76,78 80,75 84,78"
@@ -182,7 +185,7 @@ export function RetroSpeedometer({
             <circle cx="80" cy="80" r="4" fill="#475569" />
             <circle cx="80" cy="80" r="2" fill="#94a3b8" />
           </g>
-          
+
           <defs>
             <linearGradient id="glass" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="white" stopOpacity="0.1" />
@@ -198,7 +201,7 @@ export function RetroSpeedometer({
             fill="url(#glass)"
           />
         </svg>
-        
+
         <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center">
           <div className="bg-slate-800 border border-slate-600 rounded px-3 py-1 shadow-inner">
             <span className={`text-xl font-bold font-mono ${getColorClass()}`}>
@@ -208,7 +211,7 @@ export function RetroSpeedometer({
           </div>
         </div>
       </div>
-      
+
       <div className="mt-4 text-center">
         <p className="text-sm font-semibold text-slate-200 tracking-wide uppercase">
           {label}
@@ -219,20 +222,20 @@ export function RetroSpeedometer({
   );
 }
 
-export function RetroCircularGauge({ 
-  value, 
+export function RetroCircularGauge({
+  value,
   size = 100,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   color = "text-primary",
   label
-}: { 
-  value: number; 
+}: {
+  value: number;
   size?: number;
   color?: string;
   label: string;
 }) {
   const percentage = Math.min(Math.max(value, 0), 100);
-  const angle = (percentage / 100) * 360;
-  
+
   const getColor = () => {
     if (value >= 90) return "#ef4444";
     if (value >= 75) return "#f59e0b";
@@ -250,9 +253,9 @@ export function RetroCircularGauge({
               <stop offset="100%" stopColor="#0f172a" />
             </radialGradient>
           </defs>
-          
+
           <circle cx="50" cy="50" r="45" fill="url(#retroGaugeBg)" />
-          
+
           <circle
             cx="50"
             cy="50"
@@ -261,7 +264,7 @@ export function RetroCircularGauge({
             stroke="#334155"
             strokeWidth="2"
           />
-          
+
           <circle
             cx="50"
             cy="50"
@@ -274,7 +277,7 @@ export function RetroCircularGauge({
             transform="rotate(-90 50 50)"
             className="transition-all duration-500"
           />
-          
+
           {[0, 25, 50, 75, 100].map((tick) => {
             const tickAngle = (tick / 100) * 360 - 90;
             const rad = (tickAngle * Math.PI) / 180;
@@ -291,7 +294,7 @@ export function RetroCircularGauge({
             );
           })}
         </svg>
-        
+
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <span className="text-lg font-bold font-mono" style={{ color: getColor() }}>
@@ -301,7 +304,7 @@ export function RetroCircularGauge({
           </div>
         </div>
       </div>
-      
+
       <span className="text-[10px] text-slate-400 mt-1 block text-center font-mono uppercase">
         {label}
       </span>

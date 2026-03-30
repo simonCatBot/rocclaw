@@ -97,7 +97,7 @@ export function TokenUsage() {
       
       setMetrics(mockData);
       setError(null);
-    } catch (err) {
+    } catch {
       setError("Failed to load token metrics");
     }
   }, []);

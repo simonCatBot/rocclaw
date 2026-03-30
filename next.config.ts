@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   serverExternalPackages: ["ws", "better-sqlite3", "systeminformation"],
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // Suppress warnings about optional macOS temperature-sensor dependencies
     // that are attempted to be loaded on Linux/Windows builds. These packages
     // are optional peer dependencies of `systeminformation` and do not affect

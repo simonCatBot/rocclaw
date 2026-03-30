@@ -46,7 +46,7 @@ describe("studio test-connection route", () => {
         },
       };
     });
-    vi.doMock("@/lib/studio/settings-store", () => ({
+    vi.doMock("@/lib/rocclaw/settings-store", () => ({
       loadStudioSettings: () => ({
         version: 1,
         gateway: { url: "ws://localhost:18789", token: "stored-secret" },

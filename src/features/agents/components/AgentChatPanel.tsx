@@ -709,6 +709,7 @@ const AgentChatTranscript = memo(function AgentChatTranscript({
   }, [scrollChatToBottom]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPinned(true);
     scheduleScrollToBottom();
   }, [scheduleScrollToBottom, scrollToBottomOnOpenKey, setPinned]);

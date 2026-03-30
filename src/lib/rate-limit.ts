@@ -10,8 +10,10 @@
  * backed implementation using a consistent keying scheme.
  */
 
-/** Sliding window entry keyed by timestamp in milliseconds. */
-type WindowEntry = {
+/** Sliding window entry keyed by timestamp in milliseconds.
+ * @deprecated Currently unused; kept for documentation purposes.
+ */
+export type WindowEntry = {
   count: number;
   resetAt: number;
 };

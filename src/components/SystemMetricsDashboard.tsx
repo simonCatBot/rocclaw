@@ -118,7 +118,7 @@ export function SystemMetricsDashboard() {
       } else {
         setError(result.error || "Failed to fetch metrics");
       }
-    } catch (err) {
+    } catch {
       setError("Network error fetching metrics");
     }
   }, []);

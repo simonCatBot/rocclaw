@@ -7,7 +7,6 @@ import type { ControlPlaneRuntime } from "@/lib/controlplane/runtime";
 import {
   checkRateLimit,
   rateLimitRemaining,
-  DEFAULT_MAX_REQUESTS,
 } from "@/lib/rate-limit";
 
 export const LONG_RUNNING_GATEWAY_INTENT_TIMEOUT_MS = 600_000;

@@ -83,7 +83,7 @@ export function SystemInfoPanel() {
       } else {
         setError(result.error || "Failed to fetch metrics");
       }
-    } catch (err) {
+    } catch {
       setError("Network error fetching metrics");
     }
   }, []);
