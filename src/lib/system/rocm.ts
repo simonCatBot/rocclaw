@@ -145,7 +145,11 @@ function parseRocmInfo(output: string): ROCmGPUInfo[] {
       const nameMatch = block.match(/Name:\s*(.+)/);
       const marketingNameMatch = block.match(/Marketing Name:\s*(.+)/);
       const vendorMatch = block.match(/Vendor Name:\s*(.+)/);
-      const gfxVersionMatch = block.match(/Name:\s*(gfx\d+)/);
+      // Try to find gfx version - look for the most specific one (longer is usually more specific)
+      const gfxVersionMatches = [...block.matchAll(/Name:\s*(gfx\d+[a-z]*)/g)];
+      const gfxVersionMatch = gfxVersionMatches.length > 0 
+        ? gfxVersionMatches[gfxVersionMatches.length - 1]  // Take the last match (usually the most specific)
+        : null;
       const computeUnitsMatch = block.match(/Compute Unit:\s*(\d+)/);
       const maxClockMatch = block.match(/Max Clock Freq\. \(MHz\):\s*(\d+)/);
 
