@@ -75,7 +75,7 @@ describe("heartbeat gateway client", () => {
 
     expect(client.call).toHaveBeenCalledWith("wake", {
       mode: "now",
-      text: "OpenClaw Studio heartbeat trigger (agent-1).",
+      text: "rocCLAW heartbeat trigger (agent-1).",
     });
   });
 });

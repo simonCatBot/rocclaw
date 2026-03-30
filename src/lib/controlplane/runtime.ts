@@ -8,7 +8,7 @@ import {
   SQLiteControlPlaneProjectionStore,
   type BackfillAgentOutboxResult,
 } from "@/lib/controlplane/projection-store";
-import { loadStudioSettings } from "@/lib/studio/settings-store";
+import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
 
 type ControlPlaneRuntimeOptions = {
   adapterOptions?: OpenClawAdapterOptions;

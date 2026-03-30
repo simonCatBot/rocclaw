@@ -3,9 +3,9 @@ import { act, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { fetchJson } from "@/lib/http";
-import type { StudioSettingsResponse } from "@/lib/studio/coordinator";
-import { defaultStudioInstallContext } from "@/lib/studio/install-context";
-import { useStudioGatewaySettings } from "@/lib/studio/useStudioGatewaySettings";
+import type { StudioSettingsResponse } from "@/lib/rocclaw/coordinator";
+import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
+import { useStudioGatewaySettings } from "@/lib/rocclaw/useStudioGatewaySettings";
 
 vi.mock("@/lib/http", () => ({
   fetchJson: vi.fn(),
@@ -149,7 +149,7 @@ describe("useStudioGatewaySettings", () => {
     expect(saveResult).toBe(false);
     expect(ctx.coordinator.flushPending).not.toHaveBeenCalled();
     expect(mockedFetchJson).not.toHaveBeenCalledWith(
-      "/api/studio",
+      "/api/rocclaw",
       expect.anything()
     );
 
@@ -174,7 +174,7 @@ describe("useStudioGatewaySettings", () => {
 
   it("shows actionable guidance for control-ui secure-context gateway errors", async () => {
     mockedFetchJson.mockImplementation(async (input) => {
-      if (input === "/api/studio/test-connection") {
+      if (input === "/api/rocclaw/test-connection") {
         return {
           ok: false,
           error:
@@ -214,7 +214,7 @@ describe("useStudioGatewaySettings", () => {
 
   it("shows the raw backend-local startup failure when the failure is not legacy control-ui", async () => {
     mockedFetchJson.mockImplementation(async (input) => {
-      if (input === "/api/studio/test-connection") {
+      if (input === "/api/rocclaw/test-connection") {
         return {
           ok: false,
           error: "Control-plane gateway connection failed: connect ECONNREFUSED 127.0.0.1:18789",

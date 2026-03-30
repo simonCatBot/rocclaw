@@ -1,6 +1,6 @@
 import { buildAgentMainSessionKey } from "@/lib/gateway/session-keys";
 import { type GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import { type StudioSettings } from "@/lib/studio/settings";
+import { type StudioSettings } from "@/lib/rocclaw/settings";
 import {
   type SummaryPreviewSnapshot,
   type SummarySnapshotPatch,

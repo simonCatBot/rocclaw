@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defaultStudioSettings } from "@/lib/studio/settings";
-import { StudioSettingsCoordinator } from "@/lib/studio/coordinator";
+import { defaultStudioSettings } from "@/lib/rocclaw/settings";
+import { StudioSettingsCoordinator } from "@/lib/rocclaw/coordinator";
 
 describe("StudioSettingsCoordinator", () => {
   beforeEach(() => {

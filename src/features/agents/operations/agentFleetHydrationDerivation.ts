@@ -1,6 +1,6 @@
 import { buildAgentMainSessionKey } from "@/lib/gateway/session-keys";
 import { resolveConfiguredModelKey, type GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import { resolveAgentAvatarSeed, type StudioSettings } from "@/lib/studio/settings";
+import { resolveAgentAvatarSeed, type StudioSettings } from "@/lib/rocclaw/settings";
 import {
   buildSummarySnapshotPatches,
   type SummaryPreviewSnapshot,

@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { stubStudioRoute } from "./helpers/studioRoute";
+import { stubRocclawRoute } from "./helpers/rocclawRoute";
 import { stubRuntimeRoutes } from "./helpers/runtimeRoute";
 
 test.beforeEach(async ({ page }) => {
-  await stubStudioRoute(page);
+  await stubRocclawRoute(page);
   await stubRuntimeRoutes(page);
 });
 
@@ -25,7 +25,7 @@ test("persists_gateway_fields_to_studio_settings", async ({ page }) => {
   await page.getByLabel("Upstream token").fill("token-123");
 
   const request = await page.waitForRequest((req) => {
-    if (!req.url().includes("/api/studio") || req.method() !== "PUT") {
+    if (!req.url().includes("/api/rocclaw") || req.method() !== "PUT") {
       return false;
     }
     const payload = JSON.parse(req.postData() ?? "{}") as Record<string, unknown>;
@@ -65,7 +65,7 @@ test("focused_preferences_persist_across_reload", async ({ page }) => {
 
   await expect(page.getByTestId("fleet-agent-row-agent-1")).toBeVisible();
   const selectionPersistRequest = page.waitForRequest((req) => {
-    if (!req.url().includes("/api/studio") || req.method() !== "PUT") {
+    if (!req.url().includes("/api/rocclaw") || req.method() !== "PUT") {
       return false;
     }
     const payload = JSON.parse(req.postData() ?? "{}") as {

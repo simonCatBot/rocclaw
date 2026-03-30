@@ -6,10 +6,10 @@ import {
   planFocusedPreferenceRestore,
   planFocusedSelectionPatch,
   planStartupFleetBootstrapIntent,
-} from "@/features/agents/operations/studioBootstrapWorkflow";
-import type { StudioSettings } from "@/lib/studio/settings";
+} from "@/features/agents/operations/bootstrapWorkflow";
+import type { StudioSettings } from "@/lib/rocclaw/settings";
 
-describe("studioBootstrapWorkflow", () => {
+describe("bootstrapWorkflow", () => {
   it("keeps existing selection when one is already active", () => {
     const intent = planBootstrapSelection({
       hasCurrentSelection: true,

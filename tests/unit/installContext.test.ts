@@ -4,7 +4,7 @@ import {
   defaultStudioInstallContext,
   resolveDefaultSetupScenario,
   resolveGatewayConnectionWarnings,
-} from "@/lib/studio/install-context";
+} from "@/lib/rocclaw/install-context";
 
 describe("studio install context helpers", () => {
   it("defaults to same-cloud-host when Studio looks remote and the upstream is localhost", () => {

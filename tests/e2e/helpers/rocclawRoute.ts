@@ -1,5 +1,5 @@
 import type { Page, Route, Request } from "@playwright/test";
-import type { StudioInstallContext } from "@/lib/studio/install-context";
+import type { StudioInstallContext } from "@/lib/rocclaw/install-context";
 
 type StudioSettingsFixture = {
   version: 1;
@@ -134,10 +134,10 @@ const createStudioRoute = (
   };
 };
 
-export const stubStudioRoute = async (
+export const stubRocclawRoute = async (
   page: Page,
   initial: StudioSettingsFixture = DEFAULT_SETTINGS,
   envelope?: StudioRouteEnvelopeFixture
 ) => {
-  await page.route("**/api/studio", createStudioRoute(initial, envelope));
+  await page.route("**/api/rocclaw", createStudioRoute(initial, envelope));
 };
