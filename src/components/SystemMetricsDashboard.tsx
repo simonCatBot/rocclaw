@@ -123,24 +123,31 @@ function ProminentCard({
   title, 
   name,
   subtitle,
+  badge,
   children 
 }: { 
   icon: React.ComponentType<{ className?: string }>; 
   title: string;
   name: string;
   subtitle: React.ReactNode;
+  badge?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   return (
     <div className="mb-4 p-4 bg-surface-1 border border-border rounded-lg">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-primary/20 rounded-md">
-          <Icon className="w-5 h-5 text-primary" />
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="p-2 bg-primary/20 rounded-md">
+            <Icon className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{title}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{title}</p>
-          <p className="text-sm font-semibold text-foreground truncate">{name}</p>
-        </div>
+        {badge && (
+          <div className="ml-2">{badge}</div>
+        )}
       </div>
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         {subtitle}
@@ -213,10 +220,10 @@ export function SystemMetricsDashboard() {
     if (!gpu || gpu.usage === null || gpu.memory?.used === null) return null;
     const highUtil = gpu.usage > 70;
     const highVram = gpu.memory.total && (gpu.memory.used / gpu.memory.total) > 0.6;
-    if (highUtil && highVram) return { label: "Training", color: "text-green-500", icon: BrainCircuit };
-    if (highUtil) return { label: "Computing", color: "text-blue-500", icon: Activity };
-    if (gpu.usage > 10) return { label: "Active", color: "text-yellow-500", icon: Zap };
-    return { label: "Idle", color: "text-muted-foreground", icon: Clock };
+    if (highUtil && highVram) return { label: "Inference", color: "text-green-500", icon: BrainCircuit, bg: "bg-green-500/20" };
+    if (highUtil) return { label: "Computing", color: "text-blue-500", icon: Activity, bg: "bg-blue-500/20" };
+    if (gpu.usage > 10) return { label: "Active", color: "text-yellow-500", icon: Zap, bg: "bg-yellow-500/20" };
+    return { label: "Idle", color: "text-muted-foreground", icon: Clock, bg: "bg-surface-2" };
   };
 
   const calculatePowerCost = (watts: number | undefined) => {
@@ -314,25 +321,18 @@ export function SystemMetricsDashboard() {
               )}
             </>
           }
-        >
-          {/* ML Training Status Badge */}
-          {(() => {
+          badge={(() => {
             const status = getTrainingStatus(primaryGpu);
             if (!status) return null;
             const StatusIcon = status.icon;
             return (
-              <div className={`mb-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-2 border border-border/50 w-fit`}>
-                <StatusIcon className={`w-4 h-4 ${status.color}`} />
-                <span className={`text-sm font-medium ${status.color}`}>{status.label}</span>
-                {status.label === "Training" && primaryGpu.power && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    (~${calculatePowerCost(primaryGpu.power)?.hourly.toFixed(3)}/hr)
-                  </span>
-                )}
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${status.bg} border border-border/50`}>
+                <StatusIcon className={`w-3.5 h-3.5 ${status.color}`} />
+                <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
               </div>
             );
           })()}
-
+        >
           {/* GPU Usage Bar */}
           <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
             {primaryGpu.usage !== null && primaryGpu.usage !== undefined && (
