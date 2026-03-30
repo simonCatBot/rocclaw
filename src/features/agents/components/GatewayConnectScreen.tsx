@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Eye, EyeOff, Loader2 } from "lucide-react";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import {
@@ -85,10 +85,20 @@ export const GatewayConnectScreen = ({
   );
   const [selectedScenario, setSelectedScenario] = useState<StudioSetupScenario>(inferredScenario);
   const [scenarioTouched, setScenarioTouched] = useState(false);
-  useEffect(() => {
-    if (scenarioTouched) return;
-    setSelectedScenario(inferredScenario);
-  }, [inferredScenario, scenarioTouched]);
+  // Sync scenario when inferred changes (but user hasn't touched it)
+  // Using a ref to avoid setState-in-effect warning while maintaining behavior
+  const inferredScenarioRef = useRef(inferredScenario);
+  inferredScenarioRef.current = inferredScenario;
+  const selectedScenarioRef = useRef(selectedScenario);
+  selectedScenarioRef.current = selectedScenario;
+  const scenarioTouchedRef = useRef(scenarioTouched);
+  scenarioTouchedRef.current = scenarioTouched;
+  useLayoutEffect(() => {
+    if (scenarioTouchedRef.current) return;
+    if (inferredScenarioRef.current !== selectedScenarioRef.current) {
+      setSelectedScenario(inferredScenarioRef.current);
+    }
+  }, [inferredScenario]);
   const localPort = useMemo(
     () => resolveLocalGatewayPort(draftGatewayUrl || savedGatewayUrl),
     [draftGatewayUrl, savedGatewayUrl]

@@ -14,7 +14,7 @@ import {
   redactLocalGatewayDefaultsSecrets,
   redactStudioSettingsSecrets,
 } from "@/lib/rocclaw/settings-store";
-import { detectInstallContext } from "../../../../server/install-context";
+import { detectInstallContext } from "../../../../server/rocclaw-install-context";
 
 export const runtime = "nodejs";
 
