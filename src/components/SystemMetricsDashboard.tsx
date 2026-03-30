@@ -397,7 +397,7 @@ export function SystemMetricsDashboard() {
 
             {/* GPU Stats Row */}
             <div className="flex flex-wrap gap-4 pt-2">
-              {primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && (
+              {primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && primaryGpu.temperature > 0 && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Thermometer className="w-3 h-3" />
                   <span>{formatTemp(primaryGpu.temperature)}</span>
