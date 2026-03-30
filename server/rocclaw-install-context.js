@@ -397,8 +397,10 @@ const probeLocalGateway = async (runner = execFileAsync) => {
     runJsonCommand("openclaw", ["status", "--json"], OPENCLAW_PROBE_TIMEOUT_MS, runner),
     runJsonCommand("openclaw", ["sessions", "--json"], OPENCLAW_PROBE_TIMEOUT_MS, runner),
   ]);
+  /** @type {string[]} */
   const issues = Array.from(
-    new Set([statusProbe.error, sessionsProbe.error].filter((value) => typeof value === "string" && value))
+    new Set([statusProbe.error, sessionsProbe.error]
+      .filter((value) => typeof value === "string" && value.length > 0))
   );
   return {
     cliAvailable: statusProbe.available || sessionsProbe.available,
