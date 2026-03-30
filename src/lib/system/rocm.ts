@@ -100,6 +100,34 @@ async function findRocmSmi(): Promise<string | undefined> {
 }
 
 /**
+ * Map GFX version to marketing name for AMD GPUs
+ */
+function getMarketingName(gfxVersion: string | undefined): string {
+  if (!gfxVersion) return "AMD GPU";
+  
+  const gfxMap: Record<string, string> = {
+    "gfx1151": "AMD Radeon 8060S",
+    "gfx1150": "AMD Radeon 8050S",
+    "gfx1100": "AMD Radeon RX 7900 XTX",
+    "gfx1101": "AMD Radeon RX 7900 XT",
+    "gfx1102": "AMD Radeon RX 7900 GRE",
+    "gfx1030": "AMD Radeon RX 6800 XT",
+    "gfx1031": "AMD Radeon RX 6800",
+    "gfx1032": "AMD Radeon RX 6700 XT",
+    "gfx1010": "AMD Radeon RX 5700 XT",
+    "gfx1011": "AMD Radeon RX 5700",
+    "gfx1012": "AMD Radeon RX 5600 XT",
+    "gfx900": "AMD Radeon RX Vega",
+    "gfx906": "AMD Radeon VII",
+    "gfx908": "AMD Instinct MI100",
+    "gfx90a": "AMD Instinct MI200",
+    "gfx942": "AMD Instinct MI300",
+  };
+  
+  return gfxMap[gfxVersion] || `AMD GPU (${gfxVersion})`;
+}
+
+/**
  * Parse rocminfo output to extract GPU details
  */
 function parseRocmInfo(output: string): ROCmGPUInfo[] {
@@ -124,7 +152,7 @@ function parseRocmInfo(output: string): ROCmGPUInfo[] {
       gpus.push({
         index: gpuIndex++,
         name: nameMatch?.[1]?.trim() || "Unknown GPU",
-        marketingName: marketingNameMatch?.[1]?.trim() || "AMD GPU",
+        marketingName: marketingNameMatch?.[1]?.trim() || getMarketingName(gfxVersionMatch?.[1]),
         vendor: vendorMatch?.[1]?.trim() || "AMD",
         deviceType: "GPU",
         gfxVersion: gfxVersionMatch?.[1]?.trim() || "unknown",
