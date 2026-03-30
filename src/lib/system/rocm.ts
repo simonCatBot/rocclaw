@@ -46,7 +46,7 @@ export interface ROCmSystemInfo {
 /**
  * Check if rocminfo is available in PATH or /opt/rocm
  */
-async function findRocmInfo(): Promise<string | null> {
+async function findRocmInfo(): Promise<string | undefined> {
   const paths = [
     "/usr/bin/rocminfo",
     "/opt/rocm/bin/rocminfo",
@@ -67,14 +67,14 @@ async function findRocmInfo(): Promise<string | null> {
     await execAsync("which rocminfo");
     return "rocminfo";
   } catch {
-    return null;
+    return undefined;
   }
 }
 
 /**
  * Check if rocm-smi is available in PATH or /opt/rocm
  */
-async function findRocmSmi(): Promise<string | null> {
+async function findRocmSmi(): Promise<string | undefined> {
   const paths = [
     "/usr/bin/rocm-smi",
     "/opt/rocm/bin/rocm-smi",
@@ -95,7 +95,7 @@ async function findRocmSmi(): Promise<string | null> {
     await execAsync("which rocm-smi");
     return "rocm-smi";
   } catch {
-    return null;
+    return undefined;
   }
 }
 
@@ -254,7 +254,7 @@ async function getGpuUsage(rocmSmiPath: string): Promise<
     for (const match of useMatches) {
       const index = parseInt(match[1], 10);
       const usage = parseInt(match[2], 10);
-      const current = usageMap.get(index) || {};
+      const current = usageMap.get(index) ?? {};
       usageMap.set(index, { ...current, usage });
     }
   } catch {
@@ -272,7 +272,7 @@ async function getGpuUsage(rocmSmiPath: string): Promise<
     for (const match of tempMatches) {
       const index = parseInt(match[1], 10);
       const temperature = Math.round(parseFloat(match[2]));
-      const current = usageMap.get(index) || {};
+      const current = usageMap.get(index) ?? {};
       usageMap.set(index, { ...current, temperature });
     }
   } catch {
@@ -290,7 +290,7 @@ async function getGpuUsage(rocmSmiPath: string): Promise<
     for (const match of powerMatches) {
       const index = parseInt(match[1], 10);
       const power = parseFloat(match[2]);
-      const current = usageMap.get(index) || {};
+      const current = usageMap.get(index) ?? {};
       usageMap.set(index, { ...current, power });
     }
   } catch {
@@ -314,7 +314,7 @@ async function getGpuUsage(rocmSmiPath: string): Promise<
     for (const match of vramTotalMatches) {
       const index = parseInt(match[1], 10);
       const totalBytes = parseInt(match[2], 10);
-      const current = usageMap.get(index) || {};
+      const current = usageMap.get(index) ?? {};
       usageMap.set(index, {
         ...current,
         memoryTotal: Math.round(totalBytes / (1024 * 1024 * 1024) * 100) / 100,
@@ -324,7 +324,7 @@ async function getGpuUsage(rocmSmiPath: string): Promise<
     for (const match of vramUsedMatches) {
       const index = parseInt(match[1], 10);
       const usedBytes = parseInt(match[2], 10);
-      const current = usageMap.get(index) || {};
+      const current = usageMap.get(index) ?? {};
       usageMap.set(index, {
         ...current,
         memoryUsed: Math.round(usedBytes / (1024 * 1024 * 1024) * 100) / 100,
