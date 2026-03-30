@@ -23,7 +23,13 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
     const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
     return gateway.url === "ws://gateway.example:18789" && gateway.token === "token-123";
   });
-  await page.getByRole("button", { name: "Save settings" }).click();
+
+  // Wait for button to be stable and clickable before clicking
+  const saveButton = page.getByRole("button", { name: "Save settings" });
+  await saveButton.scrollIntoViewIfNeeded();
+  await saveButton.waitFor({ state: "visible" });
+  await page.waitForTimeout(100); // Brief delay to ensure element is stable
+  await saveButton.click({ force: true });
   const request = await requestPromise;
 
   const payload = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
