@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import si from 'systeminformation';
-import { detectROCm, getROCmMetrics, ROCmGPUInfo } from '@/lib/system/rocm';
+import { detectROCm, ROCmGPUInfo } from '@/lib/system/rocm';
 
 export interface SystemMetrics {
   cpu: {
