@@ -9,6 +9,14 @@
 
 ## How to connect
 
+### Prerequisites
+
+- **Node.js 20.9+** with `npm`
+- **OpenClaw** installed and running on your gateway machine
+- **GitHub CLI (`gh`)** authenticated (for auto-fix skill)
+
+### Quick Start
+
 ```bash
 git clone https://github.com/simonCatBot/rocclaw.git
 cd rocclaw
@@ -16,16 +24,130 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Enter the gateway URL and token:
+Open [http://localhost:3000](http://localhost:3000).
 
-| Gateway location | Upstream URL |
-|------------------|-------------|
-| Same machine | `ws://localhost:18789` |
-| Tailscale | `wss://<gateway-host>.ts.net` |
-| SSH tunnel | `ws://localhost:18789` (tunnel with `ssh -L 18789:127.0.0.1:18789 user@gateway-host` first) |
-| Cloud with TLS | `wss://<vm-address>` |
+---
 
-Token: `openclaw config get gateway.auth.token`
+### Same-Machine Setup (OpenClaw + rocCLAW on one host)
+
+If OpenClaw and rocCLAW run on the same machine, you need extra configuration because browsers block WebSocket connections to non-localhost origins.
+
+#### 1. Configure OpenClaw Gateway
+
+Set the gateway to allow LAN connections and disable strict device identity checks:
+
+```bash
+# Allow connections from LAN (not just 127.0.0.1)
+openclaw config set gateway.bind lan
+
+# Allow control-ui to connect without strict HTTPS/localhost checks
+openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
+openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
+
+# Restart the gateway
+openclaw gateway restart
+```
+
+> ⚠️ **Security note**: These settings relax security checks. Only use them on trusted local networks or single-user machines.
+
+#### 2. Configure rocCLAW Environment
+
+Create a `.env` file in your rocCLAW directory. Replace `YOUR_USERNAME` with your actual username:
+
+```bash
+cat > .env << 'EOF'
+# rocclaw .env - Local development configuration
+
+# Point to your OpenClaw state directory (update YOUR_USERNAME)
+OPENCLAW_STATE_DIR=/home/YOUR_USERNAME/.openclaw
+
+# Gateway URL - MUST use localhost for browser security
+NEXT_PUBLIC_GATEWAY_URL=ws://127.0.0.1:18789
+
+# SSH target for gateway operations (optional - for agent workspace cleanup)
+# Only needed if rocCLAW and OpenClaw are on different machines
+OPENCLAW_GATEWAY_SSH_TARGET=
+OPENCLAW_GATEWAY_SSH_USER=
+EOF
+```
+
+**Example for user "alice":**
+```bash
+OPENCLAW_STATE_DIR=/home/alice/.openclaw
+NEXT_PUBLIC_GATEWAY_URL=ws://127.0.0.1:18789
+```
+
+> **Important**: `NEXT_PUBLIC_GATEWAY_URL` must use `127.0.0.1` or `localhost`, not your machine's LAN IP.
+
+#### 3. Get Your Gateway Token
+
+```bash
+openclaw config get gateway.auth.token
+```
+
+Copy this token — you'll paste it into rocCLAW.
+
+#### 4. Start rocCLAW and Connect
+
+```bash
+npm run dev
+```
+
+1. Open [http://localhost:3000](http://localhost:3000) (**must** use `localhost`, not IP)
+2. Enter gateway URL: `ws://127.0.0.1:18789`
+3. Paste the token from step 3
+4. Click **Test Connection** — should show "Connection test succeeded"
+5. Click **Save Settings**
+
+---
+
+### Remote Gateway Setup
+
+| Gateway location | Upstream URL | Prerequisites |
+|------------------|-------------|---------------|
+| Same machine | `ws://localhost:18789` | See same-machine setup above |
+| Tailscale | `wss://<gateway-host>.ts.net` | Tailscale on both ends, HTTPS enabled |
+| SSH tunnel | `ws://localhost:18789` | Run `ssh -L 18789:127.0.0.1:18789 user@gateway-host` |
+| Cloud with TLS | `wss://<vm-address>` | Valid SSL certificate on gateway |
+
+---
+
+### Troubleshooting Connection Issues
+
+#### "Control ui requires device identity" or "INVALID_REQUEST"
+
+Your OpenClaw gateway is rejecting the connection because the browser's security context doesn't match. Fix:
+
+1. Ensure you're accessing rocCLAW via `http://localhost:3000`, not `http://<ip>:3000`
+2. Add these OpenClaw settings:
+   ```bash
+   openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
+   openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
+   openclaw gateway restart
+   ```
+
+#### "Connection test succeeded" but dashboard won't load
+
+The test uses a different path than the actual WebSocket. Make sure:
+- `NEXT_PUBLIC_GATEWAY_URL` uses `127.0.0.1` or `localhost`, not a LAN IP
+- You restarted rocCLAW after creating `.env`
+
+#### "Could not connect to saved gateway settings"
+
+Delete the saved settings to reset:
+```bash
+rm ~/.openclaw/openclaw-studio/settings.json
+```
+
+Then reconnect via `http://localhost:3000`.
+
+#### "npm install" fails with git reference error
+
+If you see `The git reference could not be found`, the `@multiavatar/multiavatar` dependency has an invalid commit hash. This was fixed in PR #10 — pull the latest code:
+```bash
+git pull origin main
+npm install
+```
 
 ---
 
