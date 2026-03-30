@@ -59,7 +59,6 @@ import {
 } from "@/features/agents/operations/useConfigMutationQueue";
 import { useGatewayConfigSyncController } from "@/features/agents/operations/useGatewayConfigSyncController";
 import { isLocalGatewayUrl } from "@/lib/gateway/local-gateway";
-import { randomUUID } from "@/lib/uuid";
 import type { ExecApprovalDecision, PendingExecApproval } from "@/features/agents/approvals/types";
 import {
   planAwaitingUserInputPatches,
