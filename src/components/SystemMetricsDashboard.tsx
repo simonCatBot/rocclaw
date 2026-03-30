@@ -12,7 +12,10 @@ import {
   Video,
   Gauge,
   Thermometer,
-  Zap
+  Zap,
+  BrainCircuit,
+  DollarSign,
+  AlertTriangle
 } from "lucide-react";
 import { GpuMetricsPanel } from "./GpuMetricsPanel";
 
@@ -205,10 +208,38 @@ export function SystemMetricsDashboard() {
     return `${mhz} MHz`;
   };
 
+  // ML-specific helper functions
+  const getTrainingStatus = (gpu: typeof primaryGpu) => {
+    if (!gpu || gpu.usage === null || gpu.memory?.used === null) return null;
+    const highUtil = gpu.usage > 70;
+    const highVram = gpu.memory.total && (gpu.memory.used / gpu.memory.total) > 0.6;
+    if (highUtil && highVram) return { label: "Training", color: "text-green-500", icon: BrainCircuit };
+    if (highUtil) return { label: "Computing", color: "text-blue-500", icon: Activity };
+    if (gpu.usage > 10) return { label: "Active", color: "text-yellow-500", icon: Zap };
+    return { label: "Idle", color: "text-muted-foreground", icon: Clock };
+  };
+
+  const calculatePowerCost = (watts: number | undefined) => {
+    if (!watts) return null;
+    // Assuming $0.15 per kWh - adjust for your region
+    const costPerHour = (watts / 1000) * 0.15;
+    return {
+      hourly: costPerHour,
+      daily: costPerHour * 24,
+      monthly: costPerHour * 24 * 30
+    };
+  };
+
+  const getVramStatus = (used: number | null | undefined, total: number | null | undefined) => {
+    if (!used || !total) return { percent: 0, status: "unknown", color: "text-muted-foreground" };
+    const percent = Math.round((used / total) * 100);
+    if (percent > 95) return { percent, status: "CRITICAL", color: "text-red-500", bgColor: "bg-red-500" };
+    if (percent > 85) return { percent, status: "WARNING", color: "text-orange-500", bgColor: "bg-orange-500" };
+    if (percent > 70) return { percent, status: "ELEVATED", color: "text-yellow-500", bgColor: "bg-yellow-500" };
+    return { percent, status: "OK", color: "text-green-500", bgColor: "bg-green-500" };
+  };
+
   const primaryGpu = metrics.gpu.length > 0 ? metrics.gpu[0] : null;
-  const vramUsagePercent = primaryGpu?.memory.total && primaryGpu?.memory.used
-    ? Math.round((primaryGpu.memory.used / primaryGpu.memory.total) * 100)
-    : null;
 
   return (
     <div className="ui-panel ui-depth-workspace p-4 h-full overflow-y-auto">
@@ -284,6 +315,24 @@ export function SystemMetricsDashboard() {
             </>
           }
         >
+          {/* ML Training Status Badge */}
+          {(() => {
+            const status = getTrainingStatus(primaryGpu);
+            if (!status) return null;
+            const StatusIcon = status.icon;
+            return (
+              <div className={`mb-3 flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-2 border border-border/50 w-fit`}>
+                <StatusIcon className={`w-4 h-4 ${status.color}`} />
+                <span className={`text-sm font-medium ${status.color}`}>{status.label}</span>
+                {status.label === "Training" && primaryGpu.power && (
+                  <span className="text-xs text-muted-foreground ml-1">
+                    (~${calculatePowerCost(primaryGpu.power)?.hourly.toFixed(3)}/hr)
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
           {/* GPU Usage Bar */}
           <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
             {primaryGpu.usage !== null && primaryGpu.usage !== undefined && (
@@ -308,30 +357,57 @@ export function SystemMetricsDashboard() {
               </div>
             )}
 
-            {/* VRAM Usage Bar */}
+            {/* VRAM Usage Bar with ML-specific warnings */}
             {primaryGpu.memory.total !== null && primaryGpu.memory.total !== undefined && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <MemoryStick className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium text-foreground">VRAM</span>
+                  {(() => {
+                    const vramStatus = getVramStatus(primaryGpu.memory.used, primaryGpu.memory.total);
+                    if (vramStatus.status === "CRITICAL") {
+                      return <AlertTriangle className="w-4 h-4 text-red-500 animate-pulse" />;
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 bg-surface-2 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        (vramUsagePercent || 0) > 80 ? 'bg-red-500' : 'bg-primary'
-                      }`}
-                      style={{ width: `${Math.min(vramUsagePercent || 0, 100)}%` }}
-                    />
-                  </div>
-                  <span className={`text-sm font-bold ${(vramUsagePercent || 0) > 80 ? 'text-red-500' : 'text-foreground'}`}>
-                    {vramUsagePercent}%
-                  </span>
+                  {(() => {
+                    const vramStatus = getVramStatus(primaryGpu.memory.used, primaryGpu.memory.total);
+                    return (
+                      <>
+                        <div className="w-32 h-2 bg-surface-2 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-300 ${vramStatus.bgColor}`}
+                            style={{ width: `${Math.min(vramStatus.percent, 100)}%` }}
+                          />
+                        </div>
+                        <span className={`text-sm font-bold ${vramStatus.color}`}>
+                          {vramStatus.percent}%
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}
 
-            {/* GPU Stats Row */}
+            {/* VRAM Details - ML Focus */}
+            {primaryGpu.memory.total !== null && primaryGpu.memory.total !== undefined && (
+              <div className="flex justify-between text-xs text-muted-foreground px-1">
+                <span>Used: {formatGB(primaryGpu.memory.used || 0)}</span>
+                <span>Total: {formatGB(primaryGpu.memory.total)}</span>
+                {(() => {
+                  const vramStatus = getVramStatus(primaryGpu.memory.used, primaryGpu.memory.total);
+                  if (vramStatus.status !== "OK") {
+                    return <span className={vramStatus.color}>{vramStatus.status}</span>;
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
+
+            {/* GPU Stats Row with Power Cost */}
             <div className="flex flex-wrap gap-4 pt-2">
               {primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -349,6 +425,12 @@ export function SystemMetricsDashboard() {
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Activity className="w-3 h-3" />
                   <span>{primaryGpu.power.toFixed(1)}W</span>
+                </div>
+              )}
+              {primaryGpu.power !== undefined && primaryGpu.power > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <DollarSign className="w-3 h-3" />
+                  <span>~${calculatePowerCost(primaryGpu.power)?.hourly.toFixed(2)}/hr</span>
                 </div>
               )}
             </div>
