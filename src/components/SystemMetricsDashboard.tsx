@@ -14,7 +14,6 @@ import {
   Thermometer,
   Zap,
   BrainCircuit,
-  DollarSign,
   AlertTriangle
 } from "lucide-react";
 import { GpuMetricsPanel } from "./GpuMetricsPanel";
@@ -226,17 +225,6 @@ export function SystemMetricsDashboard() {
     return { label: "Idle", color: "text-muted-foreground", icon: Clock, bg: "bg-surface-2" };
   };
 
-  const calculatePowerCost = (watts: number | undefined) => {
-    if (!watts) return null;
-    // Assuming $0.15 per kWh - adjust for your region
-    const costPerHour = (watts / 1000) * 0.15;
-    return {
-      hourly: costPerHour,
-      daily: costPerHour * 24,
-      monthly: costPerHour * 24 * 30
-    };
-  };
-
   const getVramStatus = (used: number | null | undefined, total: number | null | undefined) => {
     if (!used || !total) return { percent: 0, status: "unknown", color: "text-muted-foreground" };
     const percent = Math.round((used / total) * 100);
@@ -407,7 +395,7 @@ export function SystemMetricsDashboard() {
               </div>
             )}
 
-            {/* GPU Stats Row with Power Cost */}
+            {/* GPU Stats Row */}
             <div className="flex flex-wrap gap-4 pt-2">
               {primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -425,12 +413,6 @@ export function SystemMetricsDashboard() {
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Activity className="w-3 h-3" />
                   <span>{primaryGpu.power.toFixed(1)}W</span>
-                </div>
-              )}
-              {primaryGpu.power !== undefined && primaryGpu.power > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <DollarSign className="w-3 h-3" />
-                  <span>~${calculatePowerCost(primaryGpu.power)?.hourly.toFixed(2)}/hr</span>
                 </div>
               )}
             </div>
@@ -458,24 +440,6 @@ export function SystemMetricsDashboard() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">VBIOS:</span>
                       <span className="font-mono text-foreground">{primaryGpu.vbiosVersion}</span>
-                    </div>
-                  )}
-                  {primaryGpu.deviceRev && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Device Rev:</span>
-                      <span className="font-mono text-foreground">{primaryGpu.deviceRev}</span>
-                    </div>
-                  )}
-                  {primaryGpu.subsystemId && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subsystem ID:</span>
-                      <span className="font-mono text-foreground">{primaryGpu.subsystemId}</span>
-                    </div>
-                  )}
-                  {primaryGpu.pciBus && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">PCI Bus:</span>
-                      <span className="font-mono text-foreground">{primaryGpu.pciBus}</span>
                     </div>
                   )}
                 </div>
