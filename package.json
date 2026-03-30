@@ -27,7 +27,7 @@
     "pw:open:max": "bash scripts/playwright-open-maximized.sh"
   },
   "dependencies": {
-    "@multiavatar/multiavatar": "github:multiavatar/Multiavatar#a938f6febe5e992dce0d728269a22b2b74db8d979",
+    "@multiavatar/multiavatar": "github:multiavatar/Multiavatar#a9386febe5e992dce0d728269a22b2b74db8d979",
     "@vercel/otel": "^2.1.0",
     "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",
