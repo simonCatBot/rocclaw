@@ -15,6 +15,7 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await page.getByLabel(/Upstream (gateway )?URL/i).fill("ws://gateway.example:18789");
   await page.getByLabel("Upstream token").fill("token-123");
 
+  // Setup request listener before clicking
   const requestPromise = page.waitForRequest((req) => {
     if (!req.url().includes("/api/rocclaw") || req.method() !== "PUT") {
       return false;
@@ -22,14 +23,11 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
     const payload = JSON.parse(req.postData() ?? "{}") as Record<string, unknown>;
     const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
     return gateway.url === "ws://gateway.example:18789" && gateway.token === "token-123";
-  });
+  }, { timeout: 10000 }); // Add explicit timeout
 
-  // Wait for button to be stable and clickable before clicking
-  const saveButton = page.getByRole("button", { name: "Save settings" });
-  await saveButton.scrollIntoViewIfNeeded();
-  await saveButton.waitFor({ state: "visible" });
-  await page.waitForTimeout(100); // Brief delay to ensure element is stable
-  await saveButton.click({ force: true });
+  // Click save button with retry
+  await page.getByRole("button", { name: "Save settings" }).click({ timeout: 5000 });
+  
   const request = await requestPromise;
 
   const payload = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
