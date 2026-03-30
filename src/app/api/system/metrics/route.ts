@@ -1,11 +1,12 @@
 /**
  * System Metrics API Route
  * GET /api/system/metrics
- * Returns CPU, Memory, Disk, Network and other system information
+ * Returns CPU, Memory, Disk, Network, GPU and other system information
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import si from 'systeminformation';
+import { detectROCm, getROCmMetrics, ROCmGPUInfo } from '@/lib/system/rocm';
 
 export interface SystemMetrics {
   cpu: {
@@ -39,6 +40,22 @@ export interface SystemMetrics {
       total: number | null;
       used: number | null;
     };
+    // ROCm-specific fields (optional)
+    vendor?: string;
+    gfxVersion?: string;
+    computeUnits?: number;
+    maxClockMHz?: number;
+    power?: number;
+    deviceType?: string;
+    // Extended ROCm info
+    deviceId?: string;
+    driverVersion?: string;
+    vbiosVersion?: string;
+    deviceRev?: string;
+    subsystemId?: string;
+    guid?: string;
+    pciBus?: string;
+    currentClockMHz?: number;
   }[];
   network: {
     rxSec: number;
@@ -95,18 +112,61 @@ export async function GET(
     const rxSec = netData.reduce((acc, net) => acc + (net.rx_sec ?? 0), 0);
     const txSec = netData.reduce((acc, net) => acc + (net.tx_sec ?? 0), 0);
 
-    // Process GPU data
-    const gpuMetrics = gpuData.controllers
-      .filter(gpu => gpu.model || gpu.vendor)
-      .map(gpu => ({
-        name: gpu.model || gpu.vendor || 'Unknown GPU',
-        usage: gpu.utilizationGpu !== null ? Math.round(gpu.utilizationGpu ?? 0) : null,
-        temperature: gpu.temperatureGpu !== null ? Math.round(gpu.temperatureGpu ?? 0) : null,
+    // Detect and use ROCm GPU data if available
+    let rocmGpus: ROCmGPUInfo[] = [];
+    try {
+      const rocmInfo = await detectROCm();
+      if (rocmInfo.detected && rocmInfo.gpus.length > 0) {
+        rocmGpus = rocmInfo.gpus;
+      }
+    } catch (error) {
+      console.log('ROCm detection failed, falling back to systeminformation:', error);
+    }
+
+    // Process GPU data - prefer ROCm data if available
+    let gpuMetrics: SystemMetrics['gpu'] = [];
+    
+    if (rocmGpus.length > 0) {
+      // Use ROCm GPU data with detailed info
+      gpuMetrics = rocmGpus.map(gpu => ({
+        name: gpu.marketingName || gpu.name,
+        usage: gpu.usage !== undefined ? gpu.usage : null,
+        temperature: gpu.temperature !== undefined ? gpu.temperature : null,
         memory: {
-          total: gpu.memoryTotal !== null ? Math.round(gpu.memoryTotal ?? 0) : null,
-          used: gpu.memoryUsed !== null ? Math.round(gpu.memoryUsed ?? 0) : null,
+          total: gpu.memory?.total ?? null,
+          used: gpu.memory?.used ?? null,
         },
+        // ROCm-specific fields
+        vendor: gpu.vendor,
+        gfxVersion: gpu.gfxVersion,
+        computeUnits: gpu.computeUnits,
+        maxClockMHz: gpu.maxClockMHz,
+        power: gpu.power,
+        deviceType: gpu.deviceType,
+        // Extended ROCm info from rocm-smi -a
+        deviceId: gpu.deviceId,
+        driverVersion: gpu.driverVersion,
+        vbiosVersion: gpu.vbiosVersion,
+        deviceRev: gpu.deviceRev,
+        subsystemId: gpu.subsystemId,
+        guid: gpu.guid,
+        pciBus: gpu.pciBus,
+        currentClockMHz: gpu.currentClockMHz,
       }));
+    } else {
+      // Fallback to systeminformation GPU data
+      gpuMetrics = gpuData.controllers
+        .filter(gpu => gpu.model || gpu.vendor)
+        .map(gpu => ({
+          name: gpu.model || gpu.vendor || 'Unknown GPU',
+          usage: gpu.utilizationGpu !== null ? Math.round(gpu.utilizationGpu ?? 0) : null,
+          temperature: gpu.temperatureGpu !== null ? Math.round(gpu.temperatureGpu ?? 0) : null,
+          memory: {
+            total: gpu.memoryTotal !== null ? Math.round(gpu.memoryTotal ?? 0) : null,
+            used: gpu.memoryUsed !== null ? Math.round(gpu.memoryUsed ?? 0) : null,
+          },
+        }));
+    }
 
     // Format CPU name
     const cpuName = cpuInfo.brand || cpuInfo.manufacturer || 'Unknown CPU';
