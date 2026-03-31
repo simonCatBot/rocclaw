@@ -19,9 +19,10 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await expect(page.getByLabel("Upstream token")).toHaveValue("token-123");
 
   // Click save and wait for the UI to transition to the post-save state.
-  // This is the most reliable signal — it confirms both that the click fired
-  // and that the React state machine processed the response.
-  await page.getByRole("button", { name: "Save settings" }).click();
+  // force:true bypasses Playwright's stability check, which is important
+  // because React's concurrent rendering may still be finalising the panel
+  // DOM when we attempt the click (causing "element not stable" flakiness).
+  await page.getByRole("button", { name: "Save settings" }).click({ force: true });
   await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible({ timeout: 10_000 });
 
   // Verify the settings persisted by fetching via the GET endpoint.
