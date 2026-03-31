@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import { Plug } from "lucide-react";
-import { resolveGatewayStatusBadgeClass, resolveGatewayStatusLabel } from "./colorSemantics";
 import Image from "next/image";
 
 type HeaderBarProps = {
@@ -53,13 +52,6 @@ export const HeaderBar = ({
           </div>
         </div>
         <div className="flex items-center justify-end gap-2">
-          <span
-            className={`ui-chip px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.06em] ${resolveGatewayStatusBadgeClass(status)}`}
-            data-testid="gateway-status-indicator"
-            data-status={status}
-          >
-            {resolveGatewayStatusLabel(status)}
-          </span>
           {showConnectionSettings ? (
             <div className="relative z-[210]" ref={menuRef}>
               <button
