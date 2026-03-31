@@ -128,6 +128,50 @@ function getMarketingName(gfxVersion: string | undefined): string {
 }
 
 /**
+ * Map Device ID (PCI device ID) to the correct GFX version string.
+ * rocminfo reports a generic gfx version per ASIC family, but the Device ID
+ * uniquely identifies the specific GPU variant. For example, Strix Point (gfx1151)
+ * reports gfx1100 in rocminfo but has Device ID 0x1502.
+ * See: https://devicehunt.com/view/type/pci/vendor/1002/device/1502
+ */
+function resolveGfxVersion(deviceId: string | undefined, fallback: string): string {
+  if (!deviceId) return fallback;
+  // Normalize: strip leading "0x" and normalize to lowercase
+  const id = deviceId.replace(/^0x/i, "").toLowerCase();
+  const deviceToGfx: Record<string, string> = {
+    // Strix Point (Ryzen AI 300 series)
+    "1502": "gfx1151", // AMD Radeon 8060S (Strix Point)
+    "150f": "gfx1150", // AMD Radeon 8050S (Strix Point)
+    "1586": "gfx1151", // AMD Radeon 8060S (Strix Point, alternate ID)
+    // RDNA 3 (Radeon RX 7000 series)
+    "744c": "gfx1100", // AMD Radeon RX 7900 XTX
+    "7440": "gfx1101", // AMD Radeon RX 7900 XT
+    "7450": "gfx1102", // AMD Radeon RX 7900 GRE
+    "743f": "gfx1103", // AMD Radeon RX 7800 XT
+    // RDNA 2 (Radeon RX 6000 series)
+    "73bf": "gfx1030", // AMD Radeon RX 6800 XT
+    "73af": "gfx1031", // AMD Radeon RX 6800
+    "73e1": "gfx1032", // AMD Radeon RX 6700 XT
+    // RDNA 1 (Radeon RX 5000 series)
+    "7310": "gfx1010", // AMD Radeon RX 5700 XT
+    "731f": "gfx1011", // AMD Radeon RX 5700
+    "731e": "gfx1012", // AMD Radeon RX 5600 XT
+    // Vega
+    "687f": "gfx900",  // AMD Radeon RX Vega
+    "66a3": "gfx906",  // AMD Radeon VII
+    // CDNA / Instinct
+    "738c": "gfx908",  // AMD Instinct MI100
+    "74a1": "gfx90a",  // AMD Instinct MI200
+    "74a3": "gfx942",  // AMD Instinct MI300X
+    // Older / other
+    "68b8": "gfx803",  // AMD FirePro S7150
+    "6900": "gfx803",  // AMD FirePro S7100
+    "67e0": "gfx804",  // AMD FirePro W7100
+  };
+  return deviceToGfx[id] ?? fallback;
+}
+
+/**
  * Parse rocminfo output to extract GPU details
  */
 function parseRocmInfo(output: string): ROCmGPUInfo[] {
@@ -230,11 +274,26 @@ function parseRocmSmiAll(output: string): Map<number, Partial<ROCmGPUInfo>> {
     }
     
     // Current clock frequency (from sclk clock level line)
-    const clockMatch = line.match(/sclk clock level:\s*\d+:\s*\((\d+)Mhz\)/);
+    // Output format: "sclk clock level: 1: (942Mhz)" — note capital H
+    const clockMatch = line.match(/sclk clock level:\s*\d+:\s*\((\d+)Mhz\)/i);
     if (clockMatch) {
       currentInfo.currentClockMHz = parseInt(clockMatch[1], 10);
     }
     
+    // Max clock frequency — find the highest supported sclk frequency (marked with *)
+    // Format: "0: 600Mhz" / "1: 2900Mhz *" (asterisk = current max)
+    const maxClockMatch = line.match(/^\s*(\d+):\s*(\d+)Mhz\s*\*\s*$/i);
+    if (maxClockMatch) {
+      currentInfo.maxClockMHz = parseInt(maxClockMatch[2], 10);
+    }
+
+    // Temperature (from rocm-smi -a)
+    // Format: "GPU[0]: Temperature (Sensor edge) (C): 38.0"
+    const tempMatch = line.match(/Temperature \(Sensor edge\) \(C\):\s*([\d.]+)/);
+    if (tempMatch) {
+      currentInfo.temperature = Math.round(parseFloat(tempMatch[1]));
+    }
+
     gpuInfoMap.set(currentGpuIndex, currentInfo);
   }
   
@@ -443,8 +502,20 @@ export async function detectROCm(): Promise<ROCmSystemInfo> {
           gpu.vbiosVersion = extraInfo.vbiosVersion;
           gpu.pciBus = extraInfo.pciBus;
           gpu.currentClockMHz = extraInfo.currentClockMHz;
+          // Override gfxVersion with the device-ID-resolved value so the
+          // marketing name mapping produces the correct product name.
+          gpu.gfxVersion = resolveGfxVersion(gpu.deviceId, gpu.gfxVersion ?? "");
+          gpu.marketingName = getMarketingName(gpu.gfxVersion);
+          // Override maxClockMHz with the actual supported max from rocm-smi
+          if (extraInfo.maxClockMHz !== undefined) {
+            gpu.maxClockMHz = extraInfo.maxClockMHz;
+          }
+          // Temperature from rocm-smi -a (more reliable than --showtemperature)
+          if (extraInfo.temperature !== undefined) {
+            gpu.temperature = extraInfo.temperature;
+          }
         }
-        
+
         // Set driver version on each GPU
         gpu.driverVersion = driverVersion;
         

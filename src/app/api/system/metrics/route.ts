@@ -15,7 +15,9 @@ export interface SystemMetrics {
     cores: number;
     temperature: number | null;
     speed: number;
+    currentSpeedMHz: number;
     loadAvg: [number, number, number];
+    coreLoads: number[];
   };
   memory: {
     total: number;
@@ -83,6 +85,7 @@ export async function GET(
       cpuData,
       cpuInfo,
       cpuTemp,
+      cpuCurrentSpeed,
       memData,
       diskData,
       gpuData,
@@ -93,6 +96,7 @@ export async function GET(
       si.currentLoad(),
       si.cpu(),
       si.cpuTemperature().catch(() => ({ main: null, cores: [], max: null })),
+      si.cpuCurrentSpeed().catch(() => ({ avg: 0, min: 0, max: 0, cores: [] })),
       si.mem(),
       si.fsSize(),
       si.graphics().catch(() => ({ controllers: [] })),
@@ -177,10 +181,12 @@ export async function GET(
         usage: cpuUsage,
         cores: cpuData.cpus?.length ?? 0,
         temperature: cpuTemp.main !== null ? Math.round(cpuTemp.main) : null,
-        speed: Math.round((cpuData.cpus?.[0] as { speed?: number } | undefined)?.speed ?? 0),
+        speed: Math.round((cpuInfo.speed ?? 0) * 1000),
+        currentSpeedMHz: Math.round((cpuCurrentSpeed.avg ?? 0) * 1000),
         loadAvg: cpuData.avgLoad 
           ? [cpuData.avgLoad, cpuData.avgLoad * 0.9, cpuData.avgLoad * 0.85] as [number, number, number]
           : [0, 0, 0] as [number, number, number],
+        coreLoads: (cpuData.cpus ?? []).map((c: { load?: number }) => Math.round(c.load ?? 0)),
       },
       memory: {
         total: Math.round(memData.total / (1024 * 1024 * 1024) * 100) / 100,
