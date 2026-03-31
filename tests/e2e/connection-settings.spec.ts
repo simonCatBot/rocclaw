@@ -15,7 +15,6 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await page.getByLabel(/Upstream (gateway )?URL/i).fill("ws://gateway.example:18789");
   await page.getByLabel("Upstream token").fill("token-123");
 
-  // Setup request listener before clicking
   const requestPromise = page.waitForRequest((req) => {
     if (!req.url().includes("/api/rocclaw") || req.method() !== "PUT") {
       return false;
@@ -23,11 +22,8 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
     const payload = JSON.parse(req.postData() ?? "{}") as Record<string, unknown>;
     const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
     return gateway.url === "ws://gateway.example:18789" && gateway.token === "token-123";
-  }, { timeout: 10000 }); // Add explicit timeout
-
-  // Click save button with retry
-  await page.getByRole("button", { name: "Save settings" }).click({ timeout: 5000 });
-  
+  });
+  await page.getByRole("button", { name: "Save settings" }).click();
   const request = await requestPromise;
 
   const payload = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
