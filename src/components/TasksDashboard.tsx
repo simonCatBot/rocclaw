@@ -8,6 +8,7 @@ import {
   formatCronPayload,
   type CronJobSummary,
 } from "@/lib/cron/types";
+import Image from "next/image";
 import {
   Search,
   Plus,
@@ -37,12 +38,13 @@ import {
 } from "@dnd-kit/core";
 import { useSortable, SortableContext } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
-function agentAvatarUrl(agentId: string, avatarSeed: string | null | undefined) {
+function agentAvatarSrc(agentId: string, avatarSeed: string | null | undefined) {
   const seed = avatarSeed?.trim() || agentId;
-  return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(seed)}`;
+  return buildAvatarDataUrl(seed);
 }
 
 // ─── Duration / time formatting ────────────────────────────────────────────────
@@ -160,7 +162,7 @@ function CronJobTile({
   isDragOverlay,
 }: CronJobTileProps) {
   const state = job.state;
-  const avatarUrl = agentAvatarUrl(job.agentId ?? agentName, agentAvatarSeed);
+  const avatarUrl = agentAvatarSrc(job.agentId ?? agentName, agentAvatarSeed);
 
   const dot = job.enabled
     ? state.runningAtMs
@@ -195,11 +197,13 @@ function CronJobTile({
       {/* Header: agent avatar + name + status */}
       <div className="mb-2 flex items-center gap-2">
         <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/30 group-hover:text-muted-foreground" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={avatarUrl}
           alt={agentName}
+          width={32}
+          height={32}
           className="h-8 w-8 shrink-0 rounded-full bg-surface-2 ring-1 ring-border"
+          unoptimized
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold leading-tight text-foreground">{job.name}</p>
@@ -311,7 +315,7 @@ function RunTile({
   const durationMs = endedAtMs ? endedAtMs - startedAtMs : null;
   const dot = dotColors[status] ?? "bg-neutral-400";
   const Icon = status === "completed" ? CheckCircle : status === "failed" ? XCircle : Activity;
-  const avatarUrl = agentAvatarUrl(agentId, avatarSeed);
+  const avatarUrl = agentAvatarSrc(agentId, avatarSeed);
 
   return (
     <div
@@ -325,11 +329,13 @@ function RunTile({
     >
       {/* Agent avatar + name + status */}
       <div className="mb-2 flex items-center gap-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={avatarUrl}
           alt={agentName}
+          width={32}
+          height={32}
           className={`h-8 w-8 shrink-0 rounded-full bg-surface-2 ring-1 ring-border ${isPendingExecution ? "ring-blue-500/50" : ""}`}
+          unoptimized
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold leading-tight text-foreground">{label}</p>
