@@ -25,14 +25,16 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await page.getByRole("button", { name: "Save settings" }).click({ force: true });
   await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible({ timeout: 10_000 });
 
-  // Verify the settings persisted by fetching via the GET endpoint.
-  const getResponse = await page.request.get("/api/rocclaw");
-  expect(getResponse.status()).toBe(200);
-  const savedSettings = (await getResponse.json()) as {
-    settings?: { gateway?: { url?: string; token?: string } };
-  };
-  expect(savedSettings.settings?.gateway?.url).toBe("ws://gateway.example:18789");
-  expect(savedSettings.settings?.gateway?.token).toBe("token-123");
+  // Verify the settings persisted by fetching via the browser context
+  // (not page.request, which bypasses route stubs).
+  const savedSettings = await page.evaluate(async () => {
+    const res = await fetch("/api/rocclaw");
+    return res.json();
+  });
+  const gateway = (savedSettings as { settings?: { gateway?: { url?: string; token?: string } } })
+    .settings?.gateway;
+  expect(gateway?.url).toBe("ws://gateway.example:18789");
+  expect(gateway?.token).toBe("token-123");
 
   // Verify the UI transitions to the post-save state.
   await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible();
