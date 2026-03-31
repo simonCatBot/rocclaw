@@ -299,14 +299,6 @@ export function SystemMetricsDashboard() {
             </div>
           </div>
 
-          {/* CPU Frequency Details */}
-          {metrics.cpu.speed > 0 && (
-            <div className="flex justify-between text-xs text-muted-foreground px-1">
-              <span>{metrics.cpu.cores} Cores</span>
-              <span>{Math.round(metrics.cpu.speed)} MHz</span>
-            </div>
-          )}
-
           {/* CPU Stats Row */}
           <div className="flex flex-wrap gap-4 pt-1">
             {metrics.cpu.temperature !== null && metrics.cpu.temperature > 0 && (
