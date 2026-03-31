@@ -1444,15 +1444,28 @@ const AgentStudioPage = () => {
         />
         <TabBar activeTabs={activeTabs} onTabToggle={(tabId) => {
           setActiveTabs((current) => {
-            if (current.includes(tabId)) {
-              // Don't allow deselecting the last tab
-              if (current.length === 1) return current;
-              return current.filter((t) => t !== tabId);
+            // Tasks tab is exclusive — selecting it replaces everything
+            if (tabId === "tasks") {
+              return current.includes("tasks") ? [] : ["tasks"];
             }
-            return [...current, tabId];
+            // Non-tasks tabs: remove tasks tab if present, then normal toggle
+            let next = current.includes(tabId)
+              ? current.filter((t) => t !== tabId)
+              : [...current, tabId];
+            next = next.filter((t) => t !== "tasks");
+            // Don't allow deselecting the last tab
+            if (next.length === 0) return current;
+            return next;
           });
         }} />
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 md:px-5 md:pb-5 md:pt-3">
+          {/* Tasks tab takes exclusive full-width focus — hide everything else */}
+          {activeTabs.length === 1 && activeTabs[0] === "tasks" ? (
+            <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+              <TasksDashboard />
+            </div>
+          ) : (
+            <>
           {connectionPanelVisible ? (
             <div className="fixed inset-0 z-[140]" data-testid="gateway-connection-overlay">
               <div
@@ -1773,6 +1786,8 @@ const AgentStudioPage = () => {
                 ) : null}
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>
