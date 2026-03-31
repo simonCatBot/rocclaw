@@ -25,6 +25,7 @@ interface SystemMetrics {
     cores: number;
     temperature: number | null;
     speed: number;
+    currentSpeedMHz: number;
     loadAvg: [number, number, number];
     coreLoads: number[];
   };
@@ -307,10 +308,10 @@ export function SystemMetricsDashboard() {
                 <span>{formatTemp(metrics.cpu.temperature)}</span>
               </div>
             )}
-            {metrics.cpu.speed > 0 && (
+            {metrics.cpu.currentSpeedMHz > 0 && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Zap className="w-3 h-3" />
-                <span>{Math.round(metrics.cpu.speed)} MHz</span>
+                <span>{Math.round(metrics.cpu.currentSpeedMHz)} MHz</span>
               </div>
             )}
             {metrics.cpu.loadAvg[0] > 0 && (
