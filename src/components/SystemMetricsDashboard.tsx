@@ -321,28 +321,6 @@ export function SystemMetricsDashboard() {
             )}
           </div>
 
-          {/* CPU Stats Row — mirrors GPU layout */}
-          <div className="flex flex-wrap gap-4 pt-1">
-            {metrics.cpu.temperature !== null && metrics.cpu.temperature > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Thermometer className="w-3 h-3" />
-                <span>{formatTemp(metrics.cpu.temperature)}</span>
-              </div>
-            )}
-            {metrics.cpu.speed > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Zap className="w-3 h-3" />
-                <span>{Math.round(metrics.cpu.speed)} MHz</span>
-              </div>
-            )}
-            {metrics.cpu.loadAvg[0] > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Activity className="w-3 h-3" />
-                <span>Load: {metrics.cpu.loadAvg[0].toFixed(2)}</span>
-              </div>
-            )}
-          </div>
-
           {/* Per-Core Load Grid */}
           {metrics.cpu.coreLoads.length > 0 && (
             <div className="pt-2 border-t border-border/30">
