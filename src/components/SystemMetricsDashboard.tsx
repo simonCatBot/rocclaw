@@ -549,7 +549,7 @@ export function SystemMetricsDashboard() {
       )}
 
       {/* Main Metrics List */}
-      <div className="space-y-2">
+      <div className="mt-4 space-y-2">
         <MetricRow
           icon={HardDrive}
           label="Disk"
