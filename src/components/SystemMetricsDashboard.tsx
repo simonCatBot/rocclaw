@@ -489,25 +489,20 @@ export function SystemMetricsDashboard() {
               </div>
             )}
 
-            {/* GPU Stats Row — temperature alongside frequency, then power */}
+            {/* GPU Stats Row — temperature, frequency, power, each independent */}
             <div className="flex flex-wrap gap-4 pt-2">
-              {(primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && primaryGpu.temperature > 0) ||
-               (primaryGpu.currentClockMHz !== undefined && primaryGpu.currentClockMHz > 0) ? (
-                <div className="flex items-center gap-3">
-                  {primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && primaryGpu.temperature > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Thermometer className="w-3 h-3" />
-                      <span>{formatTemp(primaryGpu.temperature)}</span>
-                    </div>
-                  )}
-                  {primaryGpu.currentClockMHz !== undefined && primaryGpu.currentClockMHz > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Zap className="w-3 h-3" />
-                      <span>{formatMHz(primaryGpu.currentClockMHz)}</span>
-                    </div>
-                  )}
+              {primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && primaryGpu.temperature > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Thermometer className="w-3 h-3" />
+                  <span>{formatTemp(primaryGpu.temperature)}</span>
                 </div>
-              ) : null}
+              )}
+              {primaryGpu.currentClockMHz !== undefined && primaryGpu.currentClockMHz > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Zap className="w-3 h-3" />
+                  <span>{formatMHz(primaryGpu.currentClockMHz)}</span>
+                </div>
+              )}
               {primaryGpu.power !== undefined && primaryGpu.power > 0 && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Activity className="w-3 h-3" />
