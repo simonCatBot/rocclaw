@@ -274,9 +274,17 @@ function parseRocmSmiAll(output: string): Map<number, Partial<ROCmGPUInfo>> {
     }
     
     // Current clock frequency (from sclk clock level line)
-    const clockMatch = line.match(/sclk clock level:\s*\d+:\s*\((\d+)Mhz\)/);
+    // Output format: "sclk clock level: 1: (942Mhz)" — note capital H
+    const clockMatch = line.match(/sclk clock level:\s*\d+:\s*\((\d+)Mhz\)/i);
     if (clockMatch) {
       currentInfo.currentClockMHz = parseInt(clockMatch[1], 10);
+    }
+    
+    // Max clock frequency — find the highest supported sclk frequency (marked with *)
+    // Format: "0: 600Mhz" / "1: 2900Mhz *" (asterisk = current max)
+    const maxClockMatch = line.match(/^\s*(\d+):\s*(\d+)Mhz\s*\*\s*$/i);
+    if (maxClockMatch) {
+      currentInfo.maxClockMHz = parseInt(maxClockMatch[2], 10);
     }
     
     gpuInfoMap.set(currentGpuIndex, currentInfo);
@@ -491,8 +499,12 @@ export async function detectROCm(): Promise<ROCmSystemInfo> {
           // marketing name mapping produces the correct product name.
           gpu.gfxVersion = resolveGfxVersion(gpu.deviceId, gpu.gfxVersion ?? "");
           gpu.marketingName = getMarketingName(gpu.gfxVersion);
+          // Override maxClockMHz with the actual supported max from rocm-smi
+          if (extraInfo.maxClockMHz !== undefined) {
+            gpu.maxClockMHz = extraInfo.maxClockMHz;
+          }
         }
-        
+
         // Set driver version on each GPU
         gpu.driverVersion = driverVersion;
         
