@@ -162,6 +162,7 @@ export function SystemMetricsDashboard() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPerCore, setShowPerCore] = useState(false);
+  const [showGpuHardware, setShowGpuHardware] = useState(false);
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -516,32 +517,43 @@ export function SystemMetricsDashboard() {
               )}
             </div>
 
-            {/* GPU Hardware Details */}
+            {/* GPU Hardware Details — collapsible */}
             {(primaryGpu.deviceId || primaryGpu.driverVersion || primaryGpu.vbiosVersion) && (
-              <div className="mt-3 pt-3 border-t border-border/30">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
-                  Hardware Details
-                </p>
-                <div className="space-y-1 text-xs">
-                  {primaryGpu.deviceId && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Device ID:</span>
-                      <span className="font-mono text-foreground">{primaryGpu.deviceId}</span>
-                    </div>
-                  )}
-                  {primaryGpu.driverVersion && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Driver:</span>
-                      <span className="font-mono text-foreground">{primaryGpu.driverVersion}</span>
-                    </div>
-                  )}
-                  {primaryGpu.vbiosVersion && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">VBIOS:</span>
-                      <span className="font-mono text-foreground">{primaryGpu.vbiosVersion}</span>
-                    </div>
-                  )}
-                </div>
+              <div className="pt-2 border-t border-border/30">
+                <button
+                  type="button"
+                  onClick={() => setShowGpuHardware(v => !v)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                    Hardware Details
+                  </p>
+                  <span className="text-[10px] text-muted-foreground">
+                    {showGpuHardware ? "▲" : "▼"}
+                  </span>
+                </button>
+                {showGpuHardware && (
+                  <div className="space-y-1 mt-2">
+                    {primaryGpu.deviceId && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Device ID:</span>
+                        <span className="font-mono text-foreground">{primaryGpu.deviceId}</span>
+                      </div>
+                    )}
+                    {primaryGpu.driverVersion && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Driver:</span>
+                        <span className="font-mono text-foreground">{primaryGpu.driverVersion}</span>
+                      </div>
+                    )}
+                    {primaryGpu.vbiosVersion && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">VBIOS:</span>
+                        <span className="font-mono text-foreground">{primaryGpu.vbiosVersion}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
