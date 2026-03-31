@@ -215,7 +215,14 @@ export function SystemMetricsDashboard() {
     return `${mhz} MHz`;
   };
 
-  // ML-specific helper functions
+  // Extract processor company + product line (e.g. "AMD Ryzen", "Intel Core", "Intel Xeon")
+  const getProcessorLabel = (name: string) => {
+    const parts = name.split(" ");
+    // AMD Ryzen / AMD EPYC / Intel Core / Intel Xeon / Apple Silicon
+    if (parts[0] === "AMD" && parts[1]) return `${parts[0]} ${parts[1]}`;
+    if (parts[0] === "Intel" && parts[1]) return `${parts[0]} ${parts[1]}`;
+    return parts[0];
+  };
   const getTrainingStatus = (gpu: typeof primaryGpu) => {
     if (!gpu || gpu.usage === null || gpu.memory?.used === null) return null;
     const highUtil = gpu.usage > 70;
@@ -256,7 +263,7 @@ export function SystemMetricsDashboard() {
         name={metrics.cpu.name}
         subtitle={
           <>
-            <span>{metrics.cpu.name.split(" ")[0]}</span>
+            <span>{getProcessorLabel(metrics.cpu.name)}</span>
             <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
             <span>{metrics.cpu.cores} Cores</span>
             {metrics.cpu.speed > 0 && (
