@@ -10,6 +10,7 @@ import {
 } from "@/features/agents/components/AgentInspectPanels";
 import { FleetSidebar } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
+import { FooterBar } from "@/components/FooterBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnectScreen";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
@@ -1458,6 +1459,7 @@ const AgentStudioPage = () => {
             return next;
           });
         }} />
+        <FooterBar status={gatewayStatus} gatewayUrl={gatewayUrl} />
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 md:px-5 md:pb-5 md:pt-3">
           {/* Tasks tab takes exclusive full-width focus — hide everything else */}
           {activeTabs.length === 1 && activeTabs[0] === "tasks" ? (
