@@ -182,7 +182,7 @@ export async function GET(
         cores: cpuData.cpus?.length ?? 0,
         temperature: cpuTemp.main !== null ? Math.round(cpuTemp.main) : null,
         speed: Math.round((cpuInfo.speed ?? 0) * 1000),
-        currentSpeedMHz: Math.round(cpuCurrentSpeed.avg ?? 0),
+        currentSpeedMHz: Math.round((cpuCurrentSpeed.avg ?? 0) * 1000),
         loadAvg: cpuData.avgLoad 
           ? [cpuData.avgLoad, cpuData.avgLoad * 0.9, cpuData.avgLoad * 0.85] as [number, number, number]
           : [0, 0, 0] as [number, number, number],
