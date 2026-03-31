@@ -395,6 +395,12 @@ export function SystemMetricsDashboard() {
                   <span>{primaryGpu.computeUnits} CUs</span>
                 </>
               )}
+              {primaryGpu.maxClockMHz !== undefined && primaryGpu.maxClockMHz > 0 && (
+                <>
+                  <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
+                  <span>{formatMHz(primaryGpu.maxClockMHz)}</span>
+                </>
+              )}
             </>
           }
           badge={(() => {
