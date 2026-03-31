@@ -161,6 +161,7 @@ function ProminentCard({
 export function SystemMetricsDashboard() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPerCore, setShowPerCore] = useState(false);
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -322,30 +323,41 @@ export function SystemMetricsDashboard() {
             )}
           </div>
 
-          {/* Per-Core Load Grid */}
+          {/* Per-Core Load Grid — collapsible */}
           {metrics.cpu.coreLoads.length > 0 && (
             <div className="pt-2 border-t border-border/30">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
-                Per-Core Usage
-              </p>
-              <div className="grid grid-cols-4 gap-2">
-                {metrics.cpu.coreLoads.map((load, i) => (
-                  <div key={i} className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                      <span>C{i}</span>
-                      <span className={load > 80 ? 'text-red-500 font-bold' : ''}>{load}%</span>
+              <button
+                type="button"
+                onClick={() => setShowPerCore(v => !v)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Per-Core Usage
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {showPerCore ? "▲" : "▼"}
+                </span>
+              </button>
+              {showPerCore && (
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {metrics.cpu.coreLoads.map((load, i) => (
+                    <div key={i} className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>C{i}</span>
+                        <span className={load > 80 ? "text-red-500 font-bold" : ""}>{load}%</span>
+                      </div>
+                      <div className="h-1 bg-surface-2 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            load > 80 ? "bg-red-500" : load > 50 ? "bg-yellow-500" : "bg-primary"
+                          }`}
+                          style={{ width: `${Math.min(load, 100)}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-1 bg-surface-2 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          load > 80 ? 'bg-red-500' : load > 50 ? 'bg-yellow-500' : 'bg-primary'
-                        }`}
-                        style={{ width: `${Math.min(load, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
