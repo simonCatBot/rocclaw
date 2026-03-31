@@ -218,7 +218,9 @@ export function SystemMetricsDashboard() {
   // Extract processor company + product line (e.g. "AMD Ryzen", "Intel Core", "Intel Xeon")
   const getProcessorLabel = (name: string) => {
     const parts = name.split(" ");
-    // AMD Ryzen / AMD EPYC / Intel Core / Intel Xeon / Apple Silicon
+    // RYZEN AI MAX+ PRO ... (AMD) — manufacturer not embedded in brand
+    // AMD Ryzen / AMD EPYC / Intel Core / Intel Xeon — manufacturer embedded
+    if (parts[0] === "RYZEN" && parts[1]) return `AMD ${parts[1]}`;
     if (parts[0] === "AMD" && parts[1]) return `${parts[0]} ${parts[1]}`;
     if (parts[0] === "Intel" && parts[1]) return `${parts[0]} ${parts[1]}`;
     return parts[0];
