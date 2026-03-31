@@ -102,8 +102,10 @@ export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
       {/* Separator */}
       <div className="h-4 w-px bg-border/60" />
 
-      {/* Version label */}
-      <span className="shrink-0 font-mono text-muted-foreground/40">rocCLAW</span>
+      {/* Version label — centered */}
+      <div className="flex flex-1 justify-center">
+        <span className="shrink-0 font-mono text-muted-foreground/40">rocCLAW</span>
+      </div>
 
       {/* Separator */}
       <div className="h-4 w-px bg-border/60" />
