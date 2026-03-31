@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAgentStore } from "@/features/agents/state/store";
 import {
-  listCronJobs,
   sortCronJobsByUpdatedAt,
   formatCronSchedule,
   formatCronPayload,
@@ -24,35 +23,11 @@ import {
   Activity,
 } from "lucide-react";
 
-// ─── Status dot ────────────────────────────────────────────────────────────────
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 
-const dotColors: Record<string, string> = {
-  thinking: "bg-blue-400",
-  running: "bg-blue-500",
-  completed: "bg-green-500",
-  failed: "bg-red-500",
-  scheduled: "bg-amber-500",
-  disabled: "bg-neutral-400",
-  idle: "bg-neutral-300",
-  queued: "bg-purple-500",
-};
-
-function StatusDot({ color }: { color: string }) {
-  return <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${color}`} />;
-}
-
-// ─── Agent tag pill ─────────────────────────────────────────────────────────────
-
-function AgentTag({ agentName, agentId }: { agentName: string; agentId: string }) {
-  const initial = agentName.charAt(0).toUpperCase();
-  return (
-    <span className="inline-flex items-center gap-1 rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-      <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-primary/20 text-[8px] font-bold text-primary">
-        {initial}
-      </span>
-      {agentName}
-    </span>
-  );
+function agentAvatarUrl(agentId: string, avatarSeed: string | null | undefined) {
+  const seed = avatarSeed?.trim() || agentId;
+  return `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(seed)}`;
 }
 
 // ─── Duration / time formatting ────────────────────────────────────────────────
@@ -89,11 +64,32 @@ function formatTime(ms: number): string {
   return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-// ─── Cron Job row ─────────────────────────────────────────────────────────────
+// ─── Status dot ────────────────────────────────────────────────────────────────
 
-interface CronJobRowProps {
+const dotColors: Record<string, string> = {
+  thinking: "bg-blue-400",
+  running: "bg-blue-500",
+  completed: "bg-green-500",
+  failed: "bg-red-500",
+  scheduled: "bg-amber-500",
+  disabled: "bg-neutral-400",
+  idle: "bg-neutral-300",
+  queued: "bg-purple-500",
+};
+
+function StatusDot({ color, pulse }: { color: string; pulse?: boolean }) {
+  return (
+    <span
+      className={`inline-block h-2 w-2 shrink-0 rounded-full ${color}${pulse ? " animate-pulse" : ""}`}
+    />
+  );
+}
+
+// ─── Cron Job tile ─────────────────────────────────────────────────────────────
+
+interface CronJobTileProps {
   job: CronJobSummary;
-  agents: { agentId: string; name: string }[];
+  agents: { agentId: string; name: string; avatarSeed?: string | null }[];
   onRun: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string) => void;
@@ -101,8 +97,22 @@ interface CronJobRowProps {
   deleteBusy: boolean;
 }
 
-function CronJobRow({ job, agents, onRun, onToggle, onDelete, runBusy, deleteBusy }: CronJobRowProps) {
+function CronJobTile({ job, agents, onRun, onToggle, onDelete, runBusy, deleteBusy }: CronJobTileProps) {
   const state = job.state;
+  const agent = agents.find((a) => a.agentId === job.agentId);
+  const agentName = agent?.name ?? job.agentId ?? "Unknown";
+  const avatarUrl = agentAvatarUrl(job.agentId ?? "", agent?.avatarSeed);
+
+  const dot = job.enabled
+    ? state.runningAtMs
+      ? "bg-blue-500"
+      : state.lastStatus === "ok"
+        ? "bg-green-500"
+        : state.lastStatus === "error"
+          ? "bg-red-500"
+          : "bg-amber-500"
+    : "bg-neutral-400";
+
   const lastRunColor =
     state.lastStatus === "ok"
       ? "text-green-400"
@@ -112,114 +122,101 @@ function CronJobRow({ job, agents, onRun, onToggle, onDelete, runBusy, deleteBus
           ? "text-amber-400"
           : "text-muted-foreground";
 
-  const dot = job.enabled
-    ? state.runningAtMs
-      ? "bg-blue-500 animate-pulse"
-      : state.lastStatus === "ok"
-        ? "bg-green-500"
-        : state.lastStatus === "error"
-          ? "bg-red-500"
-          : "bg-amber-500"
-    : "bg-neutral-400";
-
   const scheduleStr = formatCronSchedule(job.schedule);
   const payloadStr = formatCronPayload(job.payload);
 
-  const agentName = agents.find((a) => a.agentId === job.agentId)?.name ?? job.agentId ?? "";
-
   return (
-    <div className="group flex items-start gap-3 rounded-md px-2 py-2 hover:bg-surface-2/50">
-      {/* Status dot + icon */}
-      <div className="mt-1 flex flex-col items-center gap-1.5">
-        <StatusDot color={dot} />
-        <span className="text-muted-foreground">
-          {state.runningAtMs ? (
-            <Loader className="h-3 w-3 animate-spin" />
-          ) : (
-            <Calendar className="h-3 w-3" />
-          )}
-        </span>
+    <div className="group relative rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-colors hover:border-border/80 hover:bg-surface-2/30">
+      {/* Agent avatar + name */}
+      <div className="mb-2 flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={avatarUrl}
+          alt={agentName}
+          className="h-7 w-7 shrink-0 rounded-full bg-surface-2"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">{job.name}</p>
+          <p className="truncate font-mono text-xs text-muted-foreground">{agentName}</p>
+        </div>
+        <StatusDot color={dot} pulse={!!state.runningAtMs} />
       </div>
 
-      {/* Main content */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium text-foreground">{job.name}</span>
-          {!job.enabled && (
-            <span className="shrink-0 rounded bg-neutral-700 px-1 py-0.5 text-[10px] text-neutral-300">
-              paused
-            </span>
-          )}
-        </div>
-        <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-          {scheduleStr}
-        </p>
-        {payloadStr && (
-          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground/70">
-            {payloadStr}
-          </p>
-        )}
-        <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-          {agentName && <AgentTag agentName={agentName} agentId={job.agentId ?? ""} />}
-          {job.state.lastRunAtMs ? (
-            <span className={`text-[10px] ${lastRunColor}`}>
-              last: {formatRelative(job.state.lastRunAtMs)}
-              {state.lastDurationMs != null ? ` · ${formatDuration(state.lastDurationMs)}` : ""}
-            </span>
-          ) : null}
-          {job.state.nextRunAtMs && job.enabled ? (
-            <span className="text-[10px] text-muted-foreground">
-              next: {formatNextRun(job.state.nextRunAtMs)}
-            </span>
-          ) : null}
-        </div>
+      {/* Schedule */}
+      <p className="mb-1 flex items-center gap-1 font-mono text-xs text-muted-foreground">
+        <Calendar className="h-3 w-3 shrink-0" />
+        {scheduleStr}
+      </p>
+
+      {/* Payload */}
+      {payloadStr && (
+        <p className="mb-2 line-clamp-2 text-xs text-muted-foreground/80">{payloadStr}</p>
+      )}
+
+      {/* Status line */}
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        {job.state.lastRunAtMs ? (
+          <span className={lastRunColor}>
+            last {formatRelative(job.state.lastRunAtMs)}
+            {state.lastDurationMs != null ? ` · ${formatDuration(state.lastDurationMs)}` : ""}
+          </span>
+        ) : null}
+        {job.state.nextRunAtMs && job.enabled ? (
+          <span>next {formatNextRun(job.state.nextRunAtMs)}</span>
+        ) : null}
+        {!job.enabled && <span className="text-neutral-500">paused</span>}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+      {/* Running spinner overlay */}
+      {state.runningAtMs && (
+        <div className="absolute inset-x-0 top-0 flex items-center gap-1 rounded-t-xl bg-blue-500/10 px-3 py-1">
+          <Loader className="h-3 w-3 animate-spin text-blue-400" />
+          <span className="text-[10px] font-medium text-blue-400">Running</span>
+        </div>
+      )}
+
+      {/* Actions — appear on hover */}
+      <div className="mt-2 flex items-center gap-1 border-t border-border/50 pt-2 opacity-0 transition-opacity group-hover:opacity-100">
         {job.enabled ? (
           <button
             onClick={() => onToggle(job.id, false)}
-            className="rounded p-1 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
-            title="Pause"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-surface-3 hover:text-foreground"
           >
-            <Pause className="h-3.5 w-3.5" />
+            <Pause className="h-3 w-3" /> Pause
           </button>
         ) : (
           <button
             onClick={() => onToggle(job.id, true)}
-            className="rounded p-1 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
-            title="Resume"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-surface-3 hover:text-foreground"
           >
-            <Play className="h-3.5 w-3.5" />
+            <Play className="h-3 w-3" /> Resume
           </button>
         )}
         <button
           onClick={() => onRun(job.id)}
           disabled={runBusy || !job.enabled}
-          className="rounded p-1 text-muted-foreground hover:bg-surface-3 hover:text-foreground disabled:opacity-30"
-          title="Run now"
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-surface-3 hover:text-foreground disabled:opacity-30"
         >
-          <Zap className="h-3.5 w-3.5" />
+          <Zap className="h-3 w-3" /> Run
         </button>
         <button
           onClick={() => onDelete(job.id)}
           disabled={deleteBusy}
-          className="rounded p-1 text-muted-foreground hover:bg-surface-3 hover:text-red-400"
-          title="Delete"
+          className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-surface-3 hover:text-red-400"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-3 w-3" />
         </button>
       </div>
     </div>
   );
 }
 
-// ─── Active / history run row ─────────────────────────────────────────────────
+// ─── Run tile ──────────────────────────────────────────────────────────────────
 
-interface RunRowProps {
+interface RunTileProps {
   agentName: string;
   agentId: string;
+  avatarSeed?: string | null;
   status: "thinking" | "running" | "completed" | "failed";
   label: string;
   startedAtMs: number;
@@ -229,47 +226,102 @@ interface RunRowProps {
   lastMessage?: string | null;
 }
 
-function RunRow({ agentName, agentId, status, label, startedAtMs, endedAtMs, thinkingMs, streamText, lastMessage }: RunRowProps) {
+function RunTile({
+  agentName,
+  agentId,
+  avatarSeed,
+  status,
+  label,
+  startedAtMs,
+  endedAtMs,
+  thinkingMs,
+  streamText,
+  lastMessage,
+}: RunTileProps) {
   const durationMs = endedAtMs ? endedAtMs - startedAtMs : null;
   const dot = dotColors[status] ?? "bg-neutral-400";
   const Icon = status === "completed" ? CheckCircle : status === "failed" ? XCircle : Activity;
+  const avatarUrl = agentAvatarUrl(agentId, avatarSeed);
 
   return (
-    <div className="flex items-start gap-3 rounded-md px-2 py-2 hover:bg-surface-2/50">
-      <div className="mt-1 flex flex-col items-center gap-1.5">
-        <StatusDot color={dot} />
-        <Icon className={`h-3 w-3 ${status === "thinking" || status === "running" ? "animate-pulse text-blue-400" : "text-muted-foreground"}`} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-foreground">{label}</span>
-          <AgentTag agentName={agentName} agentId={agentId} />
+    <div className="group relative rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-colors hover:border-border/80 hover:bg-surface-2/30">
+      {/* Agent avatar + name */}
+      <div className="mb-2 flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={avatarUrl}
+          alt={agentName}
+          className="h-7 w-7 shrink-0 rounded-full bg-surface-2"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">{label}</p>
+          <p className="truncate text-xs text-muted-foreground">{agentName}</p>
         </div>
-        {(streamText || lastMessage) && (
-          <p className="mt-0.5 line-clamp-1 font-mono text-xs text-muted-foreground/70">
-            {streamText ?? lastMessage}
-          </p>
-        )}
-        {thinkingMs !== null && thinkingMs !== undefined && (
-          <p className="mt-0.5 text-[10px] text-blue-400/70">
-            thinking {formatDuration(thinkingMs)}
-          </p>
-        )}
+        <StatusDot color={dot} pulse={status === "thinking" || status === "running"} />
       </div>
-      <div className="shrink-0 text-right">
+
+      {/* Activity line */}
+      {(streamText || lastMessage) && (
+        <p className="mb-2 line-clamp-2 font-mono text-xs text-muted-foreground/70">
+          {streamText ?? lastMessage}
+        </p>
+      )}
+
+      {/* Thinking duration */}
+      {thinkingMs !== null && thinkingMs !== undefined && (
+        <p className="mb-1 flex items-center gap-1 text-[10px] text-blue-400">
+          <Activity className="h-3 w-3" />
+          thinking {formatDuration(thinkingMs)}
+        </p>
+      )}
+
+      {/* Duration / elapsed */}
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
         {durationMs !== null ? (
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Icon className="h-3 w-3" />
             {formatDuration(durationMs)}
           </span>
         ) : (
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
             {formatRelative(startedAtMs)}
           </span>
         )}
-        <div className="mt-0.5 font-mono text-[10px] text-muted-foreground/60">
-          {formatTime(startedAtMs)}
-        </div>
+        <span className="font-mono">{formatTime(startedAtMs)}</span>
+        {status === "failed" && (
+          <span className="ml-auto text-red-400">Failed</span>
+        )}
+        {status === "completed" && (
+          <span className="ml-auto text-green-400">Done</span>
+        )}
       </div>
+    </div>
+  );
+}
+
+// ─── Column header ─────────────────────────────────────────────────────────────
+
+function ColumnHeader({
+  label,
+  Icon,
+  accent,
+  count,
+}: {
+  label: string;
+  Icon: React.ElementType;
+  accent: string;
+  count: number;
+}) {
+  return (
+    <div className="mb-3 flex flex-col items-center gap-1">
+      <div className={`flex items-center gap-2 ${accent}`}>
+        <Icon className="h-5 w-5" />
+        <span className="text-sm font-bold uppercase tracking-wider">{label}</span>
+      </div>
+      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-surface-2 px-2 font-mono text-xs text-muted-foreground">
+        {count}
+      </span>
     </div>
   );
 }
@@ -449,7 +501,7 @@ export function TasksDashboard() {
 
   // Build active + history entries from agent state
   const runEntries = useMemo(() => {
-    const entries: RunRowProps[] = [];
+    const entries: Omit<RunTileProps, "avatarSeed">[] = [];
     for (const agent of agents) {
       const isRunning = agent.status === "running" && agent.runStartedAt !== null;
       if (isRunning) {
@@ -479,7 +531,9 @@ export function TasksDashboard() {
           agentName: agent.name,
           agentId: agent.agentId,
           status: agent.status === "error" ? "failed" : "completed",
-          label: agent.lastUserMessage?.split("\n")[0]?.slice(0, 60) ?? (agent.status === "error" ? "Run failed" : "Run completed"),
+          label:
+            agent.lastUserMessage?.split("\n")[0]?.slice(0, 60) ??
+            (agent.status === "error" ? "Run failed" : "Run completed"),
           startedAtMs: agent.runStartedAt ?? agent.lastActivityAt ?? 0,
           endedAtMs: agent.lastActivityAt,
           streamText: agent.lastResult,
@@ -553,7 +607,11 @@ export function TasksDashboard() {
     }
   };
 
-  const agentList = agents.map((a) => ({ agentId: a.agentId, name: a.name }));
+  const agentList = agents.map((a) => ({
+    agentId: a.agentId,
+    name: a.name,
+    avatarSeed: a.avatarSeed,
+  }));
   const defaultAgentId = agents[0]?.agentId ?? "";
 
   // ── Kanban columns ────────────────────────────────────────────────────────
@@ -585,109 +643,60 @@ export function TasksDashboard() {
     [filteredJobs]
   );
 
-  const allDone = useMemo(() => [...doneRuns, ...doneJobs], [doneRuns, doneJobs]);
+  type CronItem = typeof queuedJobs[number];
+  type RunItem = typeof executingRuns[number];
 
-  type Column = {
+  type ColConfig = {
     id: string;
     label: string;
     Icon: React.ElementType;
     accent: string;
-    count: number;
-    items: React.ReactNode;
-    empty: React.ReactNode;
+    accentBg: string;
+    cronItems: CronItem[];
+    runItems: RunItem[];
+    isRun: boolean;
   };
 
-  const columns: Column[] = [
+  const colConfig: ColConfig[] = [
     {
       id: "queued",
       label: "Queued",
       Icon: Loader,
       accent: "text-purple-400",
-      count: queuedJobs.length,
-      items: (
-        <div className="space-y-0">
-          {queuedJobs.map((job) => (
-            <CronJobRow
-              key={job.id}
-              job={job}
-              agents={agentList}
-              onRun={handleRun}
-              onToggle={handleToggle}
-              onDelete={handleDelete}
-              runBusy={runBusy}
-              deleteBusy={deleteBusy === job.id}
-            />
-          ))}
-        </div>
-      ),
-      empty: <p className="py-6 text-center text-xs text-muted-foreground/50">No queued tasks</p>,
+      accentBg: "bg-purple-400/10",
+      cronItems: queuedJobs,
+      runItems: [],
+      isRun: false,
     },
     {
-      id: "cron",
+      id: "scheduled",
       label: "Scheduled",
       Icon: Calendar,
       accent: "text-amber-400",
-      count: scheduledJobs.length,
-      items: (
-        <div className="space-y-0">
-          {scheduledJobs.map((job) => (
-            <CronJobRow
-              key={job.id}
-              job={job}
-              agents={agentList}
-              onRun={handleRun}
-              onToggle={handleToggle}
-              onDelete={handleDelete}
-              runBusy={runBusy}
-              deleteBusy={deleteBusy === job.id}
-            />
-          ))}
-        </div>
-      ),
-      empty: <p className="py-6 text-center text-xs text-muted-foreground/50">No scheduled tasks</p>,
+      accentBg: "bg-amber-400/10",
+      cronItems: scheduledJobs,
+      runItems: [],
+      isRun: false,
     },
     {
       id: "executing",
       label: "Executing",
       Icon: Zap,
       accent: "text-blue-400",
-      count: executingRuns.length,
-      items: (
-        <div className="space-y-0">
-          {executingRuns.map((run) => (
-            <RunRow key={`${run.agentId}-${run.startedAtMs}`} {...run} />
-          ))}
-        </div>
-      ),
-      empty: <p className="py-6 text-center text-xs text-muted-foreground/50">Nothing running</p>,
+      accentBg: "bg-blue-400/10",
+      cronItems: [],
+      runItems: executingRuns,
+      isRun: true,
     },
     {
       id: "done",
       label: "Done",
       Icon: CheckCircle,
       accent: "text-green-400",
-      count: allDone.length,
-      items: (
-        <div className="space-y-0">
-          {allDone.map((item, i) =>
-            "status" in item ? (
-              <RunRow key={`done-run-${i}`} {...item} />
-            ) : (
-              <CronJobRow
-                key={`done-job-${item.id}`}
-                job={item}
-                agents={agentList}
-                onRun={handleRun}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
-                runBusy={runBusy}
-                deleteBusy={false}
-              />
-            )
-          )}
-        </div>
-      ),
-      empty: <p className="py-6 text-center text-xs text-muted-foreground/50">No completed runs</p>,
+      accentBg: "bg-green-400/10",
+      cronItems: doneJobs,
+      runItems: doneRuns,
+      isRun: true,
     },
   ];
 
@@ -712,29 +721,66 @@ export function TasksDashboard() {
       </div>
 
       {/* Kanban columns */}
-      <div className="flex flex-1 gap-0 overflow-x-auto px-3 py-3">
-        {columns.map((col) => {
+      <div className="flex flex-1 gap-3 overflow-x-auto px-4 py-4">
+        {colConfig.map((col) => {
           const Icon = col.Icon;
+          const total = col.isRun
+            ? col.runItems.length
+            : col.cronItems.length;
+
           return (
             <div
               key={col.id}
-              className="flex min-w-[260px] flex-1 flex-col border-r border-border pr-3 last:border-r-0 last:pr-0"
-              style={{ maxWidth: "calc(25vw)" }}
+              className="flex min-w-[240px] flex-1 flex-col rounded-2xl border border-border bg-surface-1 p-3"
             >
               {/* Column header */}
-              <div className="mb-2 flex items-center gap-2">
-                <Icon className={`h-3.5 w-3.5 shrink-0 ${col.accent}`} />
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {col.label}
-                </span>
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-surface-2 px-1.5 font-mono text-[10px] text-muted-foreground">
-                  {col.count}
+              <div className={`mb-3 flex flex-col items-center gap-1 rounded-xl ${col.accentBg} p-2`}>
+                <div className={`flex items-center gap-1.5 ${col.accent}`}>
+                  <Icon className="h-5 w-5" />
+                  <span className="text-sm font-bold uppercase tracking-wider">{col.label}</span>
+                </div>
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-surface-2 px-2 font-mono text-xs text-muted-foreground">
+                  {total}
                 </span>
               </div>
 
-              {/* Scrollable column body */}
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                {col.count > 0 ? col.items : col.empty}
+              {/* Scrollable tile list */}
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+                {total === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">
+                    {col.id === "queued"
+                      ? "No queued tasks"
+                      : col.id === "scheduled"
+                        ? "No scheduled tasks"
+                        : col.id === "executing"
+                          ? "Nothing running"
+                          : "No completed runs"}
+                  </p>
+                ) : col.isRun ? (
+                  col.runItems.map((run) => {
+                    const agent = agents.find((a) => a.agentId === run.agentId);
+                    return (
+                      <RunTile
+                        key={`${run.agentId}-${run.startedAtMs}`}
+                        {...run}
+                        avatarSeed={agent?.avatarSeed}
+                      />
+                    );
+                  })
+                ) : (
+                  col.cronItems.map((job) => (
+                    <CronJobTile
+                      key={job.id}
+                      job={job}
+                      agents={agentList}
+                      onRun={handleRun}
+                      onToggle={handleToggle}
+                      onDelete={handleDelete}
+                      runBusy={runBusy}
+                      deleteBusy={deleteBusy === job.id}
+                    />
+                  ))
+                )}
               </div>
             </div>
           );
