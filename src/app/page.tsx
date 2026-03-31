@@ -14,6 +14,7 @@ import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnectScreen";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
+import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
@@ -1742,6 +1743,13 @@ const AgentStudioPage = () => {
                 {activeTabs.includes("system") ? (
                   <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                     <SystemMetricsDashboard />
+                  </div>
+                ) : null}
+
+                {/* Tasks Tab */}
+                {activeTabs.includes("tasks") ? (
+                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                    <TasksDashboard />
                   </div>
                 ) : null}
 

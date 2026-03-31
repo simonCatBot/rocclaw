@@ -6,10 +6,11 @@ import {
   Server, 
   Coins,
   Settings,
+  ListTodo,
   type LucideIcon
 } from "lucide-react";
 
-export type TabId = "agents" | "chat" | "system" | "tokens" | "settings";
+export type TabId = "agents" | "chat" | "system" | "tasks" | "tokens" | "settings";
 
 interface TabConfig {
   id: TabId;
@@ -22,6 +23,7 @@ const AVAILABLE_TABS: TabConfig[] = [
   { id: "agents", label: "Agents", icon: Users, defaultActive: true },
   { id: "chat", label: "Chat", icon: MessageSquare, defaultActive: false },
   { id: "system", label: "System Metrics", icon: Server, defaultActive: true },
+  { id: "tasks", label: "Tasks", icon: ListTodo, defaultActive: false },
   { id: "tokens", label: "Token Usage", icon: Coins, defaultActive: false },
   { id: "settings", label: "Settings", icon: Settings, defaultActive: false },
 ];
