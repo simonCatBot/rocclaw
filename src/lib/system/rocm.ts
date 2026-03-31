@@ -286,7 +286,14 @@ function parseRocmSmiAll(output: string): Map<number, Partial<ROCmGPUInfo>> {
     if (maxClockMatch) {
       currentInfo.maxClockMHz = parseInt(maxClockMatch[2], 10);
     }
-    
+
+    // Temperature (from rocm-smi -a)
+    // Format: "GPU[0]: Temperature (Sensor edge) (C): 38.0"
+    const tempMatch = line.match(/Temperature \(Sensor edge\) \(C\):\s*([\d.]+)/);
+    if (tempMatch) {
+      currentInfo.temperature = Math.round(parseFloat(tempMatch[1]));
+    }
+
     gpuInfoMap.set(currentGpuIndex, currentInfo);
   }
   
@@ -502,6 +509,10 @@ export async function detectROCm(): Promise<ROCmSystemInfo> {
           // Override maxClockMHz with the actual supported max from rocm-smi
           if (extraInfo.maxClockMHz !== undefined) {
             gpu.maxClockMHz = extraInfo.maxClockMHz;
+          }
+          // Temperature from rocm-smi -a (more reliable than --showtemperature)
+          if (extraInfo.temperature !== undefined) {
+            gpu.temperature = extraInfo.temperature;
           }
         }
 
