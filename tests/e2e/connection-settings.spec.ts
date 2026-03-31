@@ -12,35 +12,36 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await page.getByTestId("gateway-settings-toggle").click();
   await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toBeVisible();
 
+  // Fill and verify local input state before clicking
   await page.getByLabel(/Upstream (gateway )?URL/i).fill("ws://gateway.example:18789");
   await page.getByLabel("Upstream token").fill("token-123");
+  await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toHaveValue("ws://gateway.example:18789");
+  await expect(page.getByLabel("Upstream token")).toHaveValue("token-123");
 
-  // Capture the request body at route interception time so we can assert on
-  // it after the response arrives. We can't use response.request().body()
-  // because the standard Request interface doesn't expose body after send.
-  let capturedRequestBody: string | null = null;
-  await page.route(
-    (url) => url.toString().includes("/api/rocclaw"),
-    async (route, request) => {
-      if (request.method() !== "PUT") {
-        await route.fallback();
-        return;
-      }
-      capturedRequestBody = await request.postData();
-      await route.fallback();
-    }
-  );
+  // Use Promise.all to race the click against the response, avoiding a
+  // single point of failure when React concurrent rendering replaces the
+  // button element during the async save() call.
+  const [, response] = await Promise.all([
+    page.getByRole("button", { name: "Save settings" }).click(),
+    page.waitForResponse(
+      (res) => res.url().includes("/api/rocclaw") && res.request().method() === "PUT",
+      { timeout: 10_000 }
+    ),
+  ]);
 
-  await page.getByRole("button", { name: "Save settings" }).click();
-  await page.waitForResponse(
-    (res) => res.url().includes("/api/rocclaw") && res.request().method() === "PUT",
-    { timeout: 10_000 }
-  );
+  // Verify the PUT response is successful.
+  expect(response.status()).toBe(200);
 
-  const payload = JSON.parse(capturedRequestBody ?? "{}") as Record<string, unknown>;
-  const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
-  expect(gateway.url).toBe("ws://gateway.example:18789");
-  expect(gateway.token).toBe("token-123");
+  // Confirm the settings persisted by fetching them via the GET endpoint.
+  const getResponse = await page.request.get("/api/rocclaw");
+  expect(getResponse.status()).toBe(200);
+  const savedSettings = (await getResponse.json()) as {
+    settings?: { gateway?: { url?: string; token?: string } };
+  };
+  expect(savedSettings.settings?.gateway?.url).toBe("ws://gateway.example:18789");
+  expect(savedSettings.settings?.gateway?.token).toBe("token-123");
+
+  // Verify the UI transitions to the post-save state.
   await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible();
 });
 
