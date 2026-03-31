@@ -15,18 +15,29 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await page.getByLabel(/Upstream (gateway )?URL/i).fill("ws://gateway.example:18789");
   await page.getByLabel("Upstream token").fill("token-123");
 
-  const requestPromise = page.waitForRequest((req) => {
-    if (!req.url().includes("/api/rocclaw") || req.method() !== "PUT") {
-      return false;
+  // Capture the request body at route interception time so we can assert on
+  // it after the response arrives. We can't use response.request().body()
+  // because the standard Request interface doesn't expose body after send.
+  let capturedRequestBody: string | null = null;
+  await page.route(
+    (url) => url.toString().includes("/api/rocclaw"),
+    async (route, request) => {
+      if (request.method() !== "PUT") {
+        await route.fallback();
+        return;
+      }
+      capturedRequestBody = await request.postData();
+      await route.fallback();
     }
-    const payload = JSON.parse(req.postData() ?? "{}") as Record<string, unknown>;
-    const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
-    return gateway.url === "ws://gateway.example:18789" && gateway.token === "token-123";
-  });
-  await page.getByRole("button", { name: "Save settings" }).click();
-  const request = await requestPromise;
+  );
 
-  const payload = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await page.waitForResponse(
+    (res) => res.url().includes("/api/rocclaw") && res.request().method() === "PUT",
+    { timeout: 10_000 }
+  );
+
+  const payload = JSON.parse(capturedRequestBody ?? "{}") as Record<string, unknown>;
   const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
   expect(gateway.url).toBe("ws://gateway.example:18789");
   expect(gateway.token).toBe("token-123");
