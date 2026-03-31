@@ -364,13 +364,15 @@ export function SystemMetricsDashboard() {
       </ProminentCard>
 
       {/* System Memory - positioned between CPU and GPU */}
-      <MetricRow
-        icon={MemoryStick}
-        label="System Memory"
-        value={`${Math.round(metrics.memory.usage)}%`}
-        subtext={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)} • Swap: ${formatGB(metrics.memory.swapUsed)}`}
-        alert={metrics.memory.usage > 80}
-      />
+      <div className="mb-4">
+        <MetricRow
+          icon={MemoryStick}
+          label="System Memory"
+          value={`${Math.round(metrics.memory.usage)}%`}
+          subtext={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)} • Swap: ${formatGB(metrics.memory.swapUsed)}`}
+          alert={metrics.memory.usage > 80}
+        />
+      </div>
 
       {/* GPU Card - Prominent Display (if available) */}
       {primaryGpu && (
