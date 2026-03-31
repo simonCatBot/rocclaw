@@ -142,6 +142,7 @@ function resolveGfxVersion(deviceId: string | undefined, fallback: string): stri
     // Strix Point (Ryzen AI 300 series)
     "1502": "gfx1151", // AMD Radeon 8060S (Strix Point)
     "150f": "gfx1150", // AMD Radeon 8050S (Strix Point)
+    "1586": "gfx1151", // AMD Radeon 8060S (Strix Point, alternate ID)
     // RDNA 3 (Radeon RX 7000 series)
     "744c": "gfx1100", // AMD Radeon RX 7900 XTX
     "7440": "gfx1101", // AMD Radeon RX 7900 XT
