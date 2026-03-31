@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useAgentStore } from "@/features/agents/state/store";
 import {
   sortCronJobsByUpdatedAt,
@@ -32,8 +32,10 @@ import {
   useSensor,
   useSensors,
   DragOverlay,
+  type CollisionDetection,
+  closestCenter,
 } from "@dnd-kit/core";
-import { useSortable } from "@dnd-kit/sortable";
+import { useSortable, SortableContext } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -98,59 +100,58 @@ function StatusDot({ color, pulse }: { color: string; pulse?: boolean }) {
   );
 }
 
-// ─── Shared tile wrapper ───────────────────────────────────────────────────────
+// ─── Pending execution (created when a cron job is drag-dropped to Executing) ──
 
-interface DraggableTileProps {
-  id: string;
-  children: React.ReactNode;
-  dragging?: boolean;
+interface PendingRunEntry {
+  id: string; // unique run id
+  job: CronJobSummary;
+  agentName: string;
+  agentId: string;
+  avatarSeed?: string | null;
+  startedAtMs: number;
+  label: string;
+  payloadPreview: string;
+  /** Set to true once the real agent run shows up in runEntries */
+  absorbed: boolean;
 }
 
-function DraggableTile({ id, children, dragging }: DraggableTileProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+// ─── Tile ID helpers ─────────────────────────────────────────────────────────
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`cursor-grab active:cursor-grabbing ${dragging ? "ring-2 ring-primary" : ""}`}
-    >
-      {children}
-    </div>
-  );
+function tileId(colId: string, unique: string) {
+  return `${colId}::${unique}`;
 }
 
-// ─── Cron Job tile ─────────────────────────────────────────────────────────────
+function parseTileId(id: string): { colId: string; unique: string } | null {
+  const idx = id.indexOf("::");
+  if (idx === -1) return null;
+  return { colId: id.slice(0, idx), unique: id.slice(idx + 2) };
+}
+
+const COLUMN_IDS = new Set(["queued", "scheduled", "executing", "done"]);
+
+function isColumnId(id: string): boolean {
+  return COLUMN_IDS.has(id);
+}
+
+// ─── Draggable cron job tile ─────────────────────────────────────────────────
 
 interface CronJobTileProps {
   job: CronJobSummary;
-  agents: { agentId: string; name: string; avatarSeed?: string | null }[];
+  agentName: string;
+  agentAvatarSeed?: string | null;
   onRun: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string) => void;
   runBusy: boolean;
   deleteBusy: boolean;
   isDragOverlay?: boolean;
+  dragHandleId?: string;
 }
 
 function CronJobTile({
   job,
-  agents,
+  agentName,
+  agentAvatarSeed,
   onRun,
   onToggle,
   onDelete,
@@ -159,9 +160,7 @@ function CronJobTile({
   isDragOverlay,
 }: CronJobTileProps) {
   const state = job.state;
-  const agent = agents.find((a) => a.agentId === job.agentId);
-  const agentName = agent?.name ?? job.agentId ?? "Unknown";
-  const avatarUrl = agentAvatarUrl(job.agentId ?? "", agent?.avatarSeed);
+  const avatarUrl = agentAvatarUrl(job.agentId ?? agentName, agentAvatarSeed);
 
   const dot = job.enabled
     ? state.runningAtMs
@@ -187,23 +186,23 @@ function CronJobTile({
 
   return (
     <div
-      className={`group relative rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-colors ${
+      className={`group relative rounded-xl border bg-surface-1 p-3 shadow-sm transition-all ${
         isDragOverlay
-          ? "border-primary shadow-lg ring-2 ring-primary/50"
-          : "hover:border-border/80 hover:bg-surface-2/30"
+          ? "border-primary shadow-xl ring-2 ring-primary/60"
+          : "border-border hover:border-border/80 hover:bg-surface-2/30"
       }`}
     >
-      {/* Drag handle + Agent avatar + name */}
+      {/* Header: agent avatar + name + status */}
       <div className="mb-2 flex items-center gap-2">
-        <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/30 group-hover:text-muted-foreground" />
+        <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/30 group-hover:text-muted-foreground" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={avatarUrl}
           alt={agentName}
-          className="h-7 w-7 shrink-0 rounded-full bg-surface-2"
+          className="h-8 w-8 shrink-0 rounded-full bg-surface-2 ring-1 ring-border"
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">{job.name}</p>
+          <p className="truncate text-sm font-semibold leading-tight text-foreground">{job.name}</p>
           <p className="truncate font-mono text-xs text-muted-foreground">{agentName}</p>
         </div>
         <StatusDot color={dot} pulse={!!state.runningAtMs} />
@@ -221,7 +220,7 @@ function CronJobTile({
       )}
 
       {/* Status line */}
-      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
         {job.state.lastRunAtMs ? (
           <span className={lastRunColor}>
             last {formatRelative(job.state.lastRunAtMs)}
@@ -278,7 +277,7 @@ function CronJobTile({
   );
 }
 
-// ─── Run tile ──────────────────────────────────────────────────────────────────
+// ─── Run tile (agent execution) ────────────────────────────────────────────────
 
 interface RunTileProps {
   agentName: string;
@@ -292,6 +291,7 @@ interface RunTileProps {
   streamText?: string | null;
   lastMessage?: string | null;
   isDragOverlay?: boolean;
+  isPendingExecution?: boolean;
 }
 
 function RunTile({
@@ -306,6 +306,7 @@ function RunTile({
   streamText,
   lastMessage,
   isDragOverlay,
+  isPendingExecution,
 }: RunTileProps) {
   const durationMs = endedAtMs ? endedAtMs - startedAtMs : null;
   const dot = dotColors[status] ?? "bg-neutral-400";
@@ -314,22 +315,24 @@ function RunTile({
 
   return (
     <div
-      className={`rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-colors ${
+      className={`rounded-xl border bg-surface-1 p-3 shadow-sm transition-all ${
         isDragOverlay
-          ? "border-primary shadow-lg ring-2 ring-primary/50"
-          : "hover:border-border/80 hover:bg-surface-2/30"
+          ? "border-primary shadow-xl ring-2 ring-primary/60"
+          : isPendingExecution
+            ? "border-blue-500/50 bg-blue-500/5"
+            : "border-border hover:border-border/80 hover:bg-surface-2/30"
       }`}
     >
-      {/* Agent avatar + name */}
+      {/* Agent avatar + name + status */}
       <div className="mb-2 flex items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={avatarUrl}
           alt={agentName}
-          className="h-7 w-7 shrink-0 rounded-full bg-surface-2"
+          className={`h-8 w-8 shrink-0 rounded-full bg-surface-2 ring-1 ring-border ${isPendingExecution ? "ring-blue-500/50" : ""}`}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">{label}</p>
+          <p className="truncate text-sm font-semibold leading-tight text-foreground">{label}</p>
           <p className="truncate text-xs text-muted-foreground">{agentName}</p>
         </div>
         <StatusDot color={dot} pulse={status === "thinking" || status === "running"} />
@@ -364,6 +367,12 @@ function RunTile({
           </span>
         )}
         <span className="font-mono">{formatTime(startedAtMs)}</span>
+        {isPendingExecution && (
+          <span className="ml-auto rounded bg-blue-500/20 px-1.5 py-0.5 text-blue-400">
+            <Zap className="mr-0.5 inline h-2.5 w-2.5" />
+            Triggered
+          </span>
+        )}
         {status === "failed" && (
           <span className="ml-auto text-red-400">Failed</span>
         )}
@@ -375,21 +384,21 @@ function RunTile({
   );
 }
 
-// ─── Column container (droppable zone) ────────────────────────────────────────
+// ─── Column zone (droppable) ─────────────────────────────────────────────────
 
 interface ColumnZoneProps {
   id: string;
+  isDropTarget: boolean;
   children: React.ReactNode;
-  isOver?: boolean;
 }
 
-function ColumnZone({ id, children, isOver }: ColumnZoneProps) {
+function ColumnZone({ id, isDropTarget, children }: ColumnZoneProps) {
   return (
     <div
       data-column={id}
       className={`flex min-w-[240px] flex-1 flex-col rounded-2xl border p-3 transition-all ${
-        isOver
-          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+        isDropTarget
+          ? "border-primary bg-primary/5 ring-1 ring-primary/30 ring-offset-1 ring-offset-transparent"
           : "border-border bg-surface-1"
       }`}
     >
@@ -561,20 +570,6 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
   );
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-type TileId = string; // "cron-<jobId>" or "run-<agentId>-<startedAtMs>"
-
-function tileId(colId: string, unique: string) {
-  return `${colId}::${unique}`;
-}
-
-function parseTileId(id: string) {
-  const idx = id.indexOf("::");
-  if (idx === -1) return null;
-  return { colId: id.slice(0, idx), unique: id.slice(idx + 2) };
-}
-
 // ─── Main Tasks Dashboard ─────────────────────────────────────────────────────
 
 export function TasksDashboard() {
@@ -588,9 +583,12 @@ export function TasksDashboard() {
   const [search, setSearch] = useState("");
   const [now, setNow] = useState(Date.now());
 
+  /** Pending executions: cron jobs dragged to Executing, shown as synthetic runs */
+  const [pendingExecutions, setPendingExecutions] = useState<Map<string, PendingRunEntry>>(new Map());
+
   // Drag state
-  const [activeId, setActiveId] = useState<TileId | null>(null);
-  const [overId, setOverId] = useState<TileId | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const dragOverColumnRef = useRef<string | null>(null);
 
   // Refresh "X ago" timestamps
   useEffect(() => {
@@ -617,7 +615,7 @@ export function TasksDashboard() {
 
   // Build active + history entries from agent state
   const runEntries = useMemo(() => {
-    const entries: Omit<RunTileProps, "avatarSeed">[] = [];
+    const entries: Omit<RunTileProps, "avatarSeed" | "isPendingExecution">[] = [];
     for (const agent of agents) {
       const isRunning = agent.status === "running" && agent.runStartedAt !== null;
       if (isRunning) {
@@ -666,6 +664,43 @@ export function TasksDashboard() {
     return entries;
   }, [agents, now]);
 
+  // When a real agent run appears in runEntries, absorb the matching pending execution
+  useEffect(() => {
+    setPendingExecutions((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Map(prev);
+      let changed = false;
+      for (const [id, pending] of next) {
+        // If the real agent is now running for the same agentId, mark as absorbed
+        const realRunning = runEntries.some(
+          (r) =>
+            r.status === "thinking" &&
+            r.agentId === pending.agentId &&
+            Math.abs(r.startedAtMs - pending.startedAtMs) < 30_000
+        );
+        if (realRunning) {
+          next.set(id, { ...pending, absorbed: true });
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [runEntries]);
+
+  // When a pending execution has been absorbed for >60s, prune it (run is done)
+  useEffect(() => {
+    const cutoff = Date.now() - 60_000;
+    setPendingExecutions((prev) => {
+      const next = new Map(prev);
+      for (const [id, p] of next) {
+        if (p.absorbed && p.startedAtMs < cutoff) {
+          next.delete(id);
+        }
+      }
+      return next.size === next.size ? prev : next;
+    });
+  }, [now]);
+
   const filteredJobs = useMemo(() => {
     if (!search.trim()) return cronJobs;
     const q = search.toLowerCase();
@@ -688,7 +723,7 @@ export function TasksDashboard() {
     );
   }, [runEntries, search]);
 
-  // ── Kanban buckets (derived, no drag state) ───────────────────────────────
+  // ── Kanban buckets ────────────────────────────────────────────────────────
   const queuedJobs = useMemo(
     () => filteredJobs.filter((j) => j.state.nextRunAtMs != null && j.state.runningAtMs == null),
     [filteredJobs]
@@ -717,61 +752,119 @@ export function TasksDashboard() {
     [filteredJobs]
   );
 
-  // ── Drag & drop handlers ─────────────────────────────────────────────────
+  // Pending execution entries for the Executing column
+  const pendingRunEntries = useMemo(() => {
+    return Array.from(pendingExecutions.values());
+  }, [pendingExecutions]);
+
+  // ── Drag & drop sensors ─────────────────────────────────────────────────
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // Which column the ghost is currently over
-  const overColId = useMemo(() => {
-    if (!overId) return null;
-    const parsed = parseTileId(overId);
-    return parsed?.colId ?? null;
-  }, [overId]);
+  // Custom collision detection: prefer dropping on column containers over individual items
+  const customCollision: CollisionDetection = (args) => {
+    // First check if we're over a column zone directly
+    const columnIntersect = closestCenter(args);
+    // If the closest intersect is a column zone id (not a tile), use it
+    return columnIntersect;
+  };
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as TileId);
+    setActiveId(event.active.id as string);
   }, []);
 
+  // Track which column the drag is over (works for both empty column zones and tile intersections)
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    setOverId(event.over?.id as TileId | null ?? null);
+    const { over } = event;
+    if (!over) {
+      dragOverColumnRef.current = null;
+      return;
+    }
+
+    const overId = over.id as string;
+
+    // Check if it's a column zone id directly
+    if (isColumnId(overId)) {
+      dragOverColumnRef.current = overId;
+      return;
+    }
+
+    // Otherwise it's a tile id — extract column from it
+    const parsed = parseTileId(overId);
+    if (parsed) {
+      dragOverColumnRef.current = parsed.colId;
+    }
   }, []);
 
-  // Dropping on Executing column → fire the job immediately
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
       setActiveId(null);
-      setOverId(null);
+      dragOverColumnRef.current = null;
 
       if (!over) return;
 
-      const activeParsed = parseTileId(active.id as TileId);
-      const overParsed = parseTileId(over.id as TileId);
+      const activeParsed = parseTileId(active.id as string);
+      const targetCol = (() => {
+        const overId = over.id as string;
+        if (isColumnId(overId)) return overId;
+        const parsed = parseTileId(overId);
+        return parsed?.colId ?? null;
+      })();
 
-      if (!activeParsed || !overParsed) return;
-      if (activeParsed.colId === overParsed.colId) return; // same column, no-op
-
-      const targetCol = overParsed.colId;
+      if (!activeParsed || !targetCol) return;
+      if (activeParsed.colId === targetCol) return; // same column — no-op
 
       // Only allow drops into Executing
       if (targetCol !== "executing") return;
 
-      // It's a cron job being dropped → trigger it immediately
-      if (activeParsed.colId === "queued" || activeParsed.colId === "scheduled") {
-        const jobId = activeParsed.unique;
-        setRunBusy(true);
-        try {
-          await fetch("/api/cron/run?id=" + encodeURIComponent(jobId), { method: "POST" });
-          await fetchCronJobs();
-        } catch {
-          // silently ignore
-        } finally {
-          setRunBusy(false);
-        }
+      // Only cron job tiles can be dropped (not run tiles)
+      if (activeParsed.colId !== "queued" && activeParsed.colId !== "scheduled") return;
+
+      const job = cronJobs.find((j) => j.id === activeParsed.unique);
+      if (!job) return;
+
+      const agent = agents.find((a) => a.agentId === job.agentId);
+      const agentName = agent?.name ?? job.agentId ?? "Agent";
+      const avatarSeed = agent?.avatarSeed;
+      const runId = `${job.id}::${Date.now()}`;
+      const payloadStr = formatCronPayload(job.payload);
+
+      // Add to pending executions immediately (job shows in Executing right away)
+      setPendingExecutions((prev) => {
+        const next = new Map(prev);
+        next.set(runId, {
+          id: runId,
+          job,
+          agentName,
+          agentId: job.agentId ?? "",
+          avatarSeed,
+          startedAtMs: Date.now(),
+          label: job.name,
+          payloadPreview: payloadStr,
+          absorbed: false,
+        });
+        return next;
+      });
+
+      // Fire the actual API call
+      setRunBusy(true);
+      try {
+        await fetch("/api/cron/run?id=" + encodeURIComponent(job.id), { method: "POST" });
+        await fetchCronJobs();
+      } catch {
+        // Remove pending entry on failure
+        setPendingExecutions((prev) => {
+          const next = new Map(prev);
+          next.delete(runId);
+          return next;
+        });
+      } finally {
+        setRunBusy(false);
       }
     },
-    [fetchCronJobs]
+    [cronJobs, agents, fetchCronJobs]
   );
 
   const handleRun = async (id: string) => {
@@ -819,26 +912,27 @@ export function TasksDashboard() {
   const activeJob = useMemo(() => {
     if (!activeId) return null;
     const parsed = parseTileId(activeId);
-    if (!parsed || parsed.colId === "executing" || parsed.colId === "done") return null;
-    if (parsed.colId === "queued" || parsed.colId === "scheduled") {
-      return cronJobs.find((j) => j.id === parsed.unique) ?? null;
-    }
-    return null;
+    if (!parsed) return null;
+    if (parsed.colId === "executing" || parsed.colId === "done") return null;
+    return cronJobs.find((j) => j.id === parsed.unique) ?? null;
   }, [activeId]);
 
-  const activeRun = useMemo(() => {
+  const activeRunEntry = useMemo(() => {
     if (!activeId) return null;
     const parsed = parseTileId(activeId);
     if (!parsed) return null;
-    if (parsed.colId === "executing" || parsed.colId === "done") {
-      const runKey = parsed.unique; // agentId:startedAtMs
-      const [agentIdStr, startedAtStr] = runKey.split(":");
-      const startedAtMs = Number(startedAtStr);
-      const runs = parsed.colId === "executing" ? executingRuns : doneRuns;
-      return runs.find((r) => r.agentId === agentIdStr && r.startedAtMs === startedAtMs) ?? null;
+    const [agentIdStr, startedAtStr] = parsed.unique.split(":");
+    const startedAtMs = Number(startedAtStr);
+    if (parsed.colId === "executing") {
+      const pending = pendingExecutions.get(parsed.unique);
+      if (pending) return { ...pending, status: "running" as const, isPendingExecution: true };
+      return executingRuns.find((r) => r.agentId === agentIdStr && r.startedAtMs === startedAtMs) ?? null;
+    }
+    if (parsed.colId === "done") {
+      return doneRuns.find((r) => r.agentId === agentIdStr && r.startedAtMs === startedAtMs) ?? null;
     }
     return null;
-  }, [activeId, executingRuns, doneRuns]);
+  }, [activeId, pendingExecutions, executingRuns, doneRuns]);
 
   // ── Column config ────────────────────────────────────────────────────────
   const colConfig = [
@@ -848,9 +942,8 @@ export function TasksDashboard() {
       Icon: Loader,
       accent: "text-purple-400",
       accentBg: "bg-purple-400/10",
-      cronItems: queuedJobs,
-      runItems: [] as typeof executingRuns,
-      isRun: false as const,
+      cronItems: scheduledJobs, // scheduled but has nextRunAtMs → shown as queued
+      isRun: false,
     },
     {
       id: "scheduled",
@@ -858,9 +951,8 @@ export function TasksDashboard() {
       Icon: Calendar,
       accent: "text-amber-400",
       accentBg: "bg-amber-400/10",
-      cronItems: scheduledJobs,
-      runItems: [] as typeof executingRuns,
-      isRun: false as const,
+      cronItems: scheduledJobs.filter((j) => j.state.nextRunAtMs == null || !j.enabled),
+      isRun: false,
     },
     {
       id: "executing",
@@ -868,9 +960,8 @@ export function TasksDashboard() {
       Icon: Zap,
       accent: "text-blue-400",
       accentBg: "bg-blue-400/10",
-      cronItems: [] as typeof queuedJobs,
-      runItems: executingRuns,
-      isRun: true as const,
+      cronItems: [] as CronJobSummary[],
+      isRun: true,
     },
     {
       id: "done",
@@ -879,14 +970,20 @@ export function TasksDashboard() {
       accent: "text-green-400",
       accentBg: "bg-green-400/10",
       cronItems: doneJobs,
-      runItems: doneRuns,
-      isRun: true as const,
+      isRun: true,
     },
-  ];
+  ] as const;
+
+  // The queued bucket should show jobs that have a nextRunAtMs (they're waiting to fire)
+  const queuedJobsForDisplay = useMemo(
+    () => filteredJobs.filter((j) => j.state.nextRunAtMs != null && j.state.runningAtMs == null),
+    [filteredJobs]
+  );
 
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={customCollision}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -912,96 +1009,203 @@ export function TasksDashboard() {
 
         {/* Kanban columns */}
         <div className="flex flex-1 gap-3 overflow-x-auto px-4 py-4">
-          {colConfig.map((col) => {
-            const Icon = col.Icon;
-            const total = col.isRun ? col.runItems.length : col.cronItems.length;
-            const isOver = overColId === col.id && activeId !== null;
+          {/* ── Queued ── */}
+          <ColumnZone
+            id="queued"
+            isDropTarget={dragOverColumnRef.current === "queued"}
+          >
+            <ColumnHeader label="Queued" Icon={Loader} accent="text-purple-400" count={queuedJobsForDisplay.length} />
+            <SortableContext items={queuedJobsForDisplay.map((j) => tileId("queued", j.id))}>
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+                {queuedJobsForDisplay.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">Drag a task here</p>
+                ) : (
+                  queuedJobsForDisplay.map((job) => {
+                    const agent = agents.find((a) => a.agentId === job.agentId);
+                    return (
+                      <SortableCronJobTile
+                        key={tileId("queued", job.id)}
+                        id={tileId("queued", job.id)}
+                        job={job}
+                        agentName={agent?.name ?? job.agentId ?? "Unknown"}
+                        agentAvatarSeed={agent?.avatarSeed}
+                        onRun={handleRun}
+                        onToggle={handleToggle}
+                        onDelete={handleDelete}
+                        runBusy={runBusy}
+                        deleteBusy={deleteBusy === job.id}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </SortableContext>
+          </ColumnZone>
 
-            return (
-              <ColumnZone key={col.id} id={col.id} isOver={isOver}>
-                <ColumnHeader
-                  label={col.label}
-                  Icon={Icon}
-                  accent={col.accent}
-                  count={total}
-                />
+          {/* ── Scheduled ── */}
+          <ColumnZone
+            id="scheduled"
+            isDropTarget={dragOverColumnRef.current === "scheduled"}
+          >
+            <ColumnHeader label="Scheduled" Icon={Calendar} accent="text-amber-400" count={scheduledJobs.length} />
+            <SortableContext items={scheduledJobs.map((j) => tileId("scheduled", j.id))}>
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+                {scheduledJobs.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">No scheduled tasks</p>
+                ) : (
+                  scheduledJobs.map((job) => {
+                    const agent = agents.find((a) => a.agentId === job.agentId);
+                    return (
+                      <SortableCronJobTile
+                        key={tileId("scheduled", job.id)}
+                        id={tileId("scheduled", job.id)}
+                        job={job}
+                        agentName={agent?.name ?? job.agentId ?? "Unknown"}
+                        agentAvatarSeed={agent?.avatarSeed}
+                        onRun={handleRun}
+                        onToggle={handleToggle}
+                        onDelete={handleDelete}
+                        runBusy={runBusy}
+                        deleteBusy={deleteBusy === job.id}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </SortableContext>
+          </ColumnZone>
 
-                {/* Scrollable tile list */}
-                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
-                  {total === 0 ? (
-                    <p className="py-6 text-center text-xs text-muted-foreground/40">
-                      {col.id === "queued"
-                        ? "Drag a task here"
-                        : col.id === "scheduled"
-                          ? "No scheduled tasks"
-                          : col.id === "executing"
-                            ? "Drop to run instantly"
-                            : "No completed runs"}
-                    </p>
-                  ) : col.isRun ? (
-                    col.runItems.map((run) => {
+          {/* ── Executing ── */}
+          <ColumnZone
+            id="executing"
+            isDropTarget={dragOverColumnRef.current === "executing"}
+          >
+            <ColumnHeader label="Executing" Icon={Zap} accent="text-blue-400" count={executingRuns.length + pendingRunEntries.length} />
+            <SortableContext items={[]}>
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+                {executingRuns.length === 0 && pendingRunEntries.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">
+                    Drop to run instantly
+                  </p>
+                ) : (
+                  <>
+                    {/* Pending executions (triggered by drag) */}
+                    {pendingRunEntries.map((p) => (
+                      <RunTile
+                        key={p.id}
+                        agentName={p.agentName}
+                        agentId={p.agentId}
+                        avatarSeed={p.avatarSeed}
+                        status="running"
+                        label={p.label}
+                        startedAtMs={p.startedAtMs}
+                        thinkingMs={Date.now() - p.startedAtMs}
+                        streamText={p.payloadPreview}
+                        isPendingExecution
+                      />
+                    ))}
+                    {/* Real agent runs */}
+                    {executingRuns.map((run) => {
                       const agent = agents.find((a) => a.agentId === run.agentId);
                       return (
-                        <DraggableTile
-                          key={tileId(col.id, `${run.agentId}:${run.startedAtMs}`)}
-                          id={tileId(col.id, `${run.agentId}:${run.startedAtMs}`)}
-                        >
-                          <RunTile
-                            {...run}
-                            avatarSeed={agent?.avatarSeed}
-                          />
-                        </DraggableTile>
+                        <RunTile
+                          key={`${run.agentId}-${run.startedAtMs}`}
+                          agentName={run.agentName}
+                          agentId={run.agentId}
+                          avatarSeed={agent?.avatarSeed}
+                          status={run.status}
+                          label={run.label}
+                          startedAtMs={run.startedAtMs}
+                          thinkingMs={run.thinkingMs}
+                          streamText={run.streamText}
+                          lastMessage={run.lastMessage}
+                        />
                       );
-                    })
-                  ) : (
-                    col.cronItems.map((job) => (
-                      <DraggableTile
-                        key={tileId(col.id, job.id)}
-                        id={tileId(col.id, job.id)}
-                      >
+                    })}
+                  </>
+                )}
+              </div>
+            </SortableContext>
+          </ColumnZone>
+
+          {/* ── Done ── */}
+          <ColumnZone
+            id="done"
+            isDropTarget={dragOverColumnRef.current === "done"}
+          >
+            <ColumnHeader label="Done" Icon={CheckCircle} accent="text-green-400" count={doneRuns.length + doneJobs.length} />
+            <SortableContext items={[]}>
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+                {doneRuns.length === 0 && doneJobs.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">No completed runs</p>
+                ) : (
+                  <>
+                    {doneJobs.map((job) => {
+                      const agent = agents.find((a) => a.agentId === job.agentId);
+                      return (
                         <CronJobTile
+                          key={`done-job-${job.id}`}
                           job={job}
-                          agents={agentList}
+                          agentName={agent?.name ?? job.agentId ?? "Unknown"}
+                          agentAvatarSeed={agent?.avatarSeed}
                           onRun={handleRun}
                           onToggle={handleToggle}
                           onDelete={handleDelete}
                           runBusy={runBusy}
-                          deleteBusy={deleteBusy === job.id}
+                          deleteBusy={false}
                         />
-                      </DraggableTile>
-                    ))
-                  )}
-                </div>
-              </ColumnZone>
-            );
-          })}
+                      );
+                    })}
+                    {doneRuns.map((run) => {
+                      const agent = agents.find((a) => a.agentId === run.agentId);
+                      return (
+                        <RunTile
+                          key={`${run.agentId}-${run.startedAtMs}`}
+                          agentName={run.agentName}
+                          agentId={run.agentId}
+                          avatarSeed={agent?.avatarSeed}
+                          status={run.status}
+                          label={run.label}
+                          startedAtMs={run.startedAtMs}
+                          endedAtMs={run.endedAtMs}
+                          streamText={run.streamText}
+                          lastMessage={run.lastMessage}
+                        />
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            </SortableContext>
+          </ColumnZone>
         </div>
       </div>
 
-      {/* Drag overlay — shows a ghost of the dragged tile */}
+      {/* Drag overlay */}
       <DragOverlay dropAnimation={null}>
-        {activeJob && (
-          <CronJobTile
-            job={activeJob}
-            agents={agentList}
-            onRun={handleRun}
-            onToggle={handleToggle}
-            onDelete={handleDelete}
-            runBusy={runBusy}
-            deleteBusy={false}
-            isDragOverlay
-          />
-        )}
-        {activeRun && (() => {
-          const agent = agents.find((a) => a.agentId === activeRun.agentId);
+        {activeJob && (() => {
+          const agent = agents.find((a) => a.agentId === activeJob.agentId);
           return (
-            <RunTile
-              {...activeRun}
-              avatarSeed={agent?.avatarSeed}
+            <CronJobTile
+              job={activeJob}
+              agentName={agent?.name ?? activeJob.agentId ?? "Agent"}
+              agentAvatarSeed={agent?.avatarSeed}
+              onRun={handleRun}
+              onToggle={handleToggle}
+              onDelete={handleDelete}
+              runBusy={runBusy}
+              deleteBusy={false}
               isDragOverlay
             />
           );
         })()}
+        {activeRunEntry && (
+          <RunTile
+            {...activeRunEntry}
+            avatarSeed={"avatarSeed" in activeRunEntry ? activeRunEntry.avatarSeed : undefined}
+            isPendingExecution={"isPendingExecution" in activeRunEntry ? activeRunEntry.isPendingExecution : false}
+          />
+        )}
       </DragOverlay>
 
       {/* Create modal */}
@@ -1014,5 +1218,66 @@ export function TasksDashboard() {
         />
       )}
     </DndContext>
+  );
+}
+
+// ─── Sortable cron job tile ────────────────────────────────────────────────────
+
+interface SortableCronJobTileProps {
+  id: string;
+  job: CronJobSummary;
+  agentName: string;
+  agentAvatarSeed?: string | null;
+  onRun: (id: string) => void;
+  onToggle: (id: string, enabled: boolean) => void;
+  onDelete: (id: string) => void;
+  runBusy: boolean;
+  deleteBusy: boolean;
+}
+
+function SortableCronJobTile({
+  id,
+  job,
+  agentName,
+  agentAvatarSeed,
+  onRun,
+  onToggle,
+  onDelete,
+  runBusy,
+  deleteBusy,
+}: SortableCronJobTileProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${isDragging ? "opacity-30" : ""}`}
+      {...attributes}
+      {...listeners}
+    >
+      <CronJobTile
+        job={job}
+        agentName={agentName}
+        agentAvatarSeed={agentAvatarSeed}
+        onRun={onRun}
+        onToggle={onToggle}
+        onDelete={onDelete}
+        runBusy={runBusy}
+        deleteBusy={deleteBusy}
+      />
+    </div>
   );
 }
