@@ -256,6 +256,8 @@ export function SystemMetricsDashboard() {
         name={metrics.cpu.name}
         subtitle={
           <>
+            <span>{metrics.cpu.name.split(" ")[0]}</span>
+            <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
             <span>{metrics.cpu.cores} Cores</span>
             {metrics.cpu.speed > 0 && (
               <>
