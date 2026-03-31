@@ -26,6 +26,7 @@ interface SystemMetrics {
     temperature: number | null;
     speed: number;
     loadAvg: [number, number, number];
+    coreLoads: number[];
   };
   memory: {
     total: number;
@@ -256,14 +257,17 @@ export function SystemMetricsDashboard() {
         subtitle={
           <>
             <span>{metrics.cpu.cores} Cores</span>
-            <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
-            <span>{Math.round(metrics.cpu.speed)} MHz</span>
-            <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
-            <span>Load: {metrics.cpu.loadAvg[0].toFixed(2)}</span>
+            {metrics.cpu.speed > 0 && (
+              <>
+                <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
+                <span>{Math.round(metrics.cpu.speed)} MHz</span>
+              </>
+            )}
           </>
         }
       >
-        <div className="mt-3 pt-3 border-t border-border/30">
+        <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
+          {/* CPU Usage Bar */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Gauge className="w-4 h-4 text-primary" />
@@ -283,8 +287,96 @@ export function SystemMetricsDashboard() {
               </span>
             </div>
           </div>
+
+          {/* CPU Frequency Details */}
+          {metrics.cpu.speed > 0 && (
+            <div className="flex justify-between text-xs text-muted-foreground px-1">
+              <span>{metrics.cpu.cores} Cores</span>
+              <span>{Math.round(metrics.cpu.speed)} MHz</span>
+            </div>
+          )}
+
+          {/* CPU Stats Row */}
+          <div className="flex flex-wrap gap-4 pt-1">
+            {metrics.cpu.temperature !== null && metrics.cpu.temperature > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Thermometer className="w-3 h-3" />
+                <span>{formatTemp(metrics.cpu.temperature)}</span>
+              </div>
+            )}
+            {metrics.cpu.speed > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Zap className="w-3 h-3" />
+                <span>{Math.round(metrics.cpu.speed)} MHz</span>
+              </div>
+            )}
+            {metrics.cpu.loadAvg[0] > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Activity className="w-3 h-3" />
+                <span>Load: {metrics.cpu.loadAvg[0].toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* CPU Stats Row — mirrors GPU layout */}
+          <div className="flex flex-wrap gap-4 pt-1">
+            {metrics.cpu.temperature !== null && metrics.cpu.temperature > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Thermometer className="w-3 h-3" />
+                <span>{formatTemp(metrics.cpu.temperature)}</span>
+              </div>
+            )}
+            {metrics.cpu.speed > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Zap className="w-3 h-3" />
+                <span>{Math.round(metrics.cpu.speed)} MHz</span>
+              </div>
+            )}
+            {metrics.cpu.loadAvg[0] > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Activity className="w-3 h-3" />
+                <span>Load: {metrics.cpu.loadAvg[0].toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Per-Core Load Grid */}
+          {metrics.cpu.coreLoads.length > 0 && (
+            <div className="pt-2 border-t border-border/30">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+                Per-Core Usage
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {metrics.cpu.coreLoads.map((load, i) => (
+                  <div key={i} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>C{i}</span>
+                      <span className={load > 80 ? 'text-red-500 font-bold' : ''}>{load}%</span>
+                    </div>
+                    <div className="h-1 bg-surface-2 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          load > 80 ? 'bg-red-500' : load > 50 ? 'bg-yellow-500' : 'bg-primary'
+                        }`}
+                        style={{ width: `${Math.min(load, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </ProminentCard>
+
+      {/* System Memory - positioned between CPU and GPU */}
+      <MetricRow
+        icon={MemoryStick}
+        label="System Memory"
+        value={`${Math.round(metrics.memory.usage)}%`}
+        subtext={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)} • Swap: ${formatGB(metrics.memory.swapUsed)}`}
+        alert={metrics.memory.usage > 80}
+      />
 
       {/* GPU Card - Prominent Display (if available) */}
       {primaryGpu && (
@@ -298,7 +390,7 @@ export function SystemMetricsDashboard() {
               {primaryGpu.gfxVersion && (
                 <>
                   <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
-                  <span>{primaryGpu.gfxVersion}</span>
+                  <span className="font-mono">{primaryGpu.gfxVersion}</span>
                 </>
               )}
               {primaryGpu.computeUnits !== undefined && primaryGpu.computeUnits > 0 && (
@@ -395,20 +487,25 @@ export function SystemMetricsDashboard() {
               </div>
             )}
 
-            {/* GPU Stats Row */}
+            {/* GPU Stats Row — temperature alongside frequency, then power */}
             <div className="flex flex-wrap gap-4 pt-2">
-              {primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && primaryGpu.temperature > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Thermometer className="w-3 h-3" />
-                  <span>{formatTemp(primaryGpu.temperature)}</span>
+              {(primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && primaryGpu.temperature > 0) ||
+               (primaryGpu.currentClockMHz !== undefined && primaryGpu.currentClockMHz > 0) ? (
+                <div className="flex items-center gap-3">
+                  {primaryGpu.temperature !== null && primaryGpu.temperature !== undefined && primaryGpu.temperature > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Thermometer className="w-3 h-3" />
+                      <span>{formatTemp(primaryGpu.temperature)}</span>
+                    </div>
+                  )}
+                  {primaryGpu.currentClockMHz !== undefined && primaryGpu.currentClockMHz > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Zap className="w-3 h-3" />
+                      <span>{formatMHz(primaryGpu.currentClockMHz)}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {primaryGpu.currentClockMHz !== undefined && primaryGpu.currentClockMHz > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Zap className="w-3 h-3" />
-                  <span>{formatMHz(primaryGpu.currentClockMHz)}</span>
-                </div>
-              )}
+              ) : null}
               {primaryGpu.power !== undefined && primaryGpu.power > 0 && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Activity className="w-3 h-3" />
@@ -451,14 +548,6 @@ export function SystemMetricsDashboard() {
 
       {/* Main Metrics List */}
       <div className="space-y-2">
-        <MetricRow
-          icon={MemoryStick}
-          label="System Memory"
-          value={`${Math.round(metrics.memory.usage)}%`}
-          subtext={`${formatGB(metrics.memory.used)} / ${formatGB(metrics.memory.total)} • Swap: ${formatGB(metrics.memory.swapUsed)}`}
-          alert={metrics.memory.usage > 80}
-        />
-
         <MetricRow
           icon={HardDrive}
           label="Disk"

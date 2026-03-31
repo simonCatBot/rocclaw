@@ -16,6 +16,7 @@ export interface SystemMetrics {
     temperature: number | null;
     speed: number;
     loadAvg: [number, number, number];
+    coreLoads: number[];
   };
   memory: {
     total: number;
@@ -177,10 +178,11 @@ export async function GET(
         usage: cpuUsage,
         cores: cpuData.cpus?.length ?? 0,
         temperature: cpuTemp.main !== null ? Math.round(cpuTemp.main) : null,
-        speed: Math.round((cpuData.cpus?.[0] as { speed?: number } | undefined)?.speed ?? 0),
+        speed: Math.round(cpuInfo.speed ?? 0),
         loadAvg: cpuData.avgLoad 
           ? [cpuData.avgLoad, cpuData.avgLoad * 0.9, cpuData.avgLoad * 0.85] as [number, number, number]
           : [0, 0, 0] as [number, number, number],
+        coreLoads: (cpuData.cpus ?? []).map((c: { load?: number }) => Math.round(c.load ?? 0)),
       },
       memory: {
         total: Math.round(memData.total / (1024 * 1024 * 1024) * 100) / 100,
