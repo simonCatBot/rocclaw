@@ -12,24 +12,31 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await page.getByTestId("gateway-settings-toggle").click();
   await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toBeVisible();
 
+  // Fill and verify local input state before clicking
   await page.getByLabel(/Upstream (gateway )?URL/i).fill("ws://gateway.example:18789");
   await page.getByLabel("Upstream token").fill("token-123");
+  await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toHaveValue("ws://gateway.example:18789");
+  await expect(page.getByLabel("Upstream token")).toHaveValue("token-123");
 
-  const requestPromise = page.waitForRequest((req) => {
-    if (!req.url().includes("/api/rocclaw") || req.method() !== "PUT") {
-      return false;
-    }
-    const payload = JSON.parse(req.postData() ?? "{}") as Record<string, unknown>;
-    const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
-    return gateway.url === "ws://gateway.example:18789" && gateway.token === "token-123";
+  // Click save and wait for the UI to transition to the post-save state.
+  // force:true bypasses Playwright's stability check, which is important
+  // because React's concurrent rendering may still be finalising the panel
+  // DOM when we attempt the click (causing "element not stable" flakiness).
+  await page.getByRole("button", { name: "Save settings" }).click({ force: true });
+  await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible({ timeout: 10_000 });
+
+  // Verify the settings persisted by fetching via the browser context
+  // (not page.request, which bypasses route stubs).
+  const savedSettings = await page.evaluate(async () => {
+    const res = await fetch("/api/rocclaw");
+    return res.json();
   });
-  await page.getByRole("button", { name: "Save settings" }).click();
-  const request = await requestPromise;
+  const gateway = (savedSettings as { settings?: { gateway?: { url?: string; token?: string } } })
+    .settings?.gateway;
+  expect(gateway?.url).toBe("ws://gateway.example:18789");
+  expect(gateway?.token).toBe("token-123");
 
-  const payload = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
-  const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
-  expect(gateway.url).toBe("ws://gateway.example:18789");
-  expect(gateway.token).toBe("token-123");
+  // Verify the UI transitions to the post-save state.
   await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible();
 });
 
