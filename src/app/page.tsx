@@ -1459,7 +1459,6 @@ const AgentStudioPage = () => {
             return next;
           });
         }} />
-        <FooterBar status={gatewayStatus} gatewayUrl={gatewayUrl} />
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 md:px-5 md:pb-5 md:pt-3">
           {/* Tasks tab takes exclusive full-width focus — hide everything else */}
           {activeTabs.length === 1 && activeTabs[0] === "tasks" ? (
@@ -1792,6 +1791,7 @@ const AgentStudioPage = () => {
             </>
           )}
         </div>
+        <FooterBar status={gatewayStatus} gatewayUrl={gatewayUrl} />
       </div>
       {createAgentModalOpen ? (
         <AgentCreateModal
