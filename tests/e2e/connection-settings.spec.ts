@@ -18,21 +18,13 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toHaveValue("ws://gateway.example:18789");
   await expect(page.getByLabel("Upstream token")).toHaveValue("token-123");
 
-  // Use Promise.all to race the click against the response, avoiding a
-  // single point of failure when React concurrent rendering replaces the
-  // button element during the async save() call.
-  const [, response] = await Promise.all([
-    page.getByRole("button", { name: "Save settings" }).click(),
-    page.waitForResponse(
-      (res) => res.url().includes("/api/rocclaw") && res.request().method() === "PUT",
-      { timeout: 10_000 }
-    ),
-  ]);
+  // Click save and wait for the UI to transition to the post-save state.
+  // This is the most reliable signal — it confirms both that the click fired
+  // and that the React state machine processed the response.
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible({ timeout: 10_000 });
 
-  // Verify the PUT response is successful.
-  expect(response.status()).toBe(200);
-
-  // Confirm the settings persisted by fetching them via the GET endpoint.
+  // Verify the settings persisted by fetching via the GET endpoint.
   const getResponse = await page.request.get("/api/rocclaw");
   expect(getResponse.status()).toBe(200);
   const savedSettings = (await getResponse.json()) as {
