@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useAgentStore } from "@/features/agents/state/store";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import { ExternalLink, Cpu, Users } from "lucide-react";
 
@@ -36,21 +37,19 @@ export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
   const runningAgents = agents.filter((a) => a.status === "running").slice(0, 5);
 
   return (
-    <footer
-      className="flex items-center gap-3 border-t border-border/60 bg-surface-1/60 px-4 py-2 text-[11px] text-muted-foreground"
-    >
+    <footer className="flex items-center gap-4 border-t border-border/60 bg-surface-1/70 px-5 py-3 text-xs text-muted-foreground">
       {/* Connection status */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <StatusDot status={status} />
-        <span>{resolveGatewayStatusLabel(status)}</span>
+        <span className="font-medium">{resolveGatewayStatusLabel(status)}</span>
       </div>
 
       {/* Separator */}
-      <div className="h-3 w-px bg-border/60" />
+      <div className="h-4 w-px bg-border/60" />
 
       {/* Agent count */}
-      <div className="flex items-center gap-1.5">
-        <Users className="h-3 w-3 shrink-0" />
+      <div className="flex items-center gap-2">
+        <Users className="h-3.5 w-3.5 shrink-0" />
         <span>
           {agentCount} {agentCount === 1 ? "agent" : "agents"}
           {runningCount > 0 ? ` · ${runningCount} running` : ""}
@@ -58,11 +57,11 @@ export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
       </div>
 
       {/* Separator */}
-      <div className="h-3 w-px bg-border/60" />
+      <div className="h-4 w-px bg-border/60" />
 
       {/* Gateway URL */}
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <Cpu className="h-3 w-3 shrink-0" />
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <Cpu className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate font-mono">{gatewayUrl}</span>
         <a
           href={gatewayUrl}
@@ -71,16 +70,16 @@ export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
           className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
           title="Open gateway"
         >
-          <ExternalLink className="h-3 w-3" />
+          <ExternalLink className="h-3.5 w-3.5" />
         </a>
       </div>
 
-      {/* Spacer pushes avatars + version to the right */}
-      <div className="flex flex-1" />
+      {/* Spacer */}
+      <div className="flex-1" />
 
       {/* Running agent avatars */}
       {runningAgents.length > 0 && (
-        <div className="flex items-center -space-x-1">
+        <div className="flex items-center -space-x-1.5">
           {runningAgents.map((agent) => (
             <div
               key={agent.agentId}
@@ -90,9 +89,9 @@ export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
               <Image
                 src={buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId)}
                 alt={agent.name}
-                width={20}
-                height={20}
-                className="h-5 w-5"
+                width={24}
+                height={24}
+                className="h-6 w-6"
                 unoptimized
               />
             </div>
@@ -101,10 +100,16 @@ export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
       )}
 
       {/* Separator */}
-      <div className="h-3 w-px bg-border/60" />
+      <div className="h-4 w-px bg-border/60" />
 
       {/* Version label */}
       <span className="shrink-0 font-mono text-muted-foreground/40">rocCLAW</span>
+
+      {/* Separator */}
+      <div className="h-4 w-px bg-border/60" />
+
+      {/* Theme toggle */}
+      <ThemeToggle />
     </footer>
   );
 }
