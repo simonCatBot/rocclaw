@@ -8,7 +8,7 @@ test("loads focused studio empty state", async ({ page }) => {
 
   await page.goto("/");
 
-  await expect(page.getByTestId("studio-menu-toggle")).toBeVisible();
-  await page.getByTestId("studio-menu-toggle").click();
-  await expect(page.getByTestId("gateway-settings-toggle")).toBeVisible();
+  // Connection panel accessible via footer button
+  await page.locator('button[title="Gateway connection settings"]').click();
+  await expect(page.getByTestId("gateway-connection-overlay")).toBeVisible();
 });

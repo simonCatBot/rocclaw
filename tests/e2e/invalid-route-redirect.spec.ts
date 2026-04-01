@@ -14,5 +14,6 @@ test("redirects unknown app routes to root", async ({ page }) => {
       message: "Expected invalid route to redirect to root path.",
     })
     .toBe("/");
-  await expect(page.getByTestId("studio-menu-toggle")).toBeVisible();
+  // Page loads successfully with footer visible
+  await expect(page.locator('footer')).toBeVisible();
 });

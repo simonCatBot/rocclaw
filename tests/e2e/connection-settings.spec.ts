@@ -8,8 +8,7 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await stubRuntimeRoutes(page);
 
   await page.goto("/");
-  await page.getByTestId("studio-menu-toggle").click();
-  await page.getByTestId("gateway-settings-toggle").click();
+  await page.locator('button[title="Gateway connection settings"]').click();
   await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toBeVisible();
 
   // Fill and verify local input state before clicking

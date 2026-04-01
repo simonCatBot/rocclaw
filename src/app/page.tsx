@@ -1437,7 +1437,7 @@ const AgentStudioPage = () => {
         </div>
       ) : null}
       <div className="relative z-10 flex h-dvh flex-col">
-        <HeaderBar onMenuToggle={() => setShowConnectionPanel((v) => !v)} onConnectionSettings={() => setShowConnectionPanel(true)} />
+        <HeaderBar />
         <TabBar activeTabs={activeTabs} onTabToggle={(tabId) => {
           setActiveTabs((current) => {
             // Tasks tab is exclusive — selecting it replaces everything

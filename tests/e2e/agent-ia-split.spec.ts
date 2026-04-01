@@ -11,8 +11,8 @@ test("shows_connection_settings_control_in_header", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByTestId("brain-files-toggle")).toHaveCount(0);
-  await page.getByTestId("studio-menu-toggle").click();
-  await expect(page.getByTestId("gateway-settings-toggle")).toBeVisible();
+  // Connection settings accessible via footer button
+  await expect(page.locator('button[title="Gateway connection settings"]')).toBeVisible();
 });
 
 test("mobile_header_shows_connection_control", async ({ page }) => {
@@ -20,6 +20,6 @@ test("mobile_header_shows_connection_control", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByTestId("brain-files-toggle")).toHaveCount(0);
-  await page.getByTestId("studio-menu-toggle").click();
-  await expect(page.getByTestId("gateway-settings-toggle")).toBeVisible();
+  // Connection settings accessible via footer button
+  await expect(page.locator('button[title="Gateway connection settings"]')).toBeVisible();
 });
