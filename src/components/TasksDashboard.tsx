@@ -634,9 +634,11 @@ function AgentFilterChips({
 
 // ─── Keyboard shortcut hint ───────────────────────────────────────────────────
 
-function Kbd({ children }: { children: React.ReactNode }) {
+function Kbd({ children }: { children?: React.ReactNode }) {
   return (
-    <kbd className="inline-flex h-4 min-w-4 items-center justify-center rounded border border-border bg-surface-2 px-1 font-mono text-[9px] text-muted-foreground" />
+    <kbd className="inline-flex h-4 min-w-4 items-center justify-center rounded border border-border bg-surface-2 px-1 font-mono text-[9px] text-muted-foreground">
+      {children}
+    </kbd>
   );
 }
 
@@ -1291,7 +1293,7 @@ export function TasksDashboard() {
     if (!parsed) return null;
     if (parsed.colId === "executing" || parsed.colId === "done") return null;
     return cronJobs.find((j) => j.id === parsed.unique) ?? null;
-  }, [activeId]);
+  }, [activeId, cronJobs]);
 
   const activeRunEntry = useMemo(() => {
     if (!activeId) return null;
@@ -1444,9 +1446,9 @@ export function TasksDashboard() {
         {/* ── Keyboard shortcut hint bar ── */}
         {showKeyboardHint && (
           <div className="flex flex-wrap items-center justify-center gap-4 border-b border-border bg-surface-2/50 px-4 py-2 text-[10px] text-muted-foreground">
-            <span className="flex items-center gap-1"><Kbd>?</Kbd> Shortcuts</span>
-            <span className="flex items-center gap-1"><Kbd>Esc</Kbd> Close</span>
-            <span className="flex items-center gap-1"><Kbd>/</Kbd> Search</span>
+            <span className="flex items-center gap-1"><Kbd /> Shortcuts</span>
+            <span className="flex items-center gap-1"><Kbd /> Esc Close</span>
+            <span className="flex items-center gap-1"><Kbd /> / Search</span>
           </div>
         )}
 

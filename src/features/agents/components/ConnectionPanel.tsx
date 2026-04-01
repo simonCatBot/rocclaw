@@ -92,6 +92,7 @@ export const ConnectionPanel = ({
           </span>
           {onClose ? (
             <button
+              data-testid="gateway-connection-close"
               className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-surface-2 hover:text-foreground"
               type="button"
               onClick={onClose}
@@ -204,7 +205,8 @@ export const ConnectionPanel = ({
               {disconnecting ? <Loader className="h-3.5 w-3.5 animate-spin" /> : null}
               {disconnecting ? "Disconnecting…" : "Disconnect"}
             </button>
-          ) : (
+          ) : null}
+          {!isConnected && (
             <button
               className="flex items-center gap-2 rounded-xl border border-border bg-surface-1 px-4 py-2 text-xs font-semibold text-muted-foreground hover:border-border/80 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
               type="button"
@@ -217,19 +219,20 @@ export const ConnectionPanel = ({
           )}
         </div>
         <div className="flex items-center gap-3">
-          {!isConnected && savedGatewayUrl && (
+          {!isConnected && savedGatewayUrl ? (
             <p className="text-[10px] text-muted-foreground/50">
               Saved: <span className="font-mono">{savedGatewayUrl}</span>
             </p>
-          )}
+          ) : null}
           <button
+            data-testid="gateway-save-settings"
             className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             onClick={onSaveSettings}
             disabled={actionBusy || !draftGatewayUrl.trim()}
           >
             {saving ? <Loader className="h-3.5 w-3.5 animate-spin" /> : null}
-            {saving ? "Saving…" : "Save"}
+            {saving ? "Saving…" : "Save settings"}
           </button>
         </div>
       </div>

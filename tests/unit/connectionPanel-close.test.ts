@@ -82,8 +82,11 @@ describe("ConnectionPanel close control", () => {
       })
     );
 
+    // "Save settings" is always visible
     expect(screen.getByRole("button", { name: "Save settings" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Test connection" })).toBeDisabled();
+    // "Disconnecting…" replaces "Disconnect" when connected and disconnecting
     expect(screen.getByRole("button", { name: "Disconnecting…" })).toBeDisabled();
+    // "Test connection" is hidden when connected
+    expect(screen.queryByRole("button", { name: "Test connection" })).not.toBeInTheDocument();
   });
 });

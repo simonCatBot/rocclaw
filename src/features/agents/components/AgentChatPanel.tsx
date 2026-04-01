@@ -306,6 +306,9 @@ const ThinkingDetailsRow = memo(function ThinkingDetailsRow({
         <ChevronRight className="h-3 w-3 shrink-0 transition group-open:rotate-90" />
         <span className="flex min-w-0 items-center gap-2">
           <Brain className="h-3 w-3 shrink-0 text-foreground/60" />
+          <span className="truncate font-mono text-xs font-medium tracking-[0.02em] text-foreground/60 group-open:text-foreground">
+            Thinking (internal)
+          </span>
           {typeof durationMs === "number" ? (
             <span className="inline-flex items-center gap-1 font-mono text-[10px] font-medium tracking-[0.02em] text-muted-foreground/80">
               <Clock className="h-3 w-3" />
@@ -443,6 +446,7 @@ const AssistantMessageCard = memo(function AssistantMessageCard({
             data-testid="agent-typing-indicator"
           >
             <Brain className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+            <span className="font-mono text-[10px] font-medium">Thinking</span>
             <span className="typing-dots" aria-hidden="true">
               <span />
               <span />
@@ -459,6 +463,7 @@ const AssistantMessageCard = memo(function AssistantMessageCard({
                 data-testid="agent-typing-indicator"
               >
                 <Brain className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+                <span className="font-mono text-[10px] font-medium">Thinking</span>
                 <span className="typing-dots" aria-hidden="true">
                   <span />
                   <span />

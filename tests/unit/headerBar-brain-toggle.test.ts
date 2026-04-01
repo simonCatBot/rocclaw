@@ -26,29 +26,39 @@ describe("HeaderBar controls", () => {
   });
 
   it("does_not_render_brain_toggle_in_header", () => {
-    render(
-      createElement(HeaderBar, {
-        status: "disconnected",
-        onConnectionSettings: vi.fn(),
-      })
-    );
-
+    render(createElement(HeaderBar, {}));
     expect(screen.queryByTestId("brain-files-toggle")).not.toBeInTheDocument();
   });
 
-  it("opens_menu_and_calls_connection_settings_handler", () => {
+  it("calls_onConnectionSettings_when_settings_button_clicked", () => {
     const onConnectionSettings = vi.fn();
 
     render(
       createElement(HeaderBar, {
         status: "disconnected",
         onConnectionSettings,
+        showConnectionSettings: true,
       })
     );
 
-    fireEvent.click(screen.getByTestId("studio-menu-toggle"));
-    fireEvent.click(screen.getByTestId("gateway-settings-toggle"));
+    // Find the connection button (Plug icon)
+    const plugButton = screen.getByRole("button", { name: /disconnected/i });
+    fireEvent.click(plugButton);
 
     expect(onConnectionSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it("does_not_render_settings_button_when_showConnectionSettings_is_false", () => {
+    const onConnectionSettings = vi.fn();
+
+    render(
+      createElement(HeaderBar, {
+        status: "disconnected",
+        onConnectionSettings,
+        showConnectionSettings: false,
+      })
+    );
+
+    expect(screen.queryByRole("button", { name: /disconnected/i })).not.toBeInTheDocument();
   });
 });

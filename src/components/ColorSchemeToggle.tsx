@@ -37,7 +37,7 @@ function applyTheme(mode: ThemeMode) {
   localStorage.setItem(THEME_KEY, mode);
 }
 
-// Apply stored values before first paint
+// Apply stored values before first paint — avoids flash of wrong theme
 if (typeof document !== "undefined") {
   const storedScheme = localStorage.getItem(SCHEME_KEY) as ColorSchemeId | null;
   if (storedScheme && SCHEMES.find((s) => s.id === storedScheme)) {
@@ -47,31 +47,30 @@ if (typeof document !== "undefined") {
   }
   const storedTheme = localStorage.getItem(THEME_KEY) as ThemeMode | null;
   if (storedTheme === "light" || storedTheme === "dark") {
-    applyTheme(storedTheme);
+    document.documentElement.classList.toggle("dark", storedTheme === "dark");
   } else {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    applyTheme(prefersDark ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", window.matchMedia("(prefers-color-scheme: dark)").matches);
   }
+}
+
+function getInitialScheme(): ColorSchemeId {
+  if (typeof window === "undefined") return "coral";
+  const el = document.documentElement;
+  const stored = localStorage.getItem(SCHEME_KEY) as ColorSchemeId | null;
+  if (stored && SCHEMES.find((s) => s.id === stored)) return stored;
+  return (el.dataset.colorScheme as ColorSchemeId) ?? "coral";
+}
+
+function getInitialTheme(): ThemeMode {
+  if (typeof window === "undefined") return "dark";
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
 export function ColorSchemeToggle() {
   const [open, setOpen] = useState(false);
-  const [activeScheme, setActiveScheme] = useState<ColorSchemeId>("coral");
-  const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [activeScheme, setActiveScheme] = useState<ColorSchemeId>(getInitialScheme);
+  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const storedScheme = localStorage.getItem(SCHEME_KEY) as ColorSchemeId | null;
-    if (storedScheme && SCHEMES.find((s) => s.id === storedScheme)) {
-      setActiveScheme(storedScheme);
-    }
-    const storedTheme = localStorage.getItem(THEME_KEY) as ThemeMode | null;
-    if (storedTheme === "light" || storedTheme === "dark") {
-      setTheme(storedTheme);
-    } else {
-      setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    }
-  }, []);
 
   useEffect(() => {
     if (!open) return;
