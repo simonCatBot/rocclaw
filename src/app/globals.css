@@ -1015,7 +1015,7 @@ textarea:focus::-webkit-scrollbar {
 .ui-chat-user-card {
   max-width: 100%;
   border: 1px solid var(--chat-user-border);
-  background: transparent;
+  background: var(--chat-user-bg);
   box-shadow: 0 1px 3px color-mix(in oklch, var(--foreground) 8%, transparent);
 }
 
@@ -1367,9 +1367,9 @@ textarea:focus::-webkit-scrollbar {
   --ring: #FF4D4D;
   --surface-selected: transparent;
   --surface-selected-border: #FF4D4D;
-  --chat-user-bg: #FF4D4D;
-  --chat-user-border: #ff8080;
-  --chat-user-header-bg: #ff8080;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #FF4D4D;
+  --chat-user-header-bg: #FF4D4D;
   --action-bg: #FF4D4D;
   --action-bg-hover: #ff8080;
   --action-border: #ff8080;
@@ -1388,11 +1388,11 @@ textarea:focus::-webkit-scrollbar {
   --primary: #81a1c1;
   --accent: #88c0d0;
   --ring: #81a1c1;
-  --surface-selected: #81a1c1;
-  --surface-selected-border: #a3be8c;
-  --chat-user-bg: #81a1c1;
-  --chat-user-border: #a3be8c;
-  --chat-user-header-bg: #a3be8c;
+  --surface-selected: transparent;
+  --surface-selected-border: #88c0d0;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #81a1c1;
+  --chat-user-header-bg: #81a1c1;
   --action-bg: #81a1c1;
   --action-bg-hover: #88c0d0;
   --action-border: #a3be8c;
@@ -1411,11 +1411,11 @@ textarea:focus::-webkit-scrollbar {
   --primary: #bd93f9;
   --accent: #ff79c6;
   --ring: #bd93f9;
-  --surface-selected: #bd93f9;
+  --surface-selected: transparent;
   --surface-selected-border: #ff79c6;
-  --chat-user-bg: #bd93f9;
-  --chat-user-border: #ff79c6;
-  --chat-user-header-bg: #ff79c6;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #bd93f9;
+  --chat-user-header-bg: #bd93f9;
   --action-bg: #bd93f9;
   --action-bg-hover: #ff79c6;
   --action-border: #ff79c6;
@@ -1434,11 +1434,11 @@ textarea:focus::-webkit-scrollbar {
   --primary: #268bd2;
   --accent: #2aa198;
   --ring: #268bd2;
-  --surface-selected: #268bd2;
+  --surface-selected: transparent;
   --surface-selected-border: #2aa198;
-  --chat-user-bg: #268bd2;
-  --chat-user-border: #2aa198;
-  --chat-user-header-bg: #2aa198;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #268bd2;
+  --chat-user-header-bg: #268bd2;
   --action-bg: #268bd2;
   --action-bg-hover: #2aa198;
   --action-border: #2aa198;
@@ -1457,11 +1457,11 @@ textarea:focus::-webkit-scrollbar {
   --primary: #fb4934;
   --accent: #fabd2f;
   --ring: #fb4934;
-  --surface-selected: #fb4934;
+  --surface-selected: transparent;
   --surface-selected-border: #fabd2f;
-  --chat-user-bg: #fb4934;
-  --chat-user-border: #fabd2f;
-  --chat-user-header-bg: #fabd2f;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #fb4934;
+  --chat-user-header-bg: #fb4934;
   --action-bg: #fb4934;
   --action-bg-hover: #fabd2f;
   --action-border: #fabd2f;
@@ -1473,26 +1473,4 @@ textarea:focus::-webkit-scrollbar {
   --status-connected-fg: #b8bb26;
   --chart-1: #fb4934;
   --chart-2: #fabd2f;
-}
-
-/* ── Selected tile override — no solid fill, just accent border ──────────── */
-/* coral is already set above; Nord, Dracula, Solarized, Gruvbox need it here */
-:root[data-color-scheme="nord"] {
-  --surface-selected: transparent;
-  --surface-selected-border: #88c0d0;
-}
-
-:root[data-color-scheme="dracula"] {
-  --surface-selected: transparent;
-  --surface-selected-border: #ff79c6;
-}
-
-:root[data-color-scheme="solarized"] {
-  --surface-selected: transparent;
-  --surface-selected-border: #2aa198;
-}
-
-:root[data-color-scheme="gruvbox"] {
-  --surface-selected: transparent;
-  --surface-selected-border: #fabd2f;
 }
