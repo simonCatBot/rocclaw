@@ -31,6 +31,8 @@ export type CronPayload =
       bestEffortDeliver?: boolean;
     };
 
+export type CronPriority = "low" | "normal" | "high";
+
 type CronJobState = {
   nextRunAtMs?: number;
   runningAtMs?: number;
@@ -55,6 +57,7 @@ export type CronJobSummary = {
   payload: CronPayload;
   state: CronJobState;
   delivery?: CronDelivery;
+  priority?: CronPriority;
 };
 
 type CronJobsResult = {

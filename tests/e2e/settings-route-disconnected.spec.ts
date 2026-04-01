@@ -16,7 +16,6 @@ test("settings route shows connect UI while disconnected and can return to chat"
     })
     .toBe("/");
 
-  await page.getByTestId("studio-menu-toggle").click();
-  await page.getByTestId("gateway-settings-toggle").click();
+  await page.locator('button[title="Gateway connection settings"]').click();
   await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toBeVisible();
 });

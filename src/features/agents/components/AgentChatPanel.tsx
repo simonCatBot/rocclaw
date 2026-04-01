@@ -14,7 +14,7 @@ import {
 import type { AgentState as AgentRecord } from "@/features/agents/state/store";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Check, ChevronRight, Clock, Cog, Maximize2, Pencil, Shuffle, Trash2, X } from "lucide-react";
+import { Check, ChevronRight, Clock, Cog, Maximize2, Pencil, Shuffle, Trash2, X, Brain, Wrench } from "lucide-react";
 import type { GatewayModelChoice } from "@/lib/gateway/models";
 import { rewriteMediaLinesToMarkdown } from "@/lib/text/media-markdown";
 import { normalizeAssistantDisplayText } from "@/lib/text/assistantText";
@@ -305,7 +305,8 @@ const ThinkingDetailsRow = memo(function ThinkingDetailsRow({
       >
         <ChevronRight className="h-3 w-3 shrink-0 transition group-open:rotate-90" />
         <span className="flex min-w-0 items-center gap-2">
-          <span className="font-mono text-[10px] font-medium tracking-[0.02em]">
+          <Brain className="h-3 w-3 shrink-0 text-foreground/60" />
+          <span className="truncate font-mono text-xs font-medium tracking-[0.02em] text-foreground/60 group-open:text-foreground">
             Thinking (internal)
           </span>
           {typeof durationMs === "number" ? (
@@ -362,7 +363,7 @@ const UserMessageCard = memo(function UserMessageCard({
       style={MESSAGE_CONTENT_VISIBILITY_STYLE}
       {...(testId ? { "data-testid": testId } : {})}
     >
-      <div className="flex items-center justify-between gap-3 bg-[color:var(--chat-user-header-bg)] px-3 py-2 dark:px-3.5 dark:py-2.5">
+      <div className="flex items-center justify-between gap-3 border-b border-[color:var(--chat-user-border)] px-3 py-2 dark:px-3.5 dark:py-2.5">
         <div className="type-meta min-w-0 truncate font-mono text-foreground/90">
           You
         </div>
@@ -444,9 +445,8 @@ const AssistantMessageCard = memo(function AssistantMessageCard({
             aria-live="polite"
             data-testid="agent-typing-indicator"
           >
-            <span className="font-mono text-[10px] font-medium tracking-[0.02em]">
-              Thinking
-            </span>
+            <Brain className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+            <span className="font-mono text-[10px] font-medium">Thinking</span>
             <span className="typing-dots" aria-hidden="true">
               <span />
               <span />
@@ -462,9 +462,8 @@ const AssistantMessageCard = memo(function AssistantMessageCard({
                 aria-live="polite"
                 data-testid="agent-typing-indicator"
               >
-                <span className="font-mono text-[10px] font-medium tracking-[0.02em]">
-                  Thinking
-                </span>
+                <Brain className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+                <span className="font-mono text-[10px] font-medium">Thinking</span>
                 <span className="typing-dots" aria-hidden="true">
                   <span />
                   <span />
@@ -1190,8 +1189,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
             </InlineHoverTooltip>
           ) : null}
         </div>
-        <div className="flex w-full flex-wrap items-center justify-end gap-1.5 text-[10px] text-muted-foreground sm:ml-auto sm:w-auto sm:flex-nowrap">
-          <span className="font-mono tracking-[0.02em]">Show</span>
+        <div className="flex w-full flex-wrap items-center justify-end gap-1.5 sm:ml-auto sm:w-auto sm:flex-nowrap">
           <button
             type="button"
             role="switch"
@@ -1204,21 +1202,21 @@ const AgentChatComposer = memo(function AgentChatComposer({
             }`}
             onClick={() => onToolCallingToggle(!toolCallingEnabled)}
           >
-            Tools
+            <Wrench className="h-3 w-3" />
           </button>
           <button
             type="button"
             role="switch"
             aria-label="Show thinking"
             aria-checked={showThinkingTraces}
-            className={`inline-flex h-5 shrink-0 items-center rounded-sm border px-1.5 font-mono text-[10px] tracking-[0.01em] transition ${
+            className={`inline-flex h-5 shrink-0 items-center rounded-sm border px-1.5 transition ${
               showThinkingTraces
                 ? "border-primary/45 bg-primary/14 text-foreground"
                 : "border-border/70 bg-surface-2/40 text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => onThinkingTracesToggle(!showThinkingTraces)}
           >
-            Thinking
+            <Brain className="h-3 w-3" />
           </button>
         </div>
       </div>

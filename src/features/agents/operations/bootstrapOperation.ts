@@ -9,6 +9,7 @@ import type { AgentState, AgentStoreSeed, FocusFilter } from "@/features/agents/
 import { fetchJson } from "@/lib/http";
 import type { GatewayModelPolicySnapshot } from "@/lib/gateway/models";
 import type { StudioSettings, StudioSettingsPatch } from "@/lib/rocclaw/settings";
+import { normalizeGatewayKey } from "@/lib/rocclaw/settings";
 
 export type StudioBootstrapLoadCommand =
   | { kind: "set-gateway-config-snapshot"; snapshot: GatewayModelPolicySnapshot }
@@ -136,9 +137,10 @@ export async function runStudioFocusedPreferenceLoadOperation(params: {
       return [{ kind: "set-focused-preferences-loaded", value: true }];
     }
 
+    const normalizedKey = normalizeGatewayKey(key);
     const restoreIntent = planFocusedPreferenceRestore({
       settings,
-      gatewayKey: key,
+      gatewayKey: normalizedKey ?? key,
       focusFilterTouched: false,
     });
 

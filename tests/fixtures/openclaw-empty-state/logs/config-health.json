@@ -1,0 +1,22 @@
+{
+  "entries": {
+    "/home/kiriti/.openclaw/openclaw.json": {
+      "lastKnownGood": {
+        "hash": "32cd1992ba766e0893e4f07e20a159015ea83ac432e1f5ad15bb116b6cf7ec00",
+        "bytes": 3942,
+        "mtimeMs": 1774974184796.875,
+        "ctimeMs": 1774974184796.875,
+        "dev": "66306",
+        "ino": "827906",
+        "mode": 384,
+        "nlink": 1,
+        "uid": 1000,
+        "gid": 1000,
+        "hasMeta": true,
+        "gatewayMode": "local",
+        "observedAt": "2026-04-01T07:19:07.530Z"
+      },
+      "lastObservedSuspiciousSignature": null
+    }
+  }
+}

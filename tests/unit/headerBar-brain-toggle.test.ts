@@ -1,9 +1,9 @@
 import { createElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 
-describe("HeaderBar controls", () => {
+describe("HeaderBar", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "matchMedia",
@@ -25,30 +25,26 @@ describe("HeaderBar controls", () => {
     vi.unstubAllGlobals();
   });
 
-  it("does_not_render_brain_toggle_in_header", () => {
-    render(
-      createElement(HeaderBar, {
-        status: "disconnected",
-        onConnectionSettings: vi.fn(),
-      })
-    );
+  it("renders_logo", () => {
+    render(createElement(HeaderBar, {}));
+    expect(screen.getByAltText("rocCLAW control")).toBeInTheDocument();
+  });
 
+  it("does_not_render_brain_toggle", () => {
+    render(createElement(HeaderBar, {}));
     expect(screen.queryByTestId("brain-files-toggle")).not.toBeInTheDocument();
   });
 
-  it("opens_menu_and_calls_connection_settings_handler", () => {
-    const onConnectionSettings = vi.fn();
+  it("does_not_render_connection_settings_button", () => {
+    // HeaderBar no longer has connection settings button - that UI is in FooterBar
+    render(createElement(HeaderBar, {}));
+    expect(screen.queryByRole("button", { name: /disconnected/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /connected/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /gateway/i })).not.toBeInTheDocument();
+  });
 
-    render(
-      createElement(HeaderBar, {
-        status: "disconnected",
-        onConnectionSettings,
-      })
-    );
-
-    fireEvent.click(screen.getByTestId("studio-menu-toggle"));
-    fireEvent.click(screen.getByTestId("gateway-settings-toggle"));
-
-    expect(onConnectionSettings).toHaveBeenCalledTimes(1);
+  it("does_not_render_hamburger_menu", () => {
+    render(createElement(HeaderBar, {}));
+    expect(screen.queryByTestId("studio-menu-toggle")).not.toBeInTheDocument();
   });
 });

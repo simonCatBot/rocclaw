@@ -23,6 +23,27 @@ const DEFAULT_SETTINGS: StudioSettingsFixture = {
   avatars: {},
 };
 
+// Normalize gateway URL keys to match app behavior
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+const normalizeGatewayKey = (value: string): string => {
+  if (!value) return value;
+  try {
+    const parsed = new URL(value);
+    if (!LOOPBACK_HOSTNAMES.has(parsed.hostname.toLowerCase())) {
+      return value;
+    }
+    const auth = parsed.username || parsed.password
+      ? `${parsed.username}${parsed.password ? `:${parsed.password}` : ""}@`
+      : "";
+    const host = parsed.port ? `localhost:${parsed.port}` : "localhost";
+    const dropDefaultPath = parsed.pathname === "/" && !value.endsWith("/") && !parsed.search && !parsed.hash;
+    const pathname = dropDefaultPath ? "" : parsed.pathname;
+    return `${parsed.protocol}//${auth}${host}${pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return value;
+  }
+};
+
 const createStudioRoute = (
   initial: StudioSettingsFixture = DEFAULT_SETTINGS,
   envelope: StudioRouteEnvelopeFixture = {}
@@ -82,12 +103,13 @@ const createStudioRoute = (
       const focusedPatch = patch.focused as Record<string, Record<string, unknown>>;
       const focusedNext = { ...next.focused };
       for (const [key, value] of Object.entries(focusedPatch)) {
-        const existing = focusedNext[key] ?? {
+        const normalizedKey = normalizeGatewayKey(key);
+        const existing = focusedNext[normalizedKey] ?? {
           mode: "focused" as const,
           filter: "all",
           selectedAgentId: null,
         };
-        focusedNext[key] = {
+        focusedNext[normalizedKey] = {
           mode: (value.mode as "focused") ?? existing.mode,
           filter: (value.filter as string) ?? existing.filter,
           selectedAgentId:

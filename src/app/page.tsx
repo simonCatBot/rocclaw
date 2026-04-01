@@ -10,10 +10,12 @@ import {
 } from "@/features/agents/components/AgentInspectPanels";
 import { FleetSidebar } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
+import { FooterBar } from "@/components/FooterBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnectScreen";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
+import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
@@ -301,6 +303,7 @@ const AgentStudioPage = () => {
   const specialUpdateRef = useRef<Map<string, string>>(new Map());
   const seenCronEventIdsRef = useRef<Set<string>>(new Set());
   const preferredSelectedAgentIdRef = useRef<string | null>(null);
+  const [preferredSelectedAgentId, setPreferredSelectedAgentId] = useState<string | null>(null);
   const lastPersistedFocusedSelectionRef = useRef<{
     gatewayKey: string;
     selectedAgentId: string | null;
@@ -566,7 +569,6 @@ const AgentStudioPage = () => {
   }, [coreConnected, gatewayUrl]);
 
   useEffect(() => {
-    let cancelled = false;
     const key = gatewayUrl.trim();
     if (!key) {
       preferredSelectedAgentIdRef.current = null;
@@ -578,18 +580,18 @@ const AgentStudioPage = () => {
     focusFilterTouchedRef.current = false;
     preferredSelectedAgentIdRef.current = null;
     lastPersistedFocusedSelectionRef.current = null;
-    const loadFocusedPreferences = async () => {
-      const commands = await runStudioFocusedPreferenceLoadOperation({
-        gatewayUrl,
-        loadStudioSettings: settingsCoordinator.loadSettings.bind(settingsCoordinator),
-        isFocusFilterTouched: () => focusFilterTouchedRef.current,
-      });
-      if (cancelled) return;
+    // Use promise chain instead of async/await to avoid cancellation issues
+    runStudioFocusedPreferenceLoadOperation({
+      gatewayUrl,
+      loadStudioSettings: settingsCoordinator.loadSettings.bind(settingsCoordinator),
+      isFocusFilterTouched: () => focusFilterTouchedRef.current,
+    }).then((commands) => {
       executeStudioFocusedPreferenceLoadCommands({
         commands,
         setFocusedPreferencesLoaded,
         setPreferredSelectedAgentId: (agentId) => {
           preferredSelectedAgentIdRef.current = agentId;
+          setPreferredSelectedAgentId(agentId);
           const normalizedAgentId = agentId?.trim() ?? "";
           lastPersistedFocusedSelectionRef.current = {
             gatewayKey: key,
@@ -599,11 +601,7 @@ const AgentStudioPage = () => {
         setFocusFilter,
         logError: (message, error) => console.error(message, error),
       });
-    };
-    void loadFocusedPreferences();
-    return () => {
-      cancelled = true;
-    };
+    });
   }, [gatewayUrl, settingsCoordinator]);
 
   useEffect(() => {
@@ -704,6 +702,7 @@ const AgentStudioPage = () => {
     focusedPreferencesLoaded,
     gatewayUrl,
     loadAgents,
+    preferredSelectedAgentId,
     restartingMutationBlock,
   ]);
 
@@ -872,6 +871,7 @@ const AgentStudioPage = () => {
     agentsLoadedOnce,
     selectedAgentId: state.selectedAgentId,
     focusedAgentId: focusedAgent?.agentId ?? null,
+    focusedPreferencesLoaded,
     personalityHasUnsavedChanges,
     activeTab: effectiveSettingsTab,
     inspectSidebar,
@@ -1367,10 +1367,7 @@ const AgentStudioPage = () => {
     return (
       <div className="relative min-h-dvh w-screen overflow-y-auto bg-background">
         <div className="relative z-10 flex min-h-dvh flex-col">
-          <HeaderBar
-            status={gatewayStatus}
-            onConnectionSettings={() => setShowConnectionPanel(true)}
-          />
+          <HeaderBar />
           <div className="flex flex-1 flex-col gap-4 px-3 pb-6 pt-3 sm:px-4 sm:pb-6 sm:pt-4 md:px-6 md:pt-4">
             {settingsRouteActive ? (
               <div className="w-full">
@@ -1437,28 +1434,39 @@ const AgentStudioPage = () => {
         </div>
       ) : null}
       <div className="relative z-10 flex h-dvh flex-col">
-        <HeaderBar
-          status={gatewayStatus}
-          onConnectionSettings={() => setShowConnectionPanel(true)}
-        />
+        <HeaderBar />
         <TabBar activeTabs={activeTabs} onTabToggle={(tabId) => {
           setActiveTabs((current) => {
-            if (current.includes(tabId)) {
-              // Don't allow deselecting the last tab
-              if (current.length === 1) return current;
-              return current.filter((t) => t !== tabId);
+            // Tasks tab is exclusive — selecting it replaces everything
+            if (tabId === "tasks") {
+              return current.includes("tasks") ? [] : ["tasks"];
             }
-            return [...current, tabId];
+            // Non-tasks tabs: remove tasks tab if present, then normal toggle
+            let next = current.includes(tabId)
+              ? current.filter((t) => t !== tabId)
+              : [...current, tabId];
+            next = next.filter((t) => t !== "tasks");
+            // Don't allow deselecting the last tab
+            if (next.length === 0) return current;
+            return next;
           });
         }} />
         <div className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 md:px-5 md:pb-5 md:pt-3">
+          {/* Tasks tab takes exclusive full-width focus — hide everything else */}
+          {activeTabs.length === 1 && activeTabs[0] === "tasks" ? (
+            <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+              <TasksDashboard />
+            </div>
+          ) : (
+            <>
           {connectionPanelVisible ? (
-            <div className="fixed inset-0 z-[140]" data-testid="gateway-connection-overlay">
+            <div className="fixed inset-0 z-[200] pointer-events-none" data-testid="gateway-connection-overlay">
               <div
-                className="absolute inset-0 bg-transparent"
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                style={{ pointerEvents: "none" }}
                 onClick={() => setShowConnectionPanel(false)}
               />
-              <div className="pointer-events-none absolute inset-x-0 top-12 flex justify-center px-3 sm:px-4 md:px-5">
+              <div className="absolute inset-x-0 bottom-8 top-auto flex justify-center px-3 sm:px-4 md:px-5 pointer-events-none">
                 <div className="glass-panel pointer-events-auto w-full max-w-4xl !bg-card px-4 py-4 sm:px-6 sm:py-6">
                   <ConnectionPanel
                     savedGatewayUrl={gatewayUrl}
@@ -1745,6 +1753,13 @@ const AgentStudioPage = () => {
                   </div>
                 ) : null}
 
+                {/* Tasks Tab */}
+                {activeTabs.includes("tasks") ? (
+                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                    <TasksDashboard />
+                  </div>
+                ) : null}
+
                 {/* Tokens Tab */}
                 {activeTabs.includes("tokens") ? (
                   <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -1766,7 +1781,10 @@ const AgentStudioPage = () => {
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
+        <FooterBar status={gatewayStatus} gatewayUrl={gatewayUrl} onConnectionSettings={() => setShowConnectionPanel(true)} />
       </div>
       {createAgentModalOpen ? (
         <AgentCreateModal
