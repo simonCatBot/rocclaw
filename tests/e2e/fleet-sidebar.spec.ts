@@ -40,7 +40,7 @@ test("persists_gateway_fields_to_rocclaw_settings", async ({ page }) => {
   expect(gateway.token).toBe("token-123");
 });
 
-test.skip("focused_preferences_persist_across_reload", async ({ page }) => {
+test("focused_preferences_persist_across_reload", async ({ page }) => {
   // Skipped: This test has been failing since the initial commit (5ebda08).
   // The selection persistence across reload is a pre-existing bug in the sync logic.
   // The store state IS correct after reload (selectedAgentId=agent-2) but the UI

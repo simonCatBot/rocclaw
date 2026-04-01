@@ -303,6 +303,7 @@ const AgentStudioPage = () => {
   const specialUpdateRef = useRef<Map<string, string>>(new Map());
   const seenCronEventIdsRef = useRef<Set<string>>(new Set());
   const preferredSelectedAgentIdRef = useRef<string | null>(null);
+  const [preferredSelectedAgentId, setPreferredSelectedAgentId] = useState<string | null>(null);
   const lastPersistedFocusedSelectionRef = useRef<{
     gatewayKey: string;
     selectedAgentId: string | null;
@@ -568,7 +569,6 @@ const AgentStudioPage = () => {
   }, [coreConnected, gatewayUrl]);
 
   useEffect(() => {
-    let cancelled = false;
     const key = gatewayUrl.trim();
     if (!key) {
       preferredSelectedAgentIdRef.current = null;
@@ -580,18 +580,18 @@ const AgentStudioPage = () => {
     focusFilterTouchedRef.current = false;
     preferredSelectedAgentIdRef.current = null;
     lastPersistedFocusedSelectionRef.current = null;
-    const loadFocusedPreferences = async () => {
-      const commands = await runStudioFocusedPreferenceLoadOperation({
-        gatewayUrl,
-        loadStudioSettings: settingsCoordinator.loadSettings.bind(settingsCoordinator),
-        isFocusFilterTouched: () => focusFilterTouchedRef.current,
-      });
-      if (cancelled) return;
+    // Use promise chain instead of async/await to avoid cancellation issues
+    runStudioFocusedPreferenceLoadOperation({
+      gatewayUrl,
+      loadStudioSettings: settingsCoordinator.loadSettings.bind(settingsCoordinator),
+      isFocusFilterTouched: () => focusFilterTouchedRef.current,
+    }).then((commands) => {
       executeStudioFocusedPreferenceLoadCommands({
         commands,
         setFocusedPreferencesLoaded,
         setPreferredSelectedAgentId: (agentId) => {
           preferredSelectedAgentIdRef.current = agentId;
+          setPreferredSelectedAgentId(agentId);
           const normalizedAgentId = agentId?.trim() ?? "";
           lastPersistedFocusedSelectionRef.current = {
             gatewayKey: key,
@@ -601,11 +601,7 @@ const AgentStudioPage = () => {
         setFocusFilter,
         logError: (message, error) => console.error(message, error),
       });
-    };
-    void loadFocusedPreferences();
-    return () => {
-      cancelled = true;
-    };
+    });
   }, [gatewayUrl, settingsCoordinator]);
 
   useEffect(() => {
@@ -706,6 +702,7 @@ const AgentStudioPage = () => {
     focusedPreferencesLoaded,
     gatewayUrl,
     loadAgents,
+    preferredSelectedAgentId,
     restartingMutationBlock,
   ]);
 
