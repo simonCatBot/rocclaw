@@ -1360,27 +1360,27 @@ textarea:focus::-webkit-scrollbar {
 
 /* ── Color Schemes ──────────────────────────────────────────────────────── */
 
-/* Coral — coral red + teal, warm and bold */
+/* Coral — coral red, warm and bold */
 :root[data-color-scheme="coral"] {
   --primary: #FF4D4D;
-  --accent: #00e5cc;
+  --accent: #FF4D4D;
   --ring: #FF4D4D;
   --surface-selected: transparent;
-  --surface-selected-border: #00e5cc;
+  --surface-selected-border: #FF4D4D;
   --chat-user-bg: #FF4D4D;
   --chat-user-border: #ff8080;
   --chat-user-header-bg: #ff8080;
   --action-bg: #FF4D4D;
   --action-bg-hover: #ff8080;
   --action-border: #ff8080;
-  --status-running-bg: #004d40;
-  --status-running-border: #00e5cc;
-  --status-running-fg: #00e5cc;
-  --status-connected-bg: #004d40;
-  --status-connected-border: #00e5cc;
-  --status-connected-fg: #00e5cc;
+  --status-running-bg: #2d1a1a;
+  --status-running-border: #FF4D4D;
+  --status-running-fg: #FF4D4D;
+  --status-connected-bg: #2d1a1a;
+  --status-connected-border: #FF4D4D;
+  --status-connected-fg: #FF4D4D;
   --chart-1: #FF4D4D;
-  --chart-2: #00e5cc;
+  --chart-2: #ff8080;
 }
 
 /* Nord — cool blue-gray, inspired by Arctic landscapes */

@@ -16,7 +16,7 @@ interface ColorScheme {
 }
 
 const SCHEMES: ColorScheme[] = [
-  { id: "coral", label: "Coral", primary: "#FF4D4D", accent: "#00e5cc", bg: "#0a0a0a" },
+  { id: "coral", label: "Coral", primary: "#FF4D4D", accent: "#FF4D4D", bg: "#0a0a0a" },
   { id: "nord", label: "Nord", primary: "#81a1c1", accent: "#88c0d0", bg: "#2e3440" },
   { id: "dracula", label: "Dracula", primary: "#bd93f9", accent: "#ff79c6", bg: "#282a36" },
   { id: "solarized", label: "Solarized", primary: "#268bd2", accent: "#2aa198", bg: "#002b36" },
