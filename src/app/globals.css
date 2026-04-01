@@ -1429,48 +1429,48 @@ textarea:focus::-webkit-scrollbar {
   --chart-2: #ff79c6;
 }
 
-/* Catppuccin Mocha — soft lavender/rose, trendy in dev tooling */
-:root[data-color-scheme="catppuccin"] {
-  --primary: #cba6f7;
-  --accent: #f5c2e7;
-  --ring: #cba6f7;
-  --surface-selected: #cba6f7;
-  --surface-selected-border: #f5c2e7;
-  --chat-user-bg: #cba6f7;
-  --chat-user-border: #f5c2e7;
-  --chat-user-header-bg: #f5c2e7;
-  --action-bg: #cba6f7;
-  --action-bg-hover: #f5c2e7;
-  --action-border: #f5c2e7;
-  --status-running-bg: #1e1e2e;
-  --status-running-border: #94e2d5;
-  --status-running-fg: #94e2d5;
-  --status-connected-bg: #1e1e2e;
-  --status-connected-border: #94e2d5;
-  --status-connected-fg: #94e2d5;
-  --chart-1: #cba6f7;
-  --chart-2: #f5c2e7;
+/* Solarized — warm cream/yellow/gold, one of the most beloved terminal themes ever */
+:root[data-color-scheme="solarized"] {
+  --primary: #268bd2;
+  --accent: #2aa198;
+  --ring: #268bd2;
+  --surface-selected: #268bd2;
+  --surface-selected-border: #2aa198;
+  --chat-user-bg: #268bd2;
+  --chat-user-border: #2aa198;
+  --chat-user-header-bg: #2aa198;
+  --action-bg: #268bd2;
+  --action-bg-hover: #2aa198;
+  --action-border: #2aa198;
+  --status-running-bg: #002b36;
+  --status-running-border: #2aa198;
+  --status-running-fg: #2aa198;
+  --status-connected-bg: #002b36;
+  --status-connected-border: #2aa198;
+  --status-connected-fg: #2aa198;
+  --chart-1: #268bd2;
+  --chart-2: #2aa198;
 }
 
-/* Monokai Pro — warm gold/green, warm editorial feel */
-:root[data-color-scheme="monokai"] {
-  --primary: #e5c07b;
-  --accent: #56b6c2;
-  --ring: #e5c07b;
-  --surface-selected: #e5c07b;
-  --surface-selected-border: #98c379;
-  --chat-user-bg: #e5c07b;
-  --chat-user-border: #98c379;
-  --chat-user-header-bg: #98c379;
-  --action-bg: #e5c07b;
-  --action-bg-hover: #d19a66;
-  --action-border: #98c379;
-  --status-running-bg: #272822;
-  --status-running-border: #56b6c2;
-  --status-running-fg: #56b6c2;
-  --status-connected-bg: #272822;
-  --status-connected-border: #56b6c2;
-  --status-connected-fg: #56b6c2;
-  --chart-1: #e5c07b;
-  --chart-2: #56b6c2;
+/* Gruvbox — warm earthy reds/greens, hugely popular in the rice community */
+:root[data-color-scheme="gruvbox"] {
+  --primary: #fb4934;
+  --accent: #fabd2f;
+  --ring: #fb4934;
+  --surface-selected: #fb4934;
+  --surface-selected-border: #fabd2f;
+  --chat-user-bg: #fb4934;
+  --chat-user-border: #fabd2f;
+  --chat-user-header-bg: #fabd2f;
+  --action-bg: #fb4934;
+  --action-bg-hover: #fabd2f;
+  --action-border: #fabd2f;
+  --status-running-bg: #282828;
+  --status-running-border: #fabd2f;
+  --status-running-fg: #b8bb26;
+  --status-connected-bg: #282828;
+  --status-connected-border: #fabd2f;
+  --status-connected-fg: #b8bb26;
+  --chart-1: #fb4934;
+  --chart-2: #fabd2f;
 }

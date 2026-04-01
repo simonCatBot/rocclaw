@@ -5,7 +5,7 @@ import { Palette, Moon, Sun } from "lucide-react";
 
 const SCHEME_KEY = "rocclaw-color-scheme";
 
-export type ColorSchemeId = "coral" | "nord" | "dracula" | "catppuccin" | "monokai";
+export type ColorSchemeId = "coral" | "nord" | "dracula" | "solarized" | "gruvbox";
 
 interface ColorScheme {
   id: ColorSchemeId;
@@ -19,8 +19,8 @@ const SCHEMES: ColorScheme[] = [
   { id: "coral", label: "Coral", primary: "#FF4D4D", accent: "#00e5cc", bg: "#0a0a0a" },
   { id: "nord", label: "Nord", primary: "#81a1c1", accent: "#88c0d0", bg: "#2e3440" },
   { id: "dracula", label: "Dracula", primary: "#bd93f9", accent: "#ff79c6", bg: "#282a36" },
-  { id: "catppuccin", label: "Catppuccin", primary: "#cba6f7", accent: "#f5c2e7", bg: "#1e1e2e" },
-  { id: "monokai", label: "Monokai", primary: "#e5c07b", accent: "#56b6c2", bg: "#272822" },
+  { id: "solarized", label: "Solarized", primary: "#268bd2", accent: "#2aa198", bg: "#002b36" },
+  { id: "gruvbox", label: "Gruvbox", primary: "#fb4934", accent: "#fabd2f", bg: "#282828" },
 ];
 
 const THEME_KEY = "theme";
