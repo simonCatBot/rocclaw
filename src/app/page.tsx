@@ -874,6 +874,7 @@ const AgentStudioPage = () => {
     agentsLoadedOnce,
     selectedAgentId: state.selectedAgentId,
     focusedAgentId: focusedAgent?.agentId ?? null,
+    focusedPreferencesLoaded,
     personalityHasUnsavedChanges,
     activeTab: effectiveSettingsTab,
     inspectSidebar,
@@ -1436,7 +1437,7 @@ const AgentStudioPage = () => {
         </div>
       ) : null}
       <div className="relative z-10 flex h-dvh flex-col">
-        <HeaderBar />
+        <HeaderBar onMenuToggle={() => setShowConnectionPanel((v) => !v)} onConnectionSettings={() => setShowConnectionPanel(true)} />
         <TabBar activeTabs={activeTabs} onTabToggle={(tabId) => {
           setActiveTabs((current) => {
             // Tasks tab is exclusive — selecting it replaces everything
@@ -1462,12 +1463,13 @@ const AgentStudioPage = () => {
           ) : (
             <>
           {connectionPanelVisible ? (
-            <div className="fixed inset-0 z-[200]" data-testid="gateway-connection-overlay">
+            <div className="fixed inset-0 z-[200] pointer-events-none" data-testid="gateway-connection-overlay">
               <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                style={{ pointerEvents: "none" }}
                 onClick={() => setShowConnectionPanel(false)}
               />
-              <div className="pointer-events-none absolute inset-x-0 bottom-8 top-auto flex justify-center px-3 sm:px-4 md:px-5">
+              <div className="absolute inset-x-0 bottom-8 top-auto flex justify-center px-3 sm:px-4 md:px-5 pointer-events-none">
                 <div className="glass-panel pointer-events-auto w-full max-w-4xl !bg-card px-4 py-4 sm:px-6 sm:py-6">
                   <ConnectionPanel
                     savedGatewayUrl={gatewayUrl}

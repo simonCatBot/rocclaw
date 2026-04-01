@@ -268,7 +268,7 @@ export const planNonRouteSelectionSyncCommands = (input: {
     commands.push({ kind: "select-agent", agentId: null });
   }
 
-  const nextSelectedAgentId = input.focusedAgentId ?? null;
+  const nextSelectedAgentId = input.focusedAgentId ?? input.selectedAgentId;
   if (input.selectedAgentId !== nextSelectedAgentId) {
     commands.push({ kind: "select-agent", agentId: nextSelectedAgentId });
   }

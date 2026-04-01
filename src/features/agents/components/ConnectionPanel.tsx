@@ -110,9 +110,10 @@ export const ConnectionPanel = ({
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Gateway URL
+              Upstream gateway URL
             </span>
             <input
+              data-testid="gateway-url-input"
               className="h-10 rounded-xl border border-border bg-surface-2 px-4 font-mono text-xs text-foreground placeholder-muted-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               type="text"
               value={draftGatewayUrl}
@@ -124,7 +125,7 @@ export const ConnectionPanel = ({
           <label className="flex flex-col gap-1.5">
             <span className="flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Token
+                Upstream token
               </span>
               {(hasStoredToken || localGatewayDefaultsHasToken) && (
                 <span className="text-[10px] text-green-400/70">stored · safe</span>

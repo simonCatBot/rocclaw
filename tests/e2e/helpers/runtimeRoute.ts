@@ -117,4 +117,30 @@ export const stubRuntimeRoutes = async (page: Page, fixture: RuntimeRouteFixture
       },
     });
   });
+
+  await page.route("**/api/runtime/disconnect", async (route, request) => {
+    if (request.method() !== "POST") {
+      await route.fallback();
+      return;
+    }
+    const asOf = new Date().toISOString();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        enabled: true,
+        summary: {
+          status: "disconnected",
+          reason: null,
+          asOf,
+          outboxHead: 0,
+        },
+        freshness: {
+          source: "gateway",
+          stale: false,
+          asOf,
+        },
+      }),
+    });
+  });
 };

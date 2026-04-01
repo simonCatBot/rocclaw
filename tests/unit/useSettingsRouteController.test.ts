@@ -89,6 +89,7 @@ const renderController = (
     agentsLoadedOnce: true,
     selectedAgentId: null,
     focusedAgentId: null,
+    focusedPreferencesLoaded: true,
     personalityHasUnsavedChanges: false,
     activeTab: "personality",
     inspectSidebar: null,

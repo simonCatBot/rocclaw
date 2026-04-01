@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import {
   planBackToChatCommands,
@@ -20,6 +20,7 @@ export type UseSettingsRouteControllerParams = {
   agentsLoadedOnce: boolean;
   selectedAgentId: string | null;
   focusedAgentId: string | null;
+  focusedPreferencesLoaded: boolean;
   personalityHasUnsavedChanges: boolean;
   activeTab: SettingsRouteTab;
   inspectSidebar: InspectSidebarState;
@@ -97,6 +98,7 @@ export function useSettingsRouteController(
     agentsLoadedOnce,
     selectedAgentId,
     focusedAgentId,
+    focusedPreferencesLoaded,
     personalityHasUnsavedChanges,
     activeTab,
     inspectSidebar,
@@ -235,6 +237,94 @@ export function useSettingsRouteController(
     status,
   ]);
 
+  // Track user-initiated selection changes to avoid overwriting them.
+  // isUserInitiatedRef.current starts false. On user click (FleetSidebar →
+  // handleFleetSelectAgent → dispatchSelectAgent), we set it true BEFORE
+  // dispatch, then the sync effect runs and resets it to false.
+  // This lets the sync tell apart user clicks from fleet/envelope changes.
+  const isUserInitiatedRef = useRef(false);
+
+  // Track the previously synced focusedAgentId and whether the initial bypass
+  // (for the null→default transition) has been done. This prevents the default
+  // focusedAgentId (first agent) from overwriting the selection before the
+  // focused preferences envelope has loaded.
+  const prevFocusedAgentIdRef = useRef<string | null>(null);
+  const initialBypassDoneRef = useRef(false);
+
+  useEffect(() => {
+    // Only run the sync when focused preferences are loaded AND agents exist.
+    if (!focusedPreferencesLoaded || agents.length === 0) {
+      return;
+    }
+
+    // Bypass the initial null→default focusedAgentId transition so it doesn't
+    // overwrite the selection before focused preferences load.
+    if (prevFocusedAgentIdRef.current === null && !initialBypassDoneRef.current) {
+      prevFocusedAgentIdRef.current = focusedAgentId;
+      initialBypassDoneRef.current = true;
+      return;
+    }
+
+    // Skip if focusedAgentId hasn't actually changed.
+    if (prevFocusedAgentIdRef.current === focusedAgentId) {
+      return;
+    }
+
+    // If user just clicked, preserve their choice and skip the sync.
+    // Reset the flag so future focusedAgentId changes can sync normally.
+    if (isUserInitiatedRef.current) {
+      isUserInitiatedRef.current = false;
+      prevFocusedAgentIdRef.current = focusedAgentId;
+      return;
+    }
+
+    // Skip if selectedAgentId already matches focusedAgentId — nothing to sync.
+    // This handles the case where the envelope loaded and changed selectedAgentId
+    // to match focusedAgentId — we shouldn't then sync again.
+    if (selectedAgentId === focusedAgentId) {
+      prevFocusedAgentIdRef.current = focusedAgentId;
+      return;
+    }
+
+    prevFocusedAgentIdRef.current = focusedAgentId;
+
+    const hasSelectedAgentInAgents = selectedAgentId
+      ? agents.some((agent) => agent.agentId === selectedAgentId)
+      : false;
+    const hasInspectSidebarAgent = inspectSidebar?.agentId
+      ? agents.some((agent) => agent.agentId === inspectSidebar?.agentId)
+      : false;
+
+    const commands = planNonRouteSelectionSyncCommands({
+      settingsRouteActive,
+      selectedAgentId,
+      focusedAgentId,
+      hasSelectedAgentInAgents,
+      currentInspectSidebar: inspectSidebar,
+      hasInspectSidebarAgent,
+    });
+
+    applyCommands(commands);
+  }, [
+    applyCommands,
+    agents,
+    focusedAgentId,
+    focusedPreferencesLoaded,
+    inspectSidebar,
+    selectedAgentId,
+    settingsRouteActive,
+  ]);
+
+  // Called by FleetSidebar before dispatching a user-initiated select-agent.
+  // Sets the flag so the sync effect knows to preserve the selection.
+  const handleFleetSelectAgentWithTracking = useCallback(
+    (agentId: string) => {
+      isUserInitiatedRef.current = true;
+      dispatchSelectAgent(agentId);
+    },
+    [dispatchSelectAgent]
+  );
+
   useEffect(() => {
     const hasSelectedAgentInAgents = selectedAgentId
       ? agents.some((agent) => agent.agentId === selectedAgentId)
@@ -266,6 +356,6 @@ export function useSettingsRouteController(
     handleBackToChat,
     handleSettingsRouteTabChange,
     handleOpenAgentSettingsRoute,
-    handleFleetSelectAgent,
+    handleFleetSelectAgent: handleFleetSelectAgentWithTracking,
   };
 }

@@ -355,7 +355,11 @@ export const useStudioGatewaySettings = (
       });
       manualDisconnectRef.current = false;
       applySettingsEnvelope(envelope);
-      await refreshRuntimeStatus();
+      // After saving, show disconnected so the user can test the connection first.
+      // The auto-connect guard (didAutoConnectRef) prevents background reconnect.
+      setStatus("disconnected");
+      setStatusReason(null);
+      setConnectionError(null);
       return true;
     } catch (nextError) {
       manualDisconnectRef.current = false;
@@ -373,7 +377,6 @@ export const useStudioGatewaySettings = (
     draftGatewayUrl,
     hasStoredToken,
     localGatewayDefaultsHasToken,
-    refreshRuntimeStatus,
     settingsCoordinator,
     token,
   ]);
