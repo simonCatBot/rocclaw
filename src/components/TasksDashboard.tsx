@@ -202,7 +202,7 @@ function CronJobTile({
           alt={agentName}
           width={32}
           height={32}
-          className="h-8 w-8 shrink-0 rounded-full bg-surface-2 ring-1 ring-black/20 dark:ring-white/10"
+          className="h-8 w-8 shrink-0 rounded-full bg-surface-2 ring-1 ring-accent"
           unoptimized
         />
         <div className="min-w-0 flex-1">
@@ -334,7 +334,7 @@ function RunTile({
           alt={agentName}
           width={32}
           height={32}
-          className={`h-8 w-8 shrink-0 rounded-full bg-surface-2 ring-1 ring-black/20 dark:ring-white/10 ${isPendingExecution ? "ring-primary/40" : ""}`}
+          className={`h-8 w-8 shrink-0 rounded-full bg-surface-2 ring-1 ring-accent ${isPendingExecution ? "ring-primary/50" : ""}`}
           unoptimized
         />
         <div className="min-w-0 flex-1">
