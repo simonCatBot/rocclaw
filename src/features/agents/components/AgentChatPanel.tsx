@@ -1184,8 +1184,7 @@ const AgentChatComposer = memo(function AgentChatComposer({
             </InlineHoverTooltip>
           ) : null}
         </div>
-        <div className="flex w-full flex-wrap items-center justify-end gap-1.5 text-[10px] text-muted-foreground sm:ml-auto sm:w-auto sm:flex-nowrap">
-          <span className="font-mono tracking-[0.02em]">Show</span>
+        <div className="flex w-full flex-wrap items-center justify-end gap-1.5 sm:ml-auto sm:w-auto sm:flex-nowrap">
           <button
             type="button"
             role="switch"
