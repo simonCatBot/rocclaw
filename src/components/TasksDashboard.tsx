@@ -190,7 +190,7 @@ function CronJobTile({
     <div
       className={`group relative rounded-xl border bg-surface-1 p-3 shadow-sm transition-all ${
         isDragOverlay
-          ? "border-primary shadow-xl ring-2 ring-primary/60"
+          ? "border-primary shadow-lg ring-1 ring-primary/30"
           : "border-border hover:border-border/80 hover:bg-surface-2/30"
       }`}
     >
@@ -321,7 +321,7 @@ function RunTile({
     <div
       className={`rounded-xl border bg-surface-1 p-3 shadow-sm transition-all ${
         isDragOverlay
-          ? "border-primary shadow-xl ring-2 ring-primary/60"
+          ? "border-primary shadow-lg ring-1 ring-primary/30"
           : isPendingExecution
             ? "border-blue-500/50 bg-blue-500/5"
             : "border-border hover:border-border/80 hover:bg-surface-2/30"
