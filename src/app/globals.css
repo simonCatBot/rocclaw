@@ -1474,3 +1474,29 @@ textarea:focus::-webkit-scrollbar {
   --chart-1: #fb4934;
   --chart-2: #fabd2f;
 }
+
+/* ── Selected tile override — no solid fill, just accent border ──────────── */
+:root[data-color-scheme="coral"] {
+  --surface-selected: transparent;
+  --surface-selected-border: #00e5cc;
+}
+
+:root[data-color-scheme="nord"] {
+  --surface-selected: transparent;
+  --surface-selected-border: #88c0d0;
+}
+
+:root[data-color-scheme="dracula"] {
+  --surface-selected: transparent;
+  --surface-selected-border: #ff79c6;
+}
+
+:root[data-color-scheme="solarized"] {
+  --surface-selected: transparent;
+  --surface-selected-border: #2aa198;
+}
+
+:root[data-color-scheme="gruvbox"] {
+  --surface-selected: transparent;
+  --surface-selected-border: #fabd2f;
+}
