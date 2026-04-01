@@ -949,7 +949,7 @@ export function TasksDashboard() {
   const [now, setNow] = useState(Date.now());
   const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
   const [compactView, setCompactView] = useState(false);
-  const [tasksView, setTasksView] = useState<"scheduled" | "board">("scheduled");
+  const [tasksView, setTasksView] = useState<"scheduled" | "board">("board");
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showKeyboardHint, setShowKeyboardHint] = useState(false);
   const [expandedTask, setExpandedTask] = useState<CronJobSummary | null>(null);
