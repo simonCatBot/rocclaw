@@ -1360,6 +1360,29 @@ textarea:focus::-webkit-scrollbar {
 
 /* ── Color Schemes ──────────────────────────────────────────────────────── */
 
+/* Coral — coral red + teal, warm and bold */
+:root[data-color-scheme="coral"] {
+  --primary: #FF4D4D;
+  --accent: #00e5cc;
+  --ring: #FF4D4D;
+  --surface-selected: #FF4D4D;
+  --surface-selected-border: #ff8080;
+  --chat-user-bg: #FF4D4D;
+  --chat-user-border: #ff8080;
+  --chat-user-header-bg: #ff8080;
+  --action-bg: #FF4D4D;
+  --action-bg-hover: #ff8080;
+  --action-border: #ff8080;
+  --status-running-bg: #004d40;
+  --status-running-border: #00e5cc;
+  --status-running-fg: #00e5cc;
+  --status-connected-bg: #004d40;
+  --status-connected-border: #00e5cc;
+  --status-connected-fg: #00e5cc;
+  --chart-1: #FF4D4D;
+  --chart-2: #00e5cc;
+}
+
 /* Nord — cool blue-gray, inspired by Arctic landscapes */
 :root[data-color-scheme="nord"] {
   --primary: #81a1c1;

@@ -5,7 +5,7 @@ import { Palette, Moon, Sun } from "lucide-react";
 
 const SCHEME_KEY = "rocclaw-color-scheme";
 
-export type ColorSchemeId = "nord" | "dracula" | "catppuccin" | "monokai";
+export type ColorSchemeId = "coral" | "nord" | "dracula" | "catppuccin" | "monokai";
 
 interface ColorScheme {
   id: ColorSchemeId;
@@ -16,6 +16,7 @@ interface ColorScheme {
 }
 
 const SCHEMES: ColorScheme[] = [
+  { id: "coral", label: "Coral", primary: "#FF4D4D", accent: "#00e5cc", bg: "#0a0a0a" },
   { id: "nord", label: "Nord", primary: "#81a1c1", accent: "#88c0d0", bg: "#2e3440" },
   { id: "dracula", label: "Dracula", primary: "#bd93f9", accent: "#ff79c6", bg: "#282a36" },
   { id: "catppuccin", label: "Catppuccin", primary: "#cba6f7", accent: "#f5c2e7", bg: "#1e1e2e" },
@@ -41,6 +42,8 @@ if (typeof document !== "undefined") {
   const storedScheme = localStorage.getItem(SCHEME_KEY) as ColorSchemeId | null;
   if (storedScheme && SCHEMES.find((s) => s.id === storedScheme)) {
     document.documentElement.dataset.colorScheme = storedScheme;
+  } else {
+    document.documentElement.dataset.colorScheme = "coral";
   }
   const storedTheme = localStorage.getItem(THEME_KEY) as ThemeMode | null;
   if (storedTheme === "light" || storedTheme === "dark") {
@@ -53,7 +56,7 @@ if (typeof document !== "undefined") {
 
 export function ColorSchemeToggle() {
   const [open, setOpen] = useState(false);
-  const [activeScheme, setActiveScheme] = useState<ColorSchemeId>("nord");
+  const [activeScheme, setActiveScheme] = useState<ColorSchemeId>("coral");
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const menuRef = useRef<HTMLDivElement | null>(null);
 
