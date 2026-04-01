@@ -1360,90 +1360,94 @@ textarea:focus::-webkit-scrollbar {
 
 /* ── Color Schemes ──────────────────────────────────────────────────────── */
 
-:root[data-color-scheme="coral"] {
-  --primary: #FF4D4D;
-  --accent: #00e5cc;
-  --ring: #FF4D4D;
-  --surface-selected: #FF4D4D;
-  --surface-selected-border: #ff8080;
-  --chat-user-bg: #FF4D4D;
-  --chat-user-border: #ff8080;
-  --chat-user-header-bg: #ff8080;
-  --action-bg: #FF4D4D;
-  --action-bg-hover: #ff8080;
-  --action-border: #ff8080;
-  --status-running-bg: #004d40;
-  --status-running-border: #00e5cc;
-  --status-running-fg: #00e5cc;
-  --status-connected-bg: #004d40;
-  --status-connected-border: #00e5cc;
-  --status-connected-fg: #00e5cc;
-  --chart-1: #FF4D4D;
-  --chart-2: #00e5cc;
+/* Nord — cool blue-gray, inspired by Arctic landscapes */
+:root[data-color-scheme="nord"] {
+  --primary: #81a1c1;
+  --accent: #88c0d0;
+  --ring: #81a1c1;
+  --surface-selected: #81a1c1;
+  --surface-selected-border: #a3be8c;
+  --chat-user-bg: #81a1c1;
+  --chat-user-border: #a3be8c;
+  --chat-user-header-bg: #a3be8c;
+  --action-bg: #81a1c1;
+  --action-bg-hover: #88c0d0;
+  --action-border: #a3be8c;
+  --status-running-bg: #2e3440;
+  --status-running-border: #88c0d0;
+  --status-running-fg: #88c0d0;
+  --status-connected-bg: #2e3440;
+  --status-connected-border: #88c0d0;
+  --status-connected-fg: #88c0d0;
+  --chart-1: #81a1c1;
+  --chart-2: #88c0d0;
 }
 
-:root[data-color-scheme="ocean"] {
-  --primary: #0ea5e9;
-  --accent: #6ee7b7;
-  --ring: #0ea5e9;
-  --surface-selected: #0ea5e9;
-  --surface-selected-border: #7dd3fc;
-  --chat-user-bg: #0ea5e9;
-  --chat-user-border: #7dd3fc;
-  --chat-user-header-bg: #7dd3fc;
-  --action-bg: #0ea5e9;
-  --action-bg-hover: #38bdf8;
-  --action-border: #7dd3fc;
-  --status-running-bg: #022c22;
-  --status-running-border: #6ee7b7;
-  --status-running-fg: #6ee7b7;
-  --status-connected-bg: #022c22;
-  --status-connected-border: #6ee7b7;
-  --status-connected-fg: #6ee7b7;
-  --chart-1: #0ea5e9;
-  --chart-2: #6ee7b7;
+/* Dracula — vivid purple/pink, classic dark theme */
+:root[data-color-scheme="dracula"] {
+  --primary: #bd93f9;
+  --accent: #ff79c6;
+  --ring: #bd93f9;
+  --surface-selected: #bd93f9;
+  --surface-selected-border: #ff79c6;
+  --chat-user-bg: #bd93f9;
+  --chat-user-border: #ff79c6;
+  --chat-user-header-bg: #ff79c6;
+  --action-bg: #bd93f9;
+  --action-bg-hover: #ff79c6;
+  --action-border: #ff79c6;
+  --status-running-bg: #282a36;
+  --status-running-border: #50fa7b;
+  --status-running-fg: #50fa7b;
+  --status-connected-bg: #282a36;
+  --status-connected-border: #50fa7b;
+  --status-connected-fg: #50fa7b;
+  --chart-1: #bd93f9;
+  --chart-2: #ff79c6;
 }
 
-:root[data-color-scheme="violet"] {
-  --primary: #a855f7;
-  --accent: #f472b6;
-  --ring: #a855f7;
-  --surface-selected: #a855f7;
-  --surface-selected-border: #c084fc;
-  --chat-user-bg: #a855f7;
-  --chat-user-border: #c084fc;
-  --chat-user-header-bg: #c084fc;
-  --action-bg: #a855f7;
-  --action-bg-hover: #c084fc;
-  --action-border: #c084fc;
-  --status-running-bg: #2e1065;
-  --status-running-border: #a855f7;
-  --status-running-fg: #c084fc;
-  --status-connected-bg: #2e1065;
-  --status-connected-border: #a855f7;
-  --status-connected-fg: #c084fc;
-  --chart-1: #a855f7;
-  --chart-2: #f472b6;
+/* Catppuccin Mocha — soft lavender/rose, trendy in dev tooling */
+:root[data-color-scheme="catppuccin"] {
+  --primary: #cba6f7;
+  --accent: #f5c2e7;
+  --ring: #cba6f7;
+  --surface-selected: #cba6f7;
+  --surface-selected-border: #f5c2e7;
+  --chat-user-bg: #cba6f7;
+  --chat-user-border: #f5c2e7;
+  --chat-user-header-bg: #f5c2e7;
+  --action-bg: #cba6f7;
+  --action-bg-hover: #f5c2e7;
+  --action-border: #f5c2e7;
+  --status-running-bg: #1e1e2e;
+  --status-running-border: #94e2d5;
+  --status-running-fg: #94e2d5;
+  --status-connected-bg: #1e1e2e;
+  --status-connected-border: #94e2d5;
+  --status-connected-fg: #94e2d5;
+  --chart-1: #cba6f7;
+  --chart-2: #f5c2e7;
 }
 
-:root[data-color-scheme="amber"] {
-  --primary: #f59e0b;
-  --accent: #fb923c;
-  --ring: #f59e0b;
-  --surface-selected: #f59e0b;
-  --surface-selected-border: #fcd34d;
-  --chat-user-bg: #f59e0b;
-  --chat-user-border: #fcd34d;
-  --chat-user-header-bg: #fcd34d;
-  --action-bg: #f59e0b;
-  --action-bg-hover: #fb923c;
-  --action-border: #fcd34d;
-  --status-running-bg: #292524;
-  --status-running-border: #f59e0b;
-  --status-running-fg: #fbbf24;
-  --status-connected-bg: #292524;
-  --status-connected-border: #f59e0b;
-  --status-connected-fg: #fbbf24;
-  --chart-1: #f59e0b;
-  --chart-2: #fb923c;
+/* Monokai Pro — warm gold/green, warm editorial feel */
+:root[data-color-scheme="monokai"] {
+  --primary: #e5c07b;
+  --accent: #56b6c2;
+  --ring: #e5c07b;
+  --surface-selected: #e5c07b;
+  --surface-selected-border: #98c379;
+  --chat-user-bg: #e5c07b;
+  --chat-user-border: #98c379;
+  --chat-user-header-bg: #98c379;
+  --action-bg: #e5c07b;
+  --action-bg-hover: #d19a66;
+  --action-border: #98c379;
+  --status-running-bg: #272822;
+  --status-running-border: #56b6c2;
+  --status-running-fg: #56b6c2;
+  --status-connected-bg: #272822;
+  --status-connected-border: #56b6c2;
+  --status-connected-fg: #56b6c2;
+  --chart-1: #e5c07b;
+  --chart-2: #56b6c2;
 }
