@@ -527,11 +527,15 @@ interface SortableTaskCardProps {
   id: string;
   task: Task;
   onSelect: (task: Task) => void;
+  onStart?: (task: Task) => void;
+  onPending?: (task: Task) => void;
+  onComplete?: (task: Task) => void;
+  onRevise?: (task: Task) => void;
   compact?: boolean;
   isDragOverlay?: boolean;
 }
 
-function SortableTaskCard({ id, task, onSelect, compact = false, isDragOverlay = false }: SortableTaskCardProps) {
+function SortableTaskCard({ id, task, onSelect, onStart, onPending, onComplete, onRevise, compact = false, isDragOverlay = false }: SortableTaskCardProps) {
   const {
     attributes,
     listeners,
@@ -546,12 +550,6 @@ function SortableTaskCard({ id, task, onSelect, compact = false, isDragOverlay =
     transition,
   };
 
-  const isExecuting = task.stage === "EXECUTING";
-  const isPending = task.stage === "PENDING";
-  const isCompleted = task.stage === "COMPLETED";
-
-  const config = STAGE_CONFIG[task.stage];
-
   return (
     <div
       ref={setNodeRef}
@@ -563,6 +561,10 @@ function SortableTaskCard({ id, task, onSelect, compact = false, isDragOverlay =
       <TaskCard
         task={task}
         onSelect={onSelect}
+        onStart={onStart}
+        onPending={onPending}
+        onComplete={onComplete}
+        onRevise={onRevise}
         compact={compact}
         isDragOverlay={isDragOverlay}
       />
@@ -575,28 +577,34 @@ function SortableTaskCard({ id, task, onSelect, compact = false, isDragOverlay =
 interface TaskCardProps {
   task: Task;
   onSelect: (task: Task) => void;
+  onStart?: (task: Task) => void;
+  onPending?: (task: Task) => void;
+  onComplete?: (task: Task) => void;
+  onRevise?: (task: Task) => void;
   compact?: boolean;
   isDragOverlay?: boolean;
 }
 
-function TaskCard({ task, onSelect, compact = false, isDragOverlay = false }: TaskCardProps) {
+function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, compact = false, isDragOverlay = false }: TaskCardProps) {
+  const [expanded, setExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
   const isExecuting = task.stage === "EXECUTING";
   const isPending = task.stage === "PENDING";
   const isCompleted = task.stage === "COMPLETED";
+  const isQueue = task.stage === "QUEUE";
 
   const config = STAGE_CONFIG[task.stage];
 
   return (
     <div
-      className={`rounded-xl border bg-surface-1 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-surface-2/30 ${
+      className={`group relative rounded-xl border bg-surface-1 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-surface-2/30 ${
         isDragOverlay
           ? "border-accent shadow-lg ring-1 ring-accent/30"
           : config.accentColor
       } ${isExecuting ? "border-blue-500/40 bg-blue-500/5" : ""} ${
         isPending ? "border-amber-500/40 bg-amber-500/5" : ""
-      } ${isCompleted ? "opacity-60" : ""}`}
+      } ${isCompleted ? "opacity-70" : ""}`}
     >
       {/* Header */}
       <div className="mb-2 flex items-start gap-2">
@@ -607,10 +615,21 @@ function TaskCard({ task, onSelect, compact = false, isDragOverlay = false }: Ta
             <PriorityBadge priority={task.priority} />
           </div>
           <h4
-            className="mt-1 truncate text-sm font-semibold text-foreground cursor-pointer hover:text-primary"
+            className="mt-1 flex items-center gap-1 truncate text-sm font-semibold text-foreground cursor-pointer hover:text-primary"
             onClick={() => onSelect(task)}
           >
-            {task.title}
+            <span className="truncate">{task.title}</span>
+            {/* Expand/collapse toggle */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+              className="shrink-0 rounded p-0.5 hover:bg-surface-2"
+            >
+              {expanded ? (
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+            </button>
           </h4>
         </div>
 
@@ -623,65 +642,6 @@ function TaskCard({ task, onSelect, compact = false, isDragOverlay = false }: Ta
         </button>
       </div>
 
-      {/* Description preview */}
-      {!compact && task.description && (
-        <p className="mb-2 line-clamp-2 text-xs text-muted-foreground/80">
-          {task.description}
-        </p>
-      )}
-
-      {/* Meta info */}
-      <div className="space-y-1 text-[10px] text-muted-foreground">
-        {/* Agent */}
-        <div className="flex items-center gap-1.5">
-          <AgentAvatar agentId={task.agentId} size={14} />
-          <span className="truncate">{task.agentId ?? "Unassigned"}</span>
-        </div>
-
-        {/* Time info */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span>Created {formatRelative(task.createdAt)}</span>
-          {task.startedAt && !isExecuting && <span>Started {formatRelative(task.startedAt)}</span>}
-          {isExecuting && task.startedAt && <span>Running {formatElapsed(task.startedAt)}</span>}
-          {task.estimatedMinutes && <span>Est: {task.estimatedMinutes}m</span>}
-        </div>
-
-        {/* Due date */}
-        {task.dueAt && (
-          <div className="flex items-center gap-1 text-amber-400">
-            <Calendar className="h-3 w-3" />
-            Due {formatDate(task.dueAt)}
-          </div>
-        )}
-
-        {/* Pending reason */}
-        {isPending && task.pendingReason && (
-          <div className="flex items-center gap-1 text-amber-400">
-            <AlertTriangle className="h-3 w-3" />
-            {getPendingReasonLabel(task.pendingReason)}
-          </div>
-        )}
-
-        {/* Tags */}
-        {!compact && task.tags && task.tags.length > 0 && (
-          <div className="flex items-center gap-1 flex-wrap">
-            <Tag className="h-3 w-3" />
-            {task.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="rounded bg-surface-2 px-1">{tag}</span>
-            ))}
-            {task.tags.length > 3 && <span>+{task.tags.length - 3}</span>}
-          </div>
-        )}
-
-        {/* Dependencies */}
-        {!compact && task.dependencies && task.dependencies.length > 0 && (
-          <div className="flex items-center gap-1 text-blue-400">
-            <Link2 className="h-3 w-3" />
-            Depends on {task.dependencies.join(", ")}
-          </div>
-        )}
-      </div>
-
       {/* Running indicator */}
       {isExecuting && task.startedAt && (
         <div className="absolute inset-x-0 top-0 flex items-center gap-1 rounded-t-xl bg-blue-500/10 px-3 py-1">
@@ -689,6 +649,185 @@ function TaskCard({ task, onSelect, compact = false, isDragOverlay = false }: Ta
           <span className="text-[10px] font-medium text-blue-400">
             Running {formatElapsed(task.startedAt)}
           </span>
+        </div>
+      )}
+
+      {/* Expanded: full task details */}
+      {expanded && !compact && (
+        <div className="space-y-2 text-[10px] text-muted-foreground">
+          {/* Description */}
+          {task.description && (
+            <p className="whitespace-pre-wrap">{task.description}</p>
+          )}
+
+          {/* Grid of info */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div>
+              <span className="text-muted-foreground/60">Agent:</span>{" "}
+              <span className="flex items-center gap-1">
+                <AgentAvatar agentId={task.agentId} size={12} />
+                {task.agentId ?? "Unassigned"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground/60">Requester:</span> {task.requester}
+            </div>
+            <div>
+              <span className="text-muted-foreground/60">Created:</span> {formatDate(task.createdAt)}
+            </div>
+            {task.dueAt && (
+              <div className="text-amber-400">
+                <span className="text-muted-foreground/60">Due:</span> {formatDate(task.dueAt)}
+              </div>
+            )}
+            {task.startedAt && (
+              <div>
+                <span className="text-muted-foreground/60">Started:</span> {formatDate(task.startedAt)}
+              </div>
+            )}
+            {task.completedAt && (
+              <div>
+                <span className="text-muted-foreground/60">Completed:</span> {formatDate(task.completedAt)}
+              </div>
+            )}
+            {task.estimatedMinutes && (
+              <div>
+                <span className="text-muted-foreground/60">Estimate:</span> {task.estimatedMinutes}m
+              </div>
+            )}
+            {task.actualMinutes && (
+              <div>
+                <span className="text-muted-foreground/60">Actual:</span> {task.actualMinutes}m
+              </div>
+            )}
+            {task.scheduledStartAt && (
+              <div className="text-blue-400">
+                <span className="text-muted-foreground/60">Scheduled:</span> {formatDate(task.scheduledStartAt)}
+              </div>
+            )}
+          </div>
+
+          {/* Pending reason */}
+          {isPending && task.pendingReason && (
+            <div className="flex items-center gap-1 text-amber-400">
+              <AlertTriangle className="h-3 w-3" />
+              {getPendingReasonLabel(task.pendingReason)}
+            </div>
+          )}
+
+          {/* Tags */}
+          {task.tags && task.tags.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              <Tag className="h-3 w-3" />
+              {task.tags.map((tag) => (
+                <span key={tag} className="rounded bg-surface-2 px-1">{tag}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Dependencies */}
+          {task.dependencies && task.dependencies.length > 0 && (
+            <div className="flex items-center gap-1 text-blue-400">
+              <Link2 className="h-3 w-3" />
+              {task.dependencies.join(", ")}
+            </div>
+          )}
+
+          {/* Resolution */}
+          {isCompleted && task.resolution && (
+            <div className="flex items-center gap-1 text-green-400">
+              <CheckCircle className="h-3 w-3" />
+              {task.resolution}
+            </div>
+          )}
+
+          {/* Inline stage transition buttons */}
+          <div className="flex flex-wrap gap-1 pt-1">
+            {isQueue && onStart && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onStart(task); }}
+                className="flex items-center gap-1 rounded-md bg-blue-500/20 px-2 py-1 text-blue-400 hover:bg-blue-500/30"
+              >
+                <Play className="h-3 w-3" /> Start
+              </button>
+            )}
+            {isExecuting && onPending && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onPending(task); }}
+                className="flex items-center gap-1 rounded-md bg-amber-500/20 px-2 py-1 text-amber-400 hover:bg-amber-500/30"
+              >
+                <AlertTriangle className="h-3 w-3" /> Pending
+              </button>
+            )}
+            {isPending && onComplete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onComplete(task); }}
+                className="flex items-center gap-1 rounded-md bg-green-500/20 px-2 py-1 text-green-400 hover:bg-green-500/30"
+              >
+                <Check className="h-3 w-3" /> Approve
+              </button>
+            )}
+            {isPending && onRevise && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onRevise(task); }}
+                className="flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-muted-foreground hover:bg-surface-3"
+              >
+                <RefreshCw className="h-3 w-3" /> Revise
+              </button>
+            )}
+            {isCompleted && onRevise && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onRevise(task); }}
+                className="flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-muted-foreground hover:bg-surface-3"
+              >
+                <ArrowUp className="h-3 w-3" /> Reopen
+              </button>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onSelect(task); }}
+              className="flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-muted-foreground hover:bg-surface-3 ml-auto"
+            >
+              <FileText className="h-3 w-3" /> Details
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Collapsed: compact meta */}
+      {!expanded && (
+        <div className="space-y-1 text-[10px] text-muted-foreground">
+          {/* Agent */}
+          <div className="flex items-center gap-1.5">
+            <AgentAvatar agentId={task.agentId} size={14} />
+            <span className="truncate">{task.agentId ?? "Unassigned"}</span>
+          </div>
+
+          {/* Time info */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>{formatRelative(task.createdAt)}</span>
+            {task.startedAt && !isExecuting && <span>· Started {formatRelative(task.startedAt)}</span>}
+            {isExecuting && task.startedAt && <span className="text-blue-400">· Running {formatElapsed(task.startedAt)}</span>}
+            {task.estimatedMinutes && <span>· Est {task.estimatedMinutes}m</span>}
+          </div>
+
+          {/* Due date */}
+          {task.dueAt && (
+            <div className="flex items-center gap-1 text-amber-400">
+              <Calendar className="h-3 w-3" />
+              Due {formatDate(task.dueAt)}
+            </div>
+          )}
+
+          {/* Tags */}
+          {!compact && task.tags && task.tags.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              <Tag className="h-3 w-3" />
+              {task.tags.slice(0, 3).map((tag) => (
+                <span key={tag} className="rounded bg-surface-2 px-1">{tag}</span>
+              ))}
+              {task.tags.length > 3 && <span>+{task.tags.length - 3}</span>}
+            </div>
+          )}
         </div>
       )}
 
@@ -1427,6 +1566,7 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
   // DnD state
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overColumn, setOverColumn] = useState<string | null>(null);
+  const [doneCollapsed, setDoneCollapsed] = useState(false);
   const dragOverColumnRef = useRef<string | null>(null);
 
   // ── Auto-refresh ──────────────────────────────────────────────────────────
@@ -1982,6 +2122,7 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
                         id={tileId("QUEUE", task.id)}
                         task={task}
                         onSelect={setSelectedTask}
+                        onStart={handleStartTask}
                         compact={compactView}
                       />
                     ))}
@@ -2035,6 +2176,7 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
                         id={tileId("EXECUTING", task.id)}
                         task={task}
                         onSelect={setSelectedTask}
+                        onPending={handlePendingTask}
                         compact={compactView}
                       />
                     ))}
@@ -2068,6 +2210,8 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
                       id={tileId("PENDING", task.id)}
                       task={task}
                       onSelect={setSelectedTask}
+                      onComplete={handleCompleteTask}
+                      onRevise={handleReviseTask}
                       compact={compactView}
                     />
                   ))
@@ -2076,19 +2220,22 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
             </SortableContext>
           </ColumnZone>
 
-          {/* ── Done (Collapsible) ── */}
+          {/* ── Done ── */}
           <ColumnZone
             id="COMPLETED"
             isDropTarget={overColumn === "COMPLETED"}
             count={completedTasks.length + doneRuns.length}
             className="border-green-500/20"
           >
-            <CollapsibleSection
-              title="Done"
-              icon={CheckCircle}
+            <ColumnHeader
+              label="Done"
+              Icon={CheckCircle}
               accent="text-green-400"
               count={completedTasks.length + doneRuns.length}
-            >
+              collapsed={doneCollapsed}
+              onToggle={() => setDoneCollapsed((v) => !v)}
+            />
+            {!doneCollapsed && (
               <SortableContext items={completedTasks.map((t) => tileId("COMPLETED", t.id))}>
                 <div className={`space-y-3 ${compactView ? "scale-95" : ""}`}>
                   {/* Live completed/failed runs */}
@@ -2122,13 +2269,14 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
                         id={tileId("COMPLETED", task.id)}
                         task={task}
                         onSelect={setSelectedTask}
+                        onRevise={handleReviseTask}
                         compact={compactView}
                       />
                     ))
                   )}
                 </div>
               </SortableContext>
-            </CollapsibleSection>
+            )}
           </ColumnZone>
         </div>
 
