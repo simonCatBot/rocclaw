@@ -118,7 +118,7 @@ export const FleetSidebar = ({
                   data-testid={`fleet-agent-row-${agent.agentId}`}
                   className={`group relative ui-card flex flex-col items-center p-4 text-center border transition-colors min-h-[240px] ${
                     selected
-                      ? "ui-card-selected ring-2 ring-primary bg-primary/5"
+                      ? "ui-card-selected ring-2 ring-accent bg-primary/5"
                       : "hover:bg-surface-2/45"
                   }`}
                   onClick={() => onSelectAgent(agent.agentId)}

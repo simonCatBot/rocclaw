@@ -188,10 +188,10 @@ function CronJobTile({
 
   return (
     <div
-      className={`group relative rounded-xl border bg-surface-1 p-3 shadow-sm transition-all ${
+      className={`group relative rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-all ${
         isDragOverlay
-          ? "border-primary shadow-lg ring-1 ring-primary/30"
-          : "border-border hover:border-border/80 hover:bg-surface-2/30"
+          ? "border-accent shadow-lg ring-1 ring-accent/30"
+          : "border-border hover:border-accent/40 hover:bg-surface-2/30"
       }`}
     >
       {/* Header: agent avatar + name + status */}
@@ -321,10 +321,10 @@ function RunTile({
     <div
       className={`rounded-xl border bg-surface-1 p-3 shadow-sm transition-all ${
         isDragOverlay
-          ? "border-primary shadow-lg ring-1 ring-primary/30"
+          ? "border-accent shadow-lg ring-1 ring-accent/30"
           : isPendingExecution
-            ? "border-blue-500/50 bg-blue-500/5"
-            : "border-border hover:border-border/80 hover:bg-surface-2/30"
+            ? "border-accent/40 bg-surface-2/30"
+            : "border-border hover:border-accent/40 hover:bg-surface-2/30"
       }`}
     >
       {/* Agent avatar + name + status */}
