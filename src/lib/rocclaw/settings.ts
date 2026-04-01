@@ -62,7 +62,7 @@ const normalizeGatewayUrl = (value: unknown) => {
   }
 };
 
-const normalizeGatewayKey = (value: unknown) => {
+export function normalizeGatewayKey(value: unknown): string | null {
   const key = normalizeGatewayUrl(value);
   return key ? key : null;
 };
