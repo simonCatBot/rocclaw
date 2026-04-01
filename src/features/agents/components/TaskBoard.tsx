@@ -32,6 +32,8 @@ import {
   GripVertical,
   Filter,
   ArrowUpDown as SortIcon,
+  CalendarClock,
+  Repeat,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -887,9 +889,11 @@ interface CreateTaskModalProps {
   agents: { agentId: string; name: string }[];
   onClose: () => void;
   onCreated: () => void;
+  onCronCreated?: () => void;
 }
 
-function CreateTaskModal({ agents, onClose, onCreated }: CreateTaskModalProps) {
+function CreateTaskModal({ agents, onClose, onCreated, onCronCreated }: CreateTaskModalProps) {
+  const [tab, setTab] = useState<"task" | "scheduled">("task");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [agentId, setAgentId] = useState<string>("");
@@ -898,10 +902,20 @@ function CreateTaskModal({ agents, onClose, onCreated }: CreateTaskModalProps) {
   const [dueAt, setDueAt] = useState("");
   const [tags, setTags] = useState("");
   const [dependencies, setDependencies] = useState("");
+  // Scheduled-specific
+  const [everyValue, setEveryValue] = useState("60");
+  const [everyUnit, setEveryUnit] = useState<"s" | "m" | "h">("m");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleCreate = async () => {
+  const everyMs = useMemo(() => {
+    const v = parseInt(everyValue) || 0;
+    if (everyUnit === "h") return v * 3600000;
+    if (everyUnit === "m") return v * 60000;
+    return v * 1000;
+  }, [everyValue, everyUnit]);
+
+  const handleCreateTask = async () => {
     if (!title.trim()) return;
     setLoading(true);
     setError(null);
@@ -933,11 +947,66 @@ function CreateTaskModal({ agents, onClose, onCreated }: CreateTaskModalProps) {
     }
   };
 
+  const handleCreateScheduled = async () => {
+    if (!title.trim() || everyMs <= 0) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/intents/cron-add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: title.trim(),
+          agentId: agentId || undefined,
+          everyMs,
+          message: description.trim() || `Scheduled task: ${title.trim()}`,
+          priority: priority === "urgent" ? "high" : priority === "low" ? "low" : "normal",
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error ?? "Failed to create scheduled task");
+      }
+      onCronCreated?.();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create scheduled task");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isScheduled = tab === "scheduled";
+  const canSubmit = isScheduled
+    ? title.trim().length > 0 && everyMs > 0
+    : title.trim().length > 0;
+
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-xl border border-border bg-surface-1 p-5 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-foreground">Create New Task</h3>
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-surface-2 p-0.5">
+            <button
+              type="button"
+              onClick={() => setTab("task")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                !isScheduled ? "bg-surface-1 shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Task
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("scheduled")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                isScheduled ? "bg-surface-1 shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CalendarClock className="h-3.5 w-3.5" />
+              Scheduled
+            </button>
+          </div>
           <button
             onClick={onClose}
             className="rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
@@ -948,26 +1017,43 @@ function CreateTaskModal({ agents, onClose, onCreated }: CreateTaskModalProps) {
 
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Title *</label>
+            <label className="mb-1 block text-xs text-muted-foreground">
+              {isScheduled ? "Schedule name" : "Title"} *
+            </label>
             <input
               className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
-              placeholder="What needs to be done?"
+              placeholder={isScheduled ? "Daily summary report" : "What needs to be done?"}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
             />
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Description</label>
-            <textarea
-              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
-              placeholder="Detailed requirements..."
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
+          {isScheduled && (
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Prompt / message</label>
+              <textarea
+                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
+                placeholder="What should this scheduled task do each time it runs?"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          )}
+
+          {!isScheduled && (
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Description</label>
+              <textarea
+                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
+                placeholder="Detailed requirements..."
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -998,48 +1084,84 @@ function CreateTaskModal({ agents, onClose, onCreated }: CreateTaskModalProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Estimate (minutes)</label>
-              <input
-                type="number"
-                min="1"
-                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                placeholder="30"
-                value={estimatedMinutes}
-                onChange={(e) => setEstimatedMinutes(e.target.value)}
-              />
+          {isScheduled ? (
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs text-muted-foreground">Run every</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-20 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    value={everyValue}
+                    onChange={(e) => setEveryValue(e.target.value)}
+                  />
+                  <select
+                    className="flex-1 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    value={everyUnit}
+                    onChange={(e) => setEveryUnit(e.target.value as "s" | "m" | "h")}
+                  >
+                    <option value="s">seconds</option>
+                    <option value="m">minutes</option>
+                    <option value="h">hours</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-xs text-muted-foreground">Preview</label>
+                <p className="flex h-[38px] items-center rounded-md border border-border bg-surface-2 px-3 text-xs text-muted-foreground">
+                  {everyMs >= 3600000 ? `${parseInt(everyValue) || 0}h` : everyMs >= 60000 ? `${parseInt(everyValue) || 0}m` : `${everyValue}s`}
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Due Date</label>
-              <input
-                type="datetime-local"
-                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                value={dueAt}
-                onChange={(e) => setDueAt(e.target.value)}
-              />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Estimate (minutes)</label>
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                  placeholder="30"
+                  value={estimatedMinutes}
+                  onChange={(e) => setEstimatedMinutes(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Due Date</label>
+                <input
+                  type="datetime-local"
+                  className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                  value={dueAt}
+                  onChange={(e) => setDueAt(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Tags (comma separated)</label>
-            <input
-              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
-              placeholder="setup, api, urgent"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-            />
-          </div>
+          {!isScheduled && (
+            <>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Tags (comma separated)</label>
+                <input
+                  className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
+                  placeholder="setup, api, urgent"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                />
+              </div>
 
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Dependencies (task IDs, comma separated)</label>
-            <input
-              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
-              placeholder="T-001, T-002"
-              value={dependencies}
-              onChange={(e) => setDependencies(e.target.value)}
-            />
-          </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">Dependencies (task IDs, comma separated)</label>
+                <input
+                  className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
+                  placeholder="T-001, T-002"
+                  value={dependencies}
+                  onChange={(e) => setDependencies(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
@@ -1052,11 +1174,11 @@ function CreateTaskModal({ agents, onClose, onCreated }: CreateTaskModalProps) {
             Cancel
           </button>
           <button
-            onClick={handleCreate}
-            disabled={loading || !title.trim()}
+            onClick={isScheduled ? handleCreateScheduled : handleCreateTask}
+            disabled={loading || !canSubmit}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Task"}
+            {loading ? "Creating..." : isScheduled ? "Create Schedule" : "Create Task"}
           </button>
         </div>
       </div>
@@ -1835,6 +1957,7 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
             agents={agentList}
             onClose={() => setShowCreateModal(false)}
             onCreated={handleRefresh}
+            onCronCreated={handleRefresh}
           />
         )}
 
