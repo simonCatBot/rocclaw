@@ -1365,8 +1365,8 @@ textarea:focus::-webkit-scrollbar {
   --primary: #FF4D4D;
   --accent: #00e5cc;
   --ring: #FF4D4D;
-  --surface-selected: #FF4D4D;
-  --surface-selected-border: #ff8080;
+  --surface-selected: transparent;
+  --surface-selected-border: #00e5cc;
   --chat-user-bg: #FF4D4D;
   --chat-user-border: #ff8080;
   --chat-user-header-bg: #ff8080;
@@ -1476,11 +1476,7 @@ textarea:focus::-webkit-scrollbar {
 }
 
 /* ── Selected tile override — no solid fill, just accent border ──────────── */
-:root[data-color-scheme="coral"] {
-  --surface-selected: transparent;
-  --surface-selected-border: #00e5cc;
-}
-
+/* coral is already set above; Nord, Dracula, Solarized, Gruvbox need it here */
 :root[data-color-scheme="nord"] {
   --surface-selected: transparent;
   --surface-selected-border: #88c0d0;
