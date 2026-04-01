@@ -315,14 +315,20 @@ export function useSettingsRouteController(
     settingsRouteActive,
   ]);
 
-  // Called by FleetSidebar before dispatching a user-initiated select-agent.
-  // Sets the flag so the sync effect knows to preserve the selection.
+  // Wrap handleFleetSelectAgent to track user-initiated selections so the sync
+  // effect doesn't overwrite them with a stale focusedAgentId.
   const handleFleetSelectAgentWithTracking = useCallback(
     (agentId: string) => {
       isUserInitiatedRef.current = true;
-      dispatchSelectAgent(agentId);
+      // Preserve the original fleet-select behavior.
+      const commands = planFleetSelectCommands({
+        agentId,
+        currentInspectSidebar: inspectSidebar,
+        focusedAgentId,
+      });
+      applyCommands(commands);
     },
-    [dispatchSelectAgent]
+    [applyCommands, focusedAgentId, inspectSidebar]
   );
 
   useEffect(() => {
