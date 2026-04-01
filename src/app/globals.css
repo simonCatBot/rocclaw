@@ -1016,7 +1016,16 @@ textarea:focus::-webkit-scrollbar {
   max-width: 100%;
   border: 1px solid var(--chat-user-border);
   background: var(--chat-user-bg);
+  color: #0a0a0a;
   box-shadow: 0 1px 3px color-mix(in oklch, var(--foreground) 8%, transparent);
+}
+
+.dark .ui-chat-user-card {
+  color: #111111;
+}
+
+.dark .ui-chat-user-card * {
+  color: #111111;
 }
 
 .ui-chat-assistant-card {
