@@ -1487,6 +1487,6 @@ textarea:focus::-webkit-scrollbar {
 /* ── Running badge — always green regardless of color scheme ──────────────── */
 .ui-badge-status-running {
   border-color: #16a34a !important;
-  background: #052e16 !important;
-  color: #4ade80 !important;
+  background: #16a34a !important;
+  color: #000000 !important;
 }
