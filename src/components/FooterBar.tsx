@@ -6,7 +6,7 @@ import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
-import { ExternalLink, Cpu, Users } from "lucide-react";
+import { ExternalLink, Cpu, Users, Plug } from "lucide-react";
 
 function StatusDot({ status }: { status: GatewayStatus }) {
   const colorMap: Record<GatewayStatus, string> = {
@@ -26,9 +26,10 @@ function StatusDot({ status }: { status: GatewayStatus }) {
 interface FooterBarProps {
   status: GatewayStatus;
   gatewayUrl: string;
+  onConnectionSettings: () => void;
 }
 
-export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
+export function FooterBar({ status, gatewayUrl, onConnectionSettings }: FooterBarProps) {
   const { state } = useAgentStore();
   const agents = state.agents;
 
@@ -73,7 +74,7 @@ export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
         <span className="whitespace-nowrap font-mono text-muted-foreground/40">rocCLAW</span>
       </div>
 
-      {/* Right — avatars + theme */}
+      {/* Right — avatars + connection + theme */}
       <div className="flex items-center justify-end gap-4">
         {runningAgents.length > 0 && (
           <div className="flex items-center -space-x-1.5">
@@ -96,6 +97,19 @@ export function FooterBar({ status, gatewayUrl }: FooterBarProps) {
           </div>
         )}
         <div className="h-4 w-px bg-border/60" />
+
+        {/* Connection settings button */}
+        <button
+          type="button"
+          onClick={onConnectionSettings}
+          className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+          title="Gateway connection settings"
+        >
+          <Plug className="h-3.5 w-3.5" />
+        </button>
+
+        <div className="h-4 w-px bg-border/60" />
+
         <ThemeToggle />
       </div>
     </footer>

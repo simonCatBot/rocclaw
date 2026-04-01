@@ -1369,10 +1369,7 @@ const AgentStudioPage = () => {
     return (
       <div className="relative min-h-dvh w-screen overflow-y-auto bg-background">
         <div className="relative z-10 flex min-h-dvh flex-col">
-          <HeaderBar
-            status={gatewayStatus}
-            onConnectionSettings={() => setShowConnectionPanel(true)}
-          />
+          <HeaderBar />
           <div className="flex flex-1 flex-col gap-4 px-3 pb-6 pt-3 sm:px-4 sm:pb-6 sm:pt-4 md:px-6 md:pt-4">
             {settingsRouteActive ? (
               <div className="w-full">
@@ -1439,10 +1436,7 @@ const AgentStudioPage = () => {
         </div>
       ) : null}
       <div className="relative z-10 flex h-dvh flex-col">
-        <HeaderBar
-          status={gatewayStatus}
-          onConnectionSettings={() => setShowConnectionPanel(true)}
-        />
+        <HeaderBar />
         <TabBar activeTabs={activeTabs} onTabToggle={(tabId) => {
           setActiveTabs((current) => {
             // Tasks tab is exclusive — selecting it replaces everything
@@ -1791,7 +1785,7 @@ const AgentStudioPage = () => {
             </>
           )}
         </div>
-        <FooterBar status={gatewayStatus} gatewayUrl={gatewayUrl} />
+        <FooterBar status={gatewayStatus} gatewayUrl={gatewayUrl} onConnectionSettings={() => setShowConnectionPanel(true)} />
       </div>
       {createAgentModalOpen ? (
         <AgentCreateModal
