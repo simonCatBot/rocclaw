@@ -81,7 +81,7 @@ export function FooterBar({ status, gatewayUrl, onConnectionSettings }: FooterBa
             {runningAgents.map((agent) => (
               <div
                 key={agent.agentId}
-                className="relative overflow-hidden rounded-full ring-1 ring-surface-1"
+                className="relative overflow-hidden rounded-full ring-1 ring-black/20 dark:ring-white/10"
                 title={agent.name}
               >
                 <Image
