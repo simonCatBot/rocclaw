@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useAgentStore } from "@/features/agents/state/store";
+import { TaskBoard } from "@/features/agents/components/TaskBoard";
 import {
   sortCronJobsByUpdatedAt,
   formatCronSchedule,
@@ -948,6 +949,7 @@ export function TasksDashboard() {
   const [now, setNow] = useState(Date.now());
   const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
   const [compactView, setCompactView] = useState(false);
+  const [tasksView, setTasksView] = useState<"scheduled" | "board">("scheduled");
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showKeyboardHint, setShowKeyboardHint] = useState(false);
   const [expandedTask, setExpandedTask] = useState<CronJobSummary | null>(null);
@@ -1423,6 +1425,32 @@ export function TasksDashboard() {
                 <RefreshCw className={`h-3.5 w-3.5 ${autoRefresh ? "animate-spin" : ""}`} style={{ animationDuration: "3s" }} />
               </button>
 
+              {/* View toggle: Tasks Board vs Scheduled */}
+              <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setTasksView("scheduled")}
+                  title="Scheduled Tasks view"
+                  className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] transition-all ${
+                    tasksView === "scheduled" ? "bg-surface-2 font-semibold text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Calendar className="h-3 w-3" />
+                  Scheduled
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTasksView("board")}
+                  title="Task Board view"
+                  className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] transition-all ${
+                    tasksView === "board" ? "bg-surface-2 font-semibold text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <LayoutGrid className="h-3 w-3" />
+                  Board
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setShowKeyboardHint((v) => !v)}
@@ -1452,6 +1480,11 @@ export function TasksDashboard() {
           </div>
         )}
 
+        {/* ── Task Board View ── */}
+        {tasksView === "board" ? (
+          <TaskBoard agents={agentList.map((a) => ({ agentId: a.agentId, name: a.name }))} />
+        ) : (
+          <>
         {/* ── Kanban columns ── */}
         <div className="flex flex-1 gap-3 overflow-x-auto px-4 py-4">
 
@@ -1647,9 +1680,10 @@ export function TasksDashboard() {
             </SortableContext>
           </ColumnZone>
         </div>
-      </div>
+          </>
+        )}
 
-      {/* Drag overlay */}
+        {/* Drag overlay */}
       <DragOverlay dropAnimation={null}>
         {activeJob && (() => {
           const agent = agents.find((a) => a.agentId === activeJob.agentId);
@@ -1704,6 +1738,7 @@ export function TasksDashboard() {
           />
         );
       })()}
+      </div>
     </DndContext>
   );
 }
