@@ -52,6 +52,8 @@ import { useSortable, SortableContext } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { useAgentStore } from "@/features/agents/state/store";
+import type { CronJobSummary } from "@/lib/cron/types";
+import { formatCronSchedule, sortCronJobsByUpdatedAt } from "@/lib/cron/types";
 import type {
   Task,
   TaskStage,
@@ -199,7 +201,7 @@ function ColumnZone({ id, isDropTarget, wipLimit, count, children, className = "
   return (
     <div
       data-column={id}
-      className={`flex min-w-[240px] flex-1 flex-col rounded-2xl border p-3 transition-all ${className} ${
+      className={`flex min-w-0 flex-1 flex-col rounded-2xl border p-3 transition-all ${className} ${
         isDropTarget
           ? "border-primary bg-primary/5 ring-1 ring-primary/30"
           : wipExceeded
@@ -233,8 +235,10 @@ interface ColumnHeaderProps {
 function ColumnHeader({ label, Icon, accent, count, wipLimit, collapsed, onToggle }: ColumnHeaderProps) {
   const wipExceeded = wipLimit != null && count > wipLimit;
   return (
-    <div className="mb-3 flex flex-col items-center gap-1">
-      <div className="flex items-center gap-1.5">
+    <div className="mb-3 flex flex-col items-center gap-1.5 text-center">
+      <div className="flex items-center justify-center gap-1.5">
+        <Icon className={`h-5 w-5 shrink-0 ${accent}`} />
+        <span className="text-sm font-bold uppercase tracking-wider">{label}</span>
         {onToggle && (
           <button
             type="button"
@@ -244,15 +248,13 @@ function ColumnHeader({ label, Icon, accent, count, wipLimit, collapsed, onToggl
             {collapsed ? (
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="h-3.5 w-3-3.5 text-muted-foreground" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             )}
           </button>
         )}
-        <Icon className={`h-5 w-5 ${accent}`} />
-        <span className="text-sm font-bold uppercase tracking-wider">{label}</span>
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-surface-2 px-2 font-mono text-xs ${wipExceeded ? "text-red-400" : "text-muted-foreground"}`}>
+      <div className="flex items-center justify-center gap-1.5">
+        <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full bg-surface-2 px-1.5 font-mono text-xs ${wipExceeded ? "text-red-400" : "text-muted-foreground"}`}>
           {count}
         </span>
         {wipLimit != null && (
@@ -308,6 +310,111 @@ function CollapsibleSection({
         )}
       </button>
       {open ? children : null}
+    </div>
+  );
+}
+
+// ─── Cron Job Card ──────────────────────────────────────────────────────────
+
+function formatNextRun(schedule: { kind: string; everyMs?: number; at?: string }): string {
+  if (schedule.kind === "every" && schedule.everyMs) {
+    const ms = schedule.everyMs;
+    if (ms >= 3600000) return `Every ${ms / 3600000}h`;
+    if (ms >= 60000) return `Every ${ms / 60000}m`;
+    return `Every ${ms / 1000}s`;
+  }
+  if (schedule.kind === "cron" && schedule.at) return `Cron: ${schedule.at}`;
+  return "—";
+}
+
+interface CronJobCardProps {
+  job: CronJobSummary;
+  onRun: (job: CronJobSummary) => void;
+  onDelete: (job: CronJobSummary) => void;
+  compact?: boolean;
+}
+
+function CronJobCard({ job, onRun, onDelete, compact = false }: CronJobCardProps) {
+  const { state } = useAgentStore();
+  const storeAgents = state.agents;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const scheduleStr = formatNextRun(job.schedule as { kind: string; everyMs?: number; at?: string });
+  const agent = storeAgents.find((a) => a.agentId === job.agentId);
+  const isDisabled = !job.enabled;
+
+  return (
+    <div
+      className={`group relative rounded-xl border bg-surface-1 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-surface-2/30 ${
+        isDisabled ? "opacity-50" : "border-amber-500/20"
+      }`}
+    >
+      {/* Header */}
+      <div className="mb-2 flex items-start gap-2">
+        <CalendarClock className="h-4 w-4 mt-0.5 shrink-0 text-amber-400" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-mono text-[10px] text-muted-foreground">{job.id.slice(0, 8)}</span>
+            {isDisabled && (
+              <span className="rounded-full bg-neutral-500/10 px-1.5 py-0.5 text-[10px] text-neutral-400">Disabled</span>
+            )}
+          </div>
+          <h4 className="mt-1 truncate text-sm font-semibold text-foreground">{job.name}</h4>
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+          className="rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Description */}
+      {job.description && !compact && (
+        <p className="mb-2 line-clamp-2 text-xs text-muted-foreground/80">{job.description}</p>
+      )}
+
+      {/* Schedule + Agent */}
+      <div className="space-y-1 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <Clock className="h-3 w-3" />
+          <span>{scheduleStr}</span>
+        </div>
+        {agent && (
+          <div className="flex items-center gap-1.5">
+            <AgentAvatar agentId={job.agentId} size={14} />
+            <span className="truncate">{agent.name}</span>
+          </div>
+        )}
+        {job.priority && job.priority !== "normal" && (
+          <div className="flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3 text-amber-400" />
+            <span className="capitalize">{job.priority}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Quick actions */}
+      {!isDisabled && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRun(job); }}
+          className="mt-2 flex w-full items-center justify-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-400 hover:bg-amber-500/20"
+        >
+          <Zap className="h-3 w-3" />
+          Run now
+        </button>
+      )}
+
+      {/* Context menu */}
+      {menuOpen && (
+        <div className="absolute right-2 top-8 z-10 mt-1 w-36 rounded-xl border border-border bg-surface-1 p-1 shadow-lg">
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(job); setMenuOpen(false); }}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 hover:bg-surface-2"
+          >
+            <XCircle className="h-3 w-3" /> Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -905,6 +1012,9 @@ function CreateTaskModal({ agents, onClose, onCreated, onCronCreated }: CreateTa
   // Scheduled-specific
   const [everyValue, setEveryValue] = useState("60");
   const [everyUnit, setEveryUnit] = useState<"s" | "m" | "h">("m");
+  // Task start scheduling
+  const [hasStartAt, setHasStartAt] = useState(false);
+  const [startAt, setStartAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -930,6 +1040,7 @@ function CreateTaskModal({ agents, onClose, onCreated, onCronCreated }: CreateTa
           priority,
           estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
           dueAt: dueAt || undefined,
+          startAt: hasStartAt && startAt ? startAt : undefined,
           tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
           dependencies: dependencies ? dependencies.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
         }),
@@ -1141,6 +1252,27 @@ function CreateTaskModal({ agents, onClose, onCreated, onCronCreated }: CreateTa
 
           {!isScheduled && (
             <>
+              {/* Schedule start toggle */}
+              <div>
+                <label className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={hasStartAt}
+                    onChange={(e) => { setHasStartAt(e.target.checked); if (!e.target.checked) setStartAt(""); }}
+                    className="h-3.5 w-3.5 rounded border-border"
+                  />
+                  Schedule task start
+                </label>
+                {hasStartAt && (
+                  <input
+                    type="datetime-local"
+                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    value={startAt}
+                    onChange={(e) => setStartAt(e.target.value)}
+                  />
+                )}
+              </div>
+
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">Tags (comma separated)</label>
                 <input
@@ -1279,6 +1411,7 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
   }, [propAgents, storeAgents]);
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [cronJobs, setCronJobs] = useState<CronJobSummary[]>([]);
   const [search, setSearch] = useState("");
   const [selectedPriority, setSelectedPriority] = useState<TaskPriority | null>(null);
   const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
@@ -1325,9 +1458,29 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
     }
   }, [search]);
 
+  // ── Fetch cron jobs ────────────────────────────────────────────────────────
+  const fetchCronJobs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cron/jobs");
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setCronJobs(data.jobs ?? []);
+    } catch {
+      // Silently handle
+    }
+  }, []);
+
+  // ── Combined refresh ──────────────────────────────────────────────────────
+  const handleRefresh = useCallback(() => {
+    void fetchTasks();
+    void fetchCronJobs();
+    setRefreshKey((k) => k + 1);
+  }, [fetchTasks, fetchCronJobs]);
+
   useEffect(() => {
     void fetchTasks();
-  }, [fetchTasks, refreshKey]);
+    void fetchCronJobs();
+  }, [fetchTasks, fetchCronJobs, refreshKey]);
 
   // ── Build execution run entries from agent state ──────────────────────────
   const runEntries = useMemo(() => {
@@ -1430,18 +1583,36 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
   const pendingTasks = sortedTasks.filter((t) => t.stage === "PENDING");
   const completedTasks = sortedTasks.filter((t) => t.stage === "COMPLETED");
 
+  // Filter cron jobs: enabled jobs show in queue
+  const scheduledJobs = useMemo(() => {
+    let jobs = cronJobs.filter((j) => j.enabled);
+    if (selectedAgentIds.size > 0) {
+      jobs = jobs.filter((j) => selectedAgentIds.has(j.agentId ?? "unassigned"));
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      jobs = jobs.filter(
+        (j) =>
+          j.name.toLowerCase().includes(q) ||
+          j.description?.toLowerCase().includes(q) ||
+          j.id.toLowerCase().includes(q)
+      );
+    }
+    return sortCronJobsByUpdatedAt(jobs);
+  }, [cronJobs, search, selectedAgentIds]);
+
   const executingRuns = filteredRuns.filter((r) => r.status === "thinking" || r.status === "running");
   const doneRuns = filteredRuns.filter((r) => r.status === "completed" || r.status === "failed");
 
   // ── Stats ────────────────────────────────────────────────────────────────
   const stats = useMemo(() => ({
-    queue: queueTasks.length,
+    queue: queueTasks.length + scheduledJobs.length,
     executing: executingTasks.length,
     pending: pendingTasks.length,
     completed: completedTasks.length,
-    total: tasks.length,
+    total: tasks.length + scheduledJobs.length,
     activeCount: executingRuns.length,
-  }), [queueTasks, executingTasks, pendingTasks, completedTasks, tasks, executingRuns]);
+  }), [queueTasks, executingTasks, pendingTasks, completedTasks, tasks, executingRuns, scheduledJobs]);
 
   // ── DnD handlers ─────────────────────────────────────────────────────────
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -1508,10 +1679,27 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
     [tasks, executingTasks.length]
   );
 
-  // ── Refresh handler ──────────────────────────────────────────────────────
-  const handleRefresh = useCallback(() => {
-    setRefreshKey((k) => k + 1);
-  }, []);
+  // ── Cron job handlers ────────────────────────────────────────────────────
+  const handleRunCronJob = async (job: CronJobSummary) => {
+    setLoading(true);
+    try {
+      await fetch(`/api/cron/run?id=${encodeURIComponent(job.id)}`, { method: "POST" });
+      handleRefresh();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCronJob = async (job: CronJobSummary) => {
+    if (!confirm(`Delete scheduled task "${job.name}"?`)) return;
+    setLoading(true);
+    try {
+      await fetch(`/api/cron/jobs?id=${encodeURIComponent(job.id)}`, { method: "DELETE" });
+      handleRefresh();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ── Stage transitions ────────────────────────────────────────────────────
   const handleStartTask = async (task: Task) => {
@@ -1762,29 +1950,42 @@ export function TaskBoard({ agents: propAgents }: TaskBoardProps) {
           <ColumnZone
             id="QUEUE"
             isDropTarget={overColumn === "QUEUE"}
-            count={queueTasks.length}
+            count={queueTasks.length + scheduledJobs.length}
             className="border-purple-500/20"
           >
             <ColumnHeader
               label="Queue"
               Icon={Loader}
               accent="text-purple-400"
-              count={queueTasks.length}
+              count={queueTasks.length + scheduledJobs.length}
             />
             <SortableContext items={queueTasks.map((t) => tileId("QUEUE", t.id))}>
               <div className={`space-y-2 ${compactView ? "scale-95" : ""}`}>
-                {queueTasks.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground/40">Drag tasks here to start</p>
+                {queueTasks.length === 0 && scheduledJobs.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">No queued tasks or schedules</p>
                 ) : (
-                  queueTasks.map((task) => (
-                    <SortableTaskCard
-                      key={tileId("QUEUE", task.id)}
-                      id={tileId("QUEUE", task.id)}
-                      task={task}
-                      onSelect={setSelectedTask}
-                      compact={compactView}
-                    />
-                  ))
+                  <>
+                    {/* Cron jobs in queue (not sortable) */}
+                    {scheduledJobs.map((job) => (
+                      <CronJobCard
+                        key={job.id}
+                        job={job}
+                        onRun={handleRunCronJob}
+                        onDelete={handleDeleteCronJob}
+                        compact={compactView}
+                      />
+                    ))}
+                    {/* Tasks in queue */}
+                    {queueTasks.map((task) => (
+                      <SortableTaskCard
+                        key={tileId("QUEUE", task.id)}
+                        id={tileId("QUEUE", task.id)}
+                        task={task}
+                        onSelect={setSelectedTask}
+                        compact={compactView}
+                      />
+                    ))}
+                  </>
                 )}
               </div>
             </SortableContext>

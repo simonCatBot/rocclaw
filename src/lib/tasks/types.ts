@@ -56,6 +56,7 @@ export interface Task {
   startedAt?: string | null; // ISO8601
   completedAt?: string | null; // ISO8601
   pendingSince?: string | null; // ISO8601
+  scheduledStartAt?: string | null; // ISO8601 - when to auto-start
   dueAt?: string | null; // ISO8601
   estimatedMinutes?: number | null;
   actualMinutes?: number | null;
@@ -79,6 +80,7 @@ export interface TaskCreateInput {
   description?: string;
   priority?: TaskPriority;
   dueAt?: string | null;
+  scheduledStartAt?: string | null; // When to start (future scheduling)
   estimatedMinutes?: number | null;
   requester?: string;
   agentId?: string | null;
@@ -226,6 +228,7 @@ export function createEmptyTask(input: TaskCreateInput, id: string): Task {
     context: input.context,
     dependencies: input.dependencies ?? [],
     dueAt: input.dueAt ?? null,
+    scheduledStartAt: input.scheduledStartAt ?? null,
     estimatedMinutes: input.estimatedMinutes ?? null,
   };
 }

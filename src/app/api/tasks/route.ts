@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
       description: body.description,
       priority: body.priority,
       dueAt: body.dueAt,
+      scheduledStartAt: body.startAt,
       estimatedMinutes: body.estimatedMinutes,
       requester: body.requester ?? "human",
       agentId: body.agentId,
