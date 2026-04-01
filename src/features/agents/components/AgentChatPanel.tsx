@@ -362,7 +362,7 @@ const UserMessageCard = memo(function UserMessageCard({
       style={MESSAGE_CONTENT_VISIBILITY_STYLE}
       {...(testId ? { "data-testid": testId } : {})}
     >
-      <div className="flex items-center justify-between gap-3 bg-[color:var(--chat-user-header-bg)] px-3 py-2 dark:px-3.5 dark:py-2.5">
+      <div className="flex items-center justify-between gap-3 border-b border-[color:var(--chat-user-border)] px-3 py-2 dark:px-3.5 dark:py-2.5">
         <div className="type-meta min-w-0 truncate font-mono text-foreground/90">
           You
         </div>
