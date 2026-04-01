@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useAgentStore } from "@/features/agents/state/store";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import { ExternalLink, Cpu, Users, Plug } from "lucide-react";
 
@@ -110,7 +110,7 @@ export function FooterBar({ status, gatewayUrl, onConnectionSettings }: FooterBa
 
         <div className="h-4 w-px bg-border/60" />
 
-        <ThemeToggle />
+        <ColorSchemeToggle />
       </div>
     </footer>
   );
