@@ -18,6 +18,7 @@ import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
 import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { ConnectionPage } from "@/components/ConnectionPage";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
@@ -1744,6 +1745,36 @@ const AgentStudioPage = () => {
                         className="items-center p-6 text-center text-sm"
                       />
                     )}
+                  </div>
+                ) : null}
+
+                {/* Connection Tab */}
+                {activeTabs.includes("connection") ? (
+                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                    <ConnectionPage
+                      savedGatewayUrl={gatewayUrl}
+                      draftGatewayUrl={draftGatewayUrl}
+                      token={token}
+                      localGatewayDefaults={localGatewayDefaults}
+                      localGatewayDefaultsHasToken={localGatewayDefaultsHasToken}
+                      hasStoredToken={hasStoredToken}
+                      hasUnsavedChanges={hasUnsavedChanges}
+                      installContext={installContext}
+                      status={gatewayStatus}
+                      statusReason={statusReason}
+                      error={gatewayError}
+                      testResult={testResult}
+                      saving={gatewaySaving}
+                      testing={gatewayTesting}
+                      disconnecting={gatewayDisconnecting}
+                      onGatewayUrlChange={setGatewayUrl}
+                      onTokenChange={setToken}
+                      onUseLocalDefaults={useLocalGatewayDefaults}
+                      onSaveSettings={() => void saveSettings()}
+                      onTestConnection={() => void testConnection()}
+                      onDisconnect={() => void disconnect()}
+                      onConnect={() => void saveSettings()}
+                    />
                   </div>
                 ) : null}
 
