@@ -331,6 +331,7 @@ interface CronJobCardProps {
   job: CronJobSummary;
   onRun: (job: CronJobSummary) => void;
   onDelete: (job: CronJobSummary) => void;
+  onSelect?: (job: CronJobSummary) => void;
   compact?: boolean;
 }
 
@@ -338,6 +339,7 @@ function CronJobCard({ job, onRun, onDelete, compact = false }: CronJobCardProps
   const { state } = useAgentStore();
   const storeAgents = state.agents;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const scheduleStr = formatNextRun(job.schedule as { kind: string; everyMs?: number; at?: string });
   const agent = storeAgents.find((a) => a.agentId === job.agentId);
   const isDisabled = !job.enabled;
@@ -350,7 +352,7 @@ function CronJobCard({ job, onRun, onDelete, compact = false }: CronJobCardProps
     >
       {/* Header */}
       <div className="mb-2 flex items-start gap-2">
-        <CalendarClock className="h-4 w-4 mt-0.5 shrink-0 text-amber-400" />
+        <GripVertical className="h-4 w-4 mt-0.5 shrink-0 cursor-grab text-muted-foreground/30 group-hover:text-muted-foreground" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-mono text-[10px] text-muted-foreground">{job.id.slice(0, 8)}</span>
@@ -358,7 +360,22 @@ function CronJobCard({ job, onRun, onDelete, compact = false }: CronJobCardProps
               <span className="rounded-full bg-neutral-500/10 px-1.5 py-0.5 text-[10px] text-neutral-400">Disabled</span>
             )}
           </div>
-          <h4 className="mt-1 truncate text-sm font-semibold text-foreground">{job.name}</h4>
+          <h4
+            className="mt-1 flex items-center gap-1 truncate text-sm font-semibold text-foreground"
+          >
+            <span className="truncate">{job.name}</span>
+            {/* Expand/collapse */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+              className="shrink-0 rounded p-0.5 hover:bg-surface-2"
+            >
+              {expanded ? (
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+            </button>
+          </h4>
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
@@ -368,30 +385,59 @@ function CronJobCard({ job, onRun, onDelete, compact = false }: CronJobCardProps
         </button>
       </div>
 
-      {/* Description */}
-      {job.description && !compact && (
-        <p className="mb-2 line-clamp-2 text-xs text-muted-foreground/80">{job.description}</p>
-      )}
-
-      {/* Schedule + Agent */}
-      <div className="space-y-1 text-[10px] text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <Clock className="h-3 w-3" />
-          <span>{scheduleStr}</span>
-        </div>
-        {agent && (
+      {/* Collapsed: compact meta */}
+      {!expanded && (
+        <div className="space-y-1 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3" />
+            <span>{scheduleStr}</span>
+          </div>
           <div className="flex items-center gap-1.5">
             <AgentAvatar agentId={job.agentId} size={14} />
-            <span className="truncate">{agent.name}</span>
+            <span className="truncate">{agent?.name ?? job.agentId ?? "Unassigned"}</span>
           </div>
-        )}
-        {job.priority && job.priority !== "normal" && (
-          <div className="flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3 text-amber-400" />
-            <span className="capitalize">{job.priority}</span>
+        </div>
+      )}
+
+      {/* Expanded: full details */}
+      {expanded && !compact && (
+        <div className="space-y-2 text-[10px] text-muted-foreground">
+          {job.description && (
+            <p className="whitespace-pre-wrap">{job.description}</p>
+          )}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div>
+              <span className="text-muted-foreground/60">Agent:</span>{" "}
+              <span className="flex items-center gap-1">
+                <AgentAvatar agentId={job.agentId} size={12} />
+                {agent?.name ?? job.agentId ?? "Unassigned"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground/60">Updated:</span>{" "}
+              {formatRelative(new Date(job.updatedAtMs).toISOString())}
+            </div>
+            <div>
+              <span className="text-muted-foreground/60">Last run:</span>{" "}
+              {job.state?.lastRunAtMs
+                ? formatRelative(new Date(job.state.lastRunAtMs).toISOString())
+                : "Never"}
+            </div>
+            <div>
+              <span className="text-muted-foreground/60">Status:</span>{" "}
+              <span className={job.state?.lastStatus === "ok" ? "text-green-400" : job.state?.lastStatus === "error" ? "text-red-400" : "text-muted-foreground"}>
+                {job.state?.lastStatus ?? "—"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground/60">Next run:</span>{" "}
+              {job.state?.nextRunAtMs
+                ? new Date(job.state.nextRunAtMs).toLocaleString()
+                : "—"}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Quick actions */}
       {!isDisabled && (
