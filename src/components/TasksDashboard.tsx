@@ -657,13 +657,35 @@ interface CreateCronModalProps {
   onCreated: () => void;
 }
 
+type JobType = "onetime" | "recurring";
+type RecurringType = "interval" | "cron";
+
 function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }: CreateCronModalProps) {
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [agentId, setAgentId] = useState(defaultAgentId);
   const [message, setMessage] = useState("");
+  
+  // Job type toggle
+  const [jobType, setJobType] = useState<JobType>("recurring");
+  
+  // One-time specific
+  const [runAtDate, setRunAtDate] = useState("");
+  const [runAtTime, setRunAtTime] = useState("");
+  
+  // Recurring specific
+  const [recurringType, setRecurringType] = useState<RecurringType>("interval");
   const [everyValue, setEveryValue] = useState("60");
   const [everyUnit, setEveryUnit] = useState<"s" | "m" | "h">("m");
+  const [cronExpr, setCronExpr] = useState("");
+  const [cronTz, setCronTz] = useState("");
+  
+  // Common options
   const [priority, setPriority] = useState<CronPriority>("normal");
+  const [enabled, setEnabled] = useState(true);
+  const [deleteAfterRun, setDeleteAfterRun] = useState(false);
+  const [sessionTarget, setSessionTarget] = useState<"main" | "isolated">("isolated");
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -674,15 +696,46 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
     return v * 1000;
   }, [everyValue, everyUnit]);
 
+  const buildSchedule = () => {
+    if (jobType === "onetime") {
+      if (!runAtDate || !runAtTime) return null;
+      const at = new Date(`${runAtDate}T${runAtTime}`).toISOString();
+      return { kind: "at" as const, at };
+    }
+    // recurring
+    if (recurringType === "cron") {
+      if (!cronExpr.trim()) return null;
+      return { kind: "cron" as const, expr: cronExpr.trim(), tz: cronTz.trim() || undefined };
+    }
+    // interval
+    if (everyMs <= 0) return null;
+    return { kind: "every" as const, everyMs };
+  };
+
   const handleCreate = async () => {
-    if (!name.trim() || !message.trim() || everyMs <= 0) return;
+    if (!name.trim() || !message.trim()) return;
+    const schedule = buildSchedule();
+    if (!schedule) return;
+    
     setLoading(true);
     setError(null);
     try {
+      const payload: Record<string, unknown> = {
+        name: name.trim(),
+        agentId: agentId || undefined,
+        schedule,
+        priority,
+        enabled,
+        deleteAfterRun,
+        sessionTarget,
+        description: description.trim() || undefined,
+        payload: { kind: "agentTurn", message: message.trim() },
+      };
+      
       const res = await fetch("/api/intents/cron-add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), agentId: agentId || undefined, everyMs, message: message.trim(), priority }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Unknown error" }));
@@ -697,23 +750,78 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
     }
   };
 
+  // Validation
+  const isValid = useMemo(() => {
+    if (!name.trim() || !message.trim()) return false;
+    if (jobType === "onetime") {
+      return !!(runAtDate && runAtTime);
+    }
+    if (jobType === "recurring") {
+      if (recurringType === "cron") {
+        return !!cronExpr.trim();
+      }
+      return everyMs > 0;
+    }
+    return false;
+  }, [name, message, jobType, runAtDate, runAtTime, recurringType, cronExpr, everyMs]);
+
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface-1 p-5 shadow-2xl">
-        <h3 className="mb-4 text-base font-semibold text-foreground">Create Scheduled Task</h3>
+      <div className="flex h-[90vh] w-full max-w-lg flex-col rounded-xl border border-border bg-surface-1 p-5 shadow-2xl">
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-foreground">Create Task</h3>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-        <div className="space-y-3">
+        {/* Scrollable form */}
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+          {/* Job Type Toggle */}
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Task name</label>
+            <label className="mb-2 block text-xs text-muted-foreground">Job Type</label>
+            <div className="flex rounded-md border border-border bg-surface-2 p-0.5">
+              <button
+                type="button"
+                onClick={() => setJobType("recurring")}
+                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                  jobType === "recurring"
+                    ? "bg-surface-1 text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Recurring
+              </button>
+              <button
+                type="button"
+                onClick={() => setJobType("onetime")}
+                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                  jobType === "onetime"
+                    ? "bg-surface-1 text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                One-time
+              </button>
+            </div>
+          </div>
+
+          {/* Task Name */}
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Task name *</label>
             <input
               className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Daily summary"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              autoFocus
             />
           </div>
 
+          {/* Agent */}
           {agents.length > 1 && (
             <div>
               <label className="mb-1 block text-xs text-muted-foreground">Agent</label>
@@ -730,8 +838,112 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
             </div>
           )}
 
+          {/* Schedule Section */}
+          <div className="space-y-3">
+            <label className="block text-xs text-muted-foreground">Schedule *</label>
+            
+            {jobType === "onetime" ? (
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="mb-1 block text-[10px] text-muted-foreground">Date</label>
+                  <input
+                    type="date"
+                    className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    value={runAtDate}
+                    onChange={(e) => setRunAtDate(e.target.value)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-[10px] text-muted-foreground">Time</label>
+                  <input
+                    type="time"
+                    className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    value={runAtTime}
+                    onChange={(e) => setRunAtTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Recurring type toggle */}
+                <div className="flex rounded-md border border-border bg-surface-2 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setRecurringType("interval")}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                      recurringType === "interval"
+                        ? "bg-surface-1 text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Interval
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecurringType("cron")}
+                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                      recurringType === "cron"
+                        ? "bg-surface-1 text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Cron Expression
+                  </button>
+                </div>
+
+                {recurringType === "interval" ? (
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-muted-foreground">Run every</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          className="w-20 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                          value={everyValue}
+                          onChange={(e) => setEveryValue(e.target.value)}
+                        />
+                        <select
+                          className="flex-1 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                          value={everyUnit}
+                          onChange={(e) => setEveryUnit(e.target.value as "s" | "m" | "h")}
+                        >
+                          <option value="s">seconds</option>
+                          <option value="m">minutes</option>
+                          <option value="h">hours</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">Cron expression *</label>
+                      <input
+                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none font-mono"
+                        placeholder="*/5 * * * *"
+                        value={cronExpr}
+                        onChange={(e) => setCronExpr(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">Timezone (optional)</label>
+                      <input
+                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
+                        placeholder="America/Los_Angeles"
+                        value={cronTz}
+                        onChange={(e) => setCronTz(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Prompt / Message */}
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Prompt / message</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Prompt / message *</label>
             <textarea
               className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="What should this task do?"
@@ -741,30 +953,20 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
             />
           </div>
 
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Run every</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  className="w-20 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                  value={everyValue}
-                  onChange={(e) => setEveryValue(e.target.value)}
-                />
-                <select
-                  className="flex-1 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                  value={everyUnit}
-                  onChange={(e) => setEveryUnit(e.target.value as "s" | "m" | "h")}
-                >
-                  <option value="s">seconds</option>
-                  <option value="m">minutes</option>
-                  <option value="h">hours</option>
-                </select>
-              </div>
-            </div>
+          {/* Description */}
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Description (optional)</label>
+            <input
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Brief description of what this task does"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
 
-            <div className="flex-1">
+          {/* Options Row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
               <label className="mb-1 block text-xs text-muted-foreground">Priority</label>
               <select
                 className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
@@ -776,12 +978,46 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
                 <option value="high">High</option>
               </select>
             </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Session</label>
+              <select
+                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                value={sessionTarget}
+                onChange={(e) => setSessionTarget(e.target.value as "main" | "isolated")}
+              >
+                <option value="isolated">Isolated</option>
+                <option value="main">Main</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Checkboxes */}
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-surface-2 text-primary focus:ring-primary"
+              />
+              Start enabled
+            </label>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={deleteAfterRun}
+                onChange={(e) => setDeleteAfterRun(e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-surface-2 text-primary focus:ring-primary"
+              />
+              Delete after run (for one-time jobs)
+            </label>
           </div>
 
           {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
+        {/* Footer */}
+        <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">
           <button
             onClick={onClose}
             className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-surface-2"
@@ -790,7 +1026,7 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
           </button>
           <button
             onClick={handleCreate}
-            disabled={loading || !name.trim() || !message.trim() || everyMs <= 0}
+            disabled={loading || !isValid}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create Task"}
