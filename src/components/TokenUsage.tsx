@@ -444,7 +444,7 @@ export function TokenUsage() {
                   </div>
                   <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-secondary/70 rounded-full transition-all duration-500"
+                      className="h-full bg-blue-500/70 rounded-full transition-all duration-500"
                       style={{ width: `${Math.max(msgPercent, 1)}%` }}
                     />
                   </div>
