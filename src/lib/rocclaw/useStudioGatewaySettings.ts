@@ -339,7 +339,7 @@ export const useStudioGatewaySettings = (
     setStatusReason(null);
     setConnectionError(null);
     manualDisconnectRef.current = true;
-    didAutoConnectRef.current = true;
+    // Don't set didAutoConnectRef here - let the auto-connect effect handle reconnection
     try {
       await settingsCoordinator.flushPending();
       const patch: StudioSettingsPatch = {
