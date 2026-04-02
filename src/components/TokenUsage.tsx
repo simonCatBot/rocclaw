@@ -21,11 +21,13 @@ interface TokenMetrics {
     outputTokens: number;
     cost: number;
     percentage: number;
+    messageCount: number;
   }[];
   byModel: {
     model: string;
     tokens: number;
     percentage: number;
+    messageCount: number;
   }[];
   todayUsage: {
     input: number;
@@ -62,6 +64,7 @@ const STATIC_TOKEN_DATA: TokenMetrics = {
       outputTokens: 56400000,
       cost: 0,
       percentage: 64,
+      messageCount: 1500,
     },
     {
       agentId: "main",
@@ -70,6 +73,7 @@ const STATIC_TOKEN_DATA: TokenMetrics = {
       outputTokens: 27000000,
       cost: 0,
       percentage: 31,
+      messageCount: 940,
     },
     {
       agentId: "assistant",
@@ -78,6 +82,7 @@ const STATIC_TOKEN_DATA: TokenMetrics = {
       outputTokens: 620000,
       cost: 0,
       percentage: 1,
+      messageCount: 27,
     },
     {
       agentId: "admin",
@@ -86,13 +91,15 @@ const STATIC_TOKEN_DATA: TokenMetrics = {
       outputTokens: 55826,
       cost: 0,
       percentage: 0,
+      messageCount: 11,
     },
   ],
   byModel: [
-    { model: "minimax-m2.7:cloud", tokens: 75000000, percentage: 55 },
-    { model: "llama3.1:latest", tokens: 35000000, percentage: 25 },
-    { model: "kimi-k2.5:cloud", tokens: 20000000, percentage: 15 },
-    { model: "qwen2.5:7b", tokens: 7600000, percentage: 5 },
+    { model: "minimax-m2.7:cloud", tokens: 75000000, percentage: 55, messageCount: 1500 },
+    { model: "llama3.1:latest", tokens: 35000000, percentage: 25, messageCount: 27 },
+    { model: "kimi-k2.5:cloud", tokens: 20000000, percentage: 15, messageCount: 940 },
+    { model: "qwen2.5:7b", tokens: 7600000, percentage: 5, messageCount: 11 },
+    { model: "gateway-injected", tokens: 0, percentage: 0, messageCount: 595 },
   ],
   todayUsage: {
     input: 1250000,
@@ -163,11 +170,12 @@ export function TokenUsage() {
           // Build byModel array
           const byModel: TokenMetrics["byModel"] = [];
           if (data.aggregated?.byModel) {
-            for (const [model, stats] of Object.entries(data.aggregated.byModel as Record<string, { totalTokens: number }>)) {
+            for (const [model, stats] of Object.entries(data.aggregated.byModel as Record<string, { totalTokens: number; messageCount?: number }>)) {
               byModel.push({
                 model,
                 tokens: stats.totalTokens,
                 percentage: totalTokens > 0 ? Math.round((stats.totalTokens / totalTokens) * 100) : 0,
+                messageCount: stats.messageCount ?? 0,
               });
             }
           }
@@ -356,14 +364,15 @@ export function TokenUsage() {
                     className="w-2 h-2 rounded-full"
                     style={{ 
                       backgroundColor: agent.agentId === 'developer' ? '#3b82f6' : 
-                                     agent.agentId === 'main' ? '#22c55e' : '#f59e0b' 
+                                     agent.agentId === 'main' ? '#22c55e' : 
+                                     agent.agentId === 'assistant' ? '#f59e0b' : '#8b5cf6' 
                     }}
                   />
                   <span className="text-sm text-foreground">{agent.agentName}</span>
                 </div>
                 <div className="flex items-center gap-3 text-right">
                   <span className="text-[10px] text-muted-foreground">
-                    {formatNumber(agent.inputTokens + agent.outputTokens)}
+                    {formatNumber(agent.inputTokens + agent.outputTokens)} • {formatNumber(agent.messageCount)} msg
                   </span>
                   <span className="text-xs font-medium text-foreground w-14">
                     {agent.percentage}%
@@ -385,12 +394,14 @@ export function TokenUsage() {
             </h3>
           </div>
           <div className="space-y-2">
-            {metrics.byModel.slice(0, 5).map((model) => (
+          {metrics.byModel.slice(0, 6).map((model) => (
               <div key={model.model} className="space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground capitalize">{model.model}</span>
+                  <span className="text-muted-foreground capitalize">
+                    {model.model === 'gateway-injected' ? 'Gateway Injected' : model.model}
+                  </span>
                   <span className="text-foreground font-medium">
-                    {formatNumber(model.tokens)} ({model.percentage}%)
+                    {formatNumber(model.tokens)} ({model.percentage}%) • {formatNumber(model.messageCount)} msg
                   </span>
                 </div>
                 <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
