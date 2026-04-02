@@ -658,7 +658,7 @@ interface CreateCronModalProps {
 }
 
 type JobType = "onetime" | "recurring";
-type RecurringType = "interval" | "cron";
+type SchedulePreset = "minutely" | "5min" | "15min" | "30min" | "hourly" | "daily" | "weekly" | "monthly";
 
 function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }: CreateCronModalProps) {
   const [name, setName] = useState("");
@@ -673,12 +673,12 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
   const [runAtDate, setRunAtDate] = useState("");
   const [runAtTime, setRunAtTime] = useState("");
   
-  // Recurring specific
-  const [recurringType, setRecurringType] = useState<RecurringType>("interval");
-  const [everyValue, setEveryValue] = useState("60");
-  const [everyUnit, setEveryUnit] = useState<"s" | "m" | "h">("m");
-  const [cronExpr, setCronExpr] = useState("");
-  const [cronTz, setCronTz] = useState("");
+  // Recurring schedule
+  const [schedulePreset, setSchedulePreset] = useState<SchedulePreset>("daily");
+  const [scheduleTime, setScheduleTime] = useState("09:00");
+  const [scheduleDayOfWeek, setScheduleDayOfWeek] = useState("1");
+  const [scheduleDayOfMonth, setScheduleDayOfMonth] = useState("1");
+  const [scheduleTz, setScheduleTz] = useState("");
   
   // Common options
   const [enabled, setEnabled] = useState(true);
@@ -688,27 +688,38 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const everyMs = useMemo(() => {
-    const v = parseInt(everyValue) || 0;
-    if (everyUnit === "h") return v * 3600000;
-    if (everyUnit === "m") return v * 60000;
-    return v * 1000;
-  }, [everyValue, everyUnit]);
-
   const buildSchedule = () => {
     if (jobType === "onetime") {
       if (!runAtDate || !runAtTime) return null;
       const at = new Date(`${runAtDate}T${runAtTime}`).toISOString();
       return { kind: "at" as const, at };
     }
-    // recurring
-    if (recurringType === "cron") {
-      if (!cronExpr.trim()) return null;
-      return { kind: "cron" as const, expr: cronExpr.trim(), tz: cronTz.trim() || undefined };
+    // recurring - convert preset to schedule
+    const tz = scheduleTz.trim() || undefined;
+    switch (schedulePreset) {
+      case "minutely":
+        return { kind: "every" as const, everyMs: 60_000 };
+      case "5min":
+        return { kind: "every" as const, everyMs: 5 * 60_000 };
+      case "15min":
+        return { kind: "every" as const, everyMs: 15 * 60_000 };
+      case "30min":
+        return { kind: "every" as const, everyMs: 30 * 60_000 };
+      case "hourly":
+        return { kind: "every" as const, everyMs: 3600_000 };
+      case "daily":
+        return { kind: "cron" as const, expr: `0 ${scheduleTime.split(":")[0]} * * *`, tz };
+      case "weekly": {
+        const [hour, minute] = scheduleTime.split(":");
+        return { kind: "cron" as const, expr: `${minute} ${hour} * * ${scheduleDayOfWeek}`, tz };
+      }
+      case "monthly": {
+        const [hour, minute] = scheduleTime.split(":");
+        return { kind: "cron" as const, expr: `${minute} ${hour} ${scheduleDayOfMonth} * *`, tz };
+      }
+      default:
+        return { kind: "every" as const, everyMs: 3600_000 };
     }
-    // interval
-    if (everyMs <= 0) return null;
-    return { kind: "every" as const, everyMs };
   };
 
   const handleCreate = async () => {
@@ -754,14 +765,9 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
     if (jobType === "onetime") {
       return !!(runAtDate && runAtTime);
     }
-    if (jobType === "recurring") {
-      if (recurringType === "cron") {
-        return !!cronExpr.trim();
-      }
-      return everyMs > 0;
-    }
-    return false;
-  }, [name, message, jobType, runAtDate, runAtTime, recurringType, cronExpr, everyMs]);
+    // recurring - all presets are always valid
+    return true;
+  }, [name, message, jobType, runAtDate, runAtTime]);
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -863,84 +869,98 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
               </div>
             ) : (
               <>
-                {/* Recurring type toggle */}
-                <div className="flex rounded-md border border-border bg-surface-2 p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setRecurringType("interval")}
-                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                      recurringType === "interval"
-                        ? "bg-surface-1 text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Interval
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRecurringType("cron")}
-                    className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                      recurringType === "cron"
-                        ? "bg-surface-1 text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Cron Expression
-                  </button>
-                </div>
+                {/* Simple Schedule Builder */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-[10px] text-muted-foreground">Frequency</label>
+                    <select
+                      className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                      value={schedulePreset}
+                      onChange={(e) => setSchedulePreset(e.target.value as SchedulePreset)}
+                    >
+                      <option value="minutely">Every minute</option>
+                      <option value="5min">Every 5 minutes</option>
+                      <option value="15min">Every 15 minutes</option>
+                      <option value="30min">Every 30 minutes</option>
+                      <option value="hourly">Every hour</option>
+                      <option value="daily">Daily at specific time</option>
+                      <option value="weekly">Weekly on specific day/time</option>
+                      <option value="monthly">Monthly on specific day/time</option>
+                    </select>
+                  </div>
 
-                {recurringType === "interval" ? (
-                  <div className="flex items-end gap-3">
-                    <div className="flex-1">
-                      <label className="mb-1 block text-[10px] text-muted-foreground">Run every</label>
-                      <div className="flex items-center gap-2">
+                  {/* Daily time picker */}
+                  {(schedulePreset === "daily" || schedulePreset === "weekly") && (
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        {schedulePreset === "weekly" ? "Day of week" : ""} Time
+                      </label>
+                      <input
+                        type="time"
+                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Weekly day picker */}
+                  {schedulePreset === "weekly" && (
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">Day of week</label>
+                      <select
+                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                        value={scheduleDayOfWeek}
+                        onChange={(e) => setScheduleDayOfWeek(e.target.value)}
+                      >
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Monthly day picker */}
+                  {schedulePreset === "monthly" && (
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <label className="mb-1 block text-[10px] text-muted-foreground">Day of month</label>
                         <input
                           type="number"
                           min="1"
-                          className="w-20 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                          value={everyValue}
-                          onChange={(e) => setEveryValue(e.target.value)}
+                          max="31"
+                          className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                          value={scheduleDayOfMonth}
+                          onChange={(e) => setScheduleDayOfMonth(e.target.value)}
                         />
-                        <select
-                          className="flex-1 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                          value={everyUnit}
-                          onChange={(e) => setEveryUnit(e.target.value as "s" | "m" | "h")}
-                        >
-                          <option value="s">seconds</option>
-                          <option value="m">minutes</option>
-                          <option value="h">hours</option>
-                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="mb-1 block text-[10px] text-muted-foreground">Time</label>
+                        <input
+                          type="time"
+                          className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                          value={scheduleTime}
+                          onChange={(e) => setScheduleTime(e.target.value)}
+                        />
                       </div>
                     </div>
+                  )}
+
+                  {/* Timezone */}
+                  <div>
+                    <label className="mb-1 block text-[10px] text-muted-foreground">Timezone (optional)</label>
+                    <input
+                      className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
+                      placeholder="America/Los_Angeles"
+                      value={scheduleTz}
+                      onChange={(e) => setScheduleTz(e.target.value)}
+                    />
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="mb-1 flex items-center gap-1 block text-[10px] text-muted-foreground">
-                        Cron expression *
-                        <span className="text-[8px] text-muted-foreground/60" title="Format: minute hour day month weekday. Example: */5 * * * * runs every 5 minutes">(?)</span>
-                      </label>
-                      <input
-                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none font-mono"
-                        placeholder="*/5 * * * *"
-                        value={cronExpr}
-                        onChange={(e) => setCronExpr(e.target.value)}
-                      />
-                      <p className="mt-1 text-[10px] text-muted-foreground/70">
-                        Format: minute hour day month weekday. <span className="font-mono">*</span> = any. <span className="font-mono">*/5</span> = every 5. Example: <span className="font-mono">0 9 * * *</span> = daily at 9am
-                      </p>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[10px] text-muted-foreground">Timezone (optional)</label>
-                      <input
-                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
-                        placeholder="America/Los_Angeles"
-                        value={cronTz}
-                        onChange={(e) => setCronTz(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                )}
+                </div>
               </>
             )}
           </div>
