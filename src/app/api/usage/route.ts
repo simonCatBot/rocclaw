@@ -4,14 +4,27 @@ import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstr
 
 // GET /api/usage - Fetch token usage data from gateway
 export async function GET(request: Request) {
+  console.log("[usage] Starting request...");
+  
   const runtimeBootstrap = await bootstrapDomainRuntime();
-  if (runtimeBootstrap.kind !== "runtime-ok") {
-    return NextResponse.json(
-      { error: "Gateway not available", details: runtimeBootstrap },
-      { status: 503 }
-    );
+  console.log("[usage] Bootstrap result:", JSON.stringify(runtimeBootstrap));
+  
+  if (runtimeBootstrap.kind === "mode-disabled") {
+    return NextResponse.json({ error: "API mode is disabled" }, { status: 503 });
+  }
+  if (runtimeBootstrap.kind === "runtime-init-failed") {
+    console.error("[usage] Runtime init failed:", runtimeBootstrap.failure);
+    return NextResponse.json({ error: "Runtime initialization failed", details: runtimeBootstrap.failure }, { status: 503 });
+  }
+  if (runtimeBootstrap.kind === "start-failed") {
+    console.error("[usage] Runtime start failed:", runtimeBootstrap.message, runtimeBootstrap.startFailure);
+    return NextResponse.json({ error: "Runtime start failed", details: runtimeBootstrap.message, startFailure: runtimeBootstrap.startFailure }, { status: 503 });
+  }
+  if (runtimeBootstrap.kind !== "ready") {
+    return NextResponse.json({ error: "Gateway not available", details: runtimeBootstrap }, { status: 503 });
   }
   const controlPlane = runtimeBootstrap.runtime;
+  console.log("[usage] Control plane ready, calling gateway...");
   
   const { searchParams } = new URL(request.url);
   const startDate = searchParams.get("startDate") ?? undefined;
@@ -28,6 +41,7 @@ export async function GET(request: Request) {
       limit: 1000,
       ...(tz ? { tz } : {}),
     });
+    console.log("[usage] Usage result:", JSON.stringify(usageResult));
     
     // Fetch cost data from gateway
     const costResult = await controlPlane.callGateway<GatewayCostResponse>("usage.cost", {
@@ -35,6 +49,7 @@ export async function GET(request: Request) {
       endDate,
       ...(tz ? { tz } : {}),
     });
+    console.log("[usage] Cost result:", JSON.stringify(costResult));
     
     // If agentId is specified, filter sessions for that agent
     let sessions = usageResult?.sessions ?? [];
@@ -55,7 +70,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Failed to fetch usage data:", error);
+    console.error("[usage] Failed to fetch usage data:", error);
     return NextResponse.json(
       { error: "Failed to fetch usage data", details: String(error) },
       { status: 500 }
