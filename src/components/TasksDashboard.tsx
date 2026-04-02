@@ -681,7 +681,6 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
   const [cronTz, setCronTz] = useState("");
   
   // Common options
-  const [priority, setPriority] = useState<CronPriority>("normal");
   const [enabled, setEnabled] = useState(true);
   const [deleteAfterRun, setDeleteAfterRun] = useState(false);
   const [sessionTarget, setSessionTarget] = useState<"main" | "isolated">("isolated");
@@ -724,7 +723,6 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
         name: name.trim(),
         agentId: agentId || undefined,
         schedule,
-        priority,
         enabled,
         deleteAfterRun,
         sessionTarget,
@@ -918,13 +916,19 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
                 ) : (
                   <div className="space-y-2">
                     <div>
-                      <label className="mb-1 block text-[10px] text-muted-foreground">Cron expression *</label>
+                      <label className="mb-1 flex items-center gap-1 block text-[10px] text-muted-foreground">
+                        Cron expression *
+                        <span className="text-[8px] text-muted-foreground/60" title="Format: minute hour day month weekday. Example: */5 * * * * runs every 5 minutes">(?)</span>
+                      </label>
                       <input
                         className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none font-mono"
                         placeholder="*/5 * * * *"
                         value={cronExpr}
                         onChange={(e) => setCronExpr(e.target.value)}
                       />
+                      <p className="mt-1 text-[10px] text-muted-foreground/70">
+                        Format: minute hour day month weekday. <span className="font-mono">*</span> = any. <span className="font-mono">*/5</span> = every 5. Example: <span className="font-mono">0 9 * * *</span> = daily at 9am
+                      </p>
                     </div>
                     <div>
                       <label className="mb-1 block text-[10px] text-muted-foreground">Timezone (optional)</label>
@@ -965,30 +969,16 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
           </div>
 
           {/* Options Row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Priority</label>
-              <select
-                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as CronPriority)}
-              >
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Session</label>
-              <select
-                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                value={sessionTarget}
-                onChange={(e) => setSessionTarget(e.target.value as "main" | "isolated")}
-              >
-                <option value="isolated">Isolated</option>
-                <option value="main">Main</option>
-              </select>
-            </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Session</label>
+            <select
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+              value={sessionTarget}
+              onChange={(e) => setSessionTarget(e.target.value as "main" | "isolated")}
+            >
+              <option value="isolated">Isolated</option>
+              <option value="main">Main</option>
+            </select>
           </div>
 
           {/* Checkboxes */}
