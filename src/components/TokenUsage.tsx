@@ -154,7 +154,7 @@ export function TokenUsage() {
           // Build byAgent array
           const byAgent: TokenMetrics["byAgent"] = [];
           if (data.aggregated?.byAgent) {
-            for (const [agentId, stats] of Object.entries(data.aggregated.byAgent as Record<string, { totalTokens: number; inputTokens: number; outputTokens: number; cost?: number }>)) {
+            for (const [agentId, stats] of Object.entries(data.aggregated.byAgent as Record<string, { totalTokens: number; inputTokens: number; outputTokens: number; messageCount?: number; cost?: number }>)) {
               const agentTotalTokens = stats.totalTokens;
               byAgent.push({
                 agentId,
@@ -163,6 +163,7 @@ export function TokenUsage() {
                 outputTokens: stats.outputTokens,
                 cost: stats.cost ?? 0,
                 percentage: totalTokens > 0 ? Math.round((agentTotalTokens / totalTokens) * 100) : 0,
+                messageCount: stats.messageCount ?? 0,
               });
             }
           }
