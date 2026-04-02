@@ -4,27 +4,21 @@ import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstr
 
 // GET /api/usage - Fetch token usage data from gateway
 export async function GET(request: Request) {
-  console.log("[usage] Starting request...");
-  
   const runtimeBootstrap = await bootstrapDomainRuntime();
-  console.log("[usage] Bootstrap result:", JSON.stringify(runtimeBootstrap));
   
   if (runtimeBootstrap.kind === "mode-disabled") {
     return NextResponse.json({ error: "API mode is disabled" }, { status: 503 });
   }
   if (runtimeBootstrap.kind === "runtime-init-failed") {
-    console.error("[usage] Runtime init failed:", runtimeBootstrap.failure);
     return NextResponse.json({ error: "Runtime initialization failed", details: runtimeBootstrap.failure }, { status: 503 });
   }
   if (runtimeBootstrap.kind === "start-failed") {
-    console.error("[usage] Runtime start failed:", runtimeBootstrap.message, runtimeBootstrap.startFailure);
-    return NextResponse.json({ error: "Runtime start failed", details: runtimeBootstrap.message, startFailure: runtimeBootstrap.startFailure }, { status: 503 });
+    return NextResponse.json({ error: "Runtime start failed", details: runtimeBootstrap.message }, { status: 503 });
   }
   if (runtimeBootstrap.kind !== "ready") {
     return NextResponse.json({ error: "Gateway not available", details: runtimeBootstrap }, { status: 503 });
   }
   const controlPlane = runtimeBootstrap.runtime;
-  console.log("[usage] Control plane ready, calling gateway...");
   
   const { searchParams } = new URL(request.url);
   const startDate = searchParams.get("startDate") ?? undefined;
@@ -34,30 +28,30 @@ export async function GET(request: Request) {
   
   try {
     // Fetch usage data from gateway
-    const usageResult = await controlPlane.callGateway<GatewayUsageResponse>("sessions.usage", {
+    const usageResult = await controlPlane.callGateway("sessions.usage", {
       startDate,
       endDate,
       includeContextWeight: true,
       limit: 1000,
       ...(tz ? { tz } : {}),
     });
-    console.log("[usage] Usage result:", JSON.stringify(usageResult));
     
     // Fetch cost data from gateway
-    const costResult = await controlPlane.callGateway<GatewayCostResponse>("usage.cost", {
+    const costResult = await controlPlane.callGateway("usage.cost", {
       startDate,
       endDate,
       ...(tz ? { tz } : {}),
     });
-    console.log("[usage] Cost result:", JSON.stringify(costResult));
     
-    // If agentId is specified, filter sessions for that agent
+    // Process sessions - usage data is nested inside session.usage
     let sessions = usageResult?.sessions ?? [];
+    
+    // Filter by agent if specified
     if (agentId) {
       sessions = sessions.filter((s: SessionInfo) => s.agentId === agentId);
     }
     
-    // Aggregate token usage
+    // Aggregate token usage from nested usage objects
     const aggregated = aggregateUsage(sessions);
     
     return NextResponse.json({
@@ -83,33 +77,31 @@ interface SessionInfo {
   agentId?: string;
   model?: string;
   provider?: string;
-  inputTokens?: number;
-  outputTokens?: number;
-  totalTokens?: number;
-  cost?: number;
+  usage?: {
+    input?: number;
+    output?: number;
+    totalTokens?: number;
+    totalCost?: number;
+    messageCounts?: {
+      total?: number;
+      errors?: number;
+    };
+    modelUsage?: Array<{
+      provider?: string;
+      model?: string;
+      totals?: {
+        input?: number;
+        output?: number;
+        totalTokens?: number;
+        totalCost?: number;
+      };
+    }>;
+  };
   messageCount?: number;
   errorCount?: number;
   durationMs?: number;
   startedAtMs?: number;
   endedAtMs?: number;
-}
-
-interface GatewayUsageResponse {
-  sessions?: SessionInfo[];
-  startDate?: string;
-  endDate?: string;
-  totalInputTokens?: number;
-  totalOutputTokens?: number;
-  totalTokens?: number;
-  totalMessages?: number;
-  totalErrors?: number;
-}
-
-interface GatewayCostResponse {
-  totalCost?: number;
-  costByModel?: Record<string, number>;
-  costByProvider?: Record<string, number>;
-  costByDay?: Record<string, number>;
 }
 
 interface AggregatedUsage {
@@ -149,24 +141,26 @@ function aggregateUsage(sessions: SessionInfo[]): AggregatedUsage {
   };
   
   for (const session of sessions) {
-    const inputTokens = session.inputTokens ?? 0;
-    const outputTokens = session.outputTokens ?? 0;
-    const totalTokens = session.totalTokens ?? (inputTokens + outputTokens);
-    const messageCount = session.messageCount ?? 0;
-    const errorCount = session.errorCount ?? 0;
-    const cost = session.cost ?? 0;
+    // Extract usage data from nested usage object
+    const usage = session.usage ?? {};
+    const inputTokens = usage.input ?? 0;
+    const outputTokens = usage.output ?? 0;
+    const totalTokens = usage.totalTokens ?? (inputTokens + outputTokens);
+    const totalCost = usage.totalCost ?? 0;
+    const messageCount = usage.messageCounts?.total ?? 0;
+    const errorCount = usage.messageCounts?.errors ?? 0;
     
     result.totalInputTokens += inputTokens;
     result.totalOutputTokens += outputTokens;
     result.totalTokens += totalTokens;
     result.totalMessages += messageCount;
     result.totalErrors += errorCount;
-    result.totalCost += cost;
+    result.totalCost += totalCost;
     
     // Aggregate by agent
-    const agentId = session.agentId ?? "unknown";
-    if (!result.byAgent[agentId]) {
-      result.byAgent[agentId] = {
+    const sessionAgentId = session.agentId ?? "unknown";
+    if (!result.byAgent[sessionAgentId]) {
+      result.byAgent[sessionAgentId] = {
         inputTokens: 0,
         outputTokens: 0,
         totalTokens: 0,
@@ -175,29 +169,56 @@ function aggregateUsage(sessions: SessionInfo[]): AggregatedUsage {
         cost: 0,
       };
     }
-    result.byAgent[agentId].inputTokens += inputTokens;
-    result.byAgent[agentId].outputTokens += outputTokens;
-    result.byAgent[agentId].totalTokens += totalTokens;
-    result.byAgent[agentId].messageCount += messageCount;
-    result.byAgent[agentId].errorCount += errorCount;
-    result.byAgent[agentId].cost += cost;
+    result.byAgent[sessionAgentId].inputTokens += inputTokens;
+    result.byAgent[sessionAgentId].outputTokens += outputTokens;
+    result.byAgent[sessionAgentId].totalTokens += totalTokens;
+    result.byAgent[sessionAgentId].messageCount += messageCount;
+    result.byAgent[sessionAgentId].errorCount += errorCount;
+    result.byAgent[sessionAgentId].cost += totalCost;
     
-    // Aggregate by model
-    const model = session.model ?? "unknown";
-    if (!result.byModel[model]) {
-      result.byModel[model] = {
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: 0,
-        messageCount: 0,
-        cost: 0,
-      };
+    // Aggregate by model from modelUsage array
+    const modelUsage = usage.modelUsage ?? [];
+    for (const mu of modelUsage) {
+      const model = mu.model ?? "unknown";
+      const muInput = mu.totals?.input ?? 0;
+      const muOutput = mu.totals?.output ?? 0;
+      const muTotal = mu.totals?.totalTokens ?? (muInput + muOutput);
+      const muCost = mu.totals?.totalCost ?? 0;
+      
+      if (!result.byModel[model]) {
+        result.byModel[model] = {
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          messageCount: 0,
+          cost: 0,
+        };
+      }
+      result.byModel[model].inputTokens += muInput;
+      result.byModel[model].outputTokens += muOutput;
+      result.byModel[model].totalTokens += muTotal;
+      result.byModel[model].messageCount += messageCount;
+      result.byModel[model].cost += muCost;
     }
-    result.byModel[model].inputTokens += inputTokens;
-    result.byModel[model].outputTokens += outputTokens;
-    result.byModel[model].totalTokens += totalTokens;
-    result.byModel[model].messageCount += messageCount;
-    result.byModel[model].cost += cost;
+    
+    // If no modelUsage, use session.model
+    if (modelUsage.length === 0 && session.model) {
+      const model = session.model;
+      if (!result.byModel[model]) {
+        result.byModel[model] = {
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
+          messageCount: 0,
+          cost: 0,
+        };
+      }
+      result.byModel[model].inputTokens += inputTokens;
+      result.byModel[model].outputTokens += outputTokens;
+      result.byModel[model].totalTokens += totalTokens;
+      result.byModel[model].messageCount += messageCount;
+      result.byModel[model].cost += totalCost;
+    }
   }
   
   return result;
