@@ -606,8 +606,6 @@ function SortableTaskCard({ id, task, onSelect, onStart, onPending, onComplete, 
       ref={setNodeRef}
       style={style}
       className={`group relative ${isDragging ? "opacity-30" : ""}`}
-      {...attributes}
-      {...listeners}
     >
       <TaskCard
         task={task}
@@ -618,6 +616,7 @@ function SortableTaskCard({ id, task, onSelect, onStart, onPending, onComplete, 
         onRevise={onRevise}
         compact={compact}
         isDragOverlay={isDragOverlay}
+        dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
   );
@@ -634,9 +633,10 @@ interface TaskCardProps {
   onRevise?: (task: Task) => void;
   compact?: boolean;
   isDragOverlay?: boolean;
+  dragHandleProps?: Record<string, unknown>;
 }
 
-function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, compact = false, isDragOverlay = false }: TaskCardProps) {
+function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, compact = false, isDragOverlay = false, dragHandleProps }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -659,7 +659,12 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
     >
       {/* Header */}
       <div className="mb-2 flex items-start gap-2">
-        <GripVertical className="h-4 w-4 mt-0.5 shrink-0 cursor-grab text-muted-foreground/30 group-hover:text-muted-foreground" />
+        <div
+          className="mt-0.5 shrink-0 cursor-grab text-muted-foreground/30 group-hover:text-muted-foreground"
+          {...dragHandleProps}
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-mono text-[10px] text-muted-foreground">{task.id}</span>
