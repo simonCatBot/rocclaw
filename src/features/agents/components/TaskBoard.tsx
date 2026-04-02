@@ -673,11 +673,13 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
           <h4
             className="mt-1 flex items-center gap-1 truncate text-sm font-semibold text-foreground cursor-pointer hover:text-primary"
             onClick={() => onSelect(task)}
+            onPointerDown={(e) => e.stopPropagation()}
           >
             <span className="truncate">{task.title}</span>
             {/* Expand/collapse toggle */}
             <button
               onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+              onPointerDown={(e) => e.stopPropagation()}
               className="shrink-0 rounded p-0.5 hover:bg-surface-2"
             >
               {expanded ? (
@@ -692,6 +694,7 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
         {/* Menu button */}
         <button
           onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
         >
           <MoreHorizontal className="h-4 w-4" />
@@ -802,6 +805,7 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
             {isQueue && onStart && (
               <button
                 onClick={(e) => { e.stopPropagation(); onStart(task); }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 rounded-md bg-blue-500/20 px-2 py-1 text-blue-400 hover:bg-blue-500/30"
               >
                 <Play className="h-3 w-3" /> Start
@@ -810,6 +814,7 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
             {isExecuting && onPending && (
               <button
                 onClick={(e) => { e.stopPropagation(); onPending(task); }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 rounded-md bg-amber-500/20 px-2 py-1 text-amber-400 hover:bg-amber-500/30"
               >
                 <AlertTriangle className="h-3 w-3" /> Pending
@@ -818,6 +823,7 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
             {isPending && onComplete && (
               <button
                 onClick={(e) => { e.stopPropagation(); onComplete(task); }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 rounded-md bg-green-500/20 px-2 py-1 text-green-400 hover:bg-green-500/30"
               >
                 <Check className="h-3 w-3" /> Approve
@@ -826,6 +832,7 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
             {isPending && onRevise && (
               <button
                 onClick={(e) => { e.stopPropagation(); onRevise(task); }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-muted-foreground hover:bg-surface-3"
               >
                 <RefreshCw className="h-3 w-3" /> Revise
@@ -834,6 +841,7 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
             {isCompleted && onRevise && (
               <button
                 onClick={(e) => { e.stopPropagation(); onRevise(task); }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-muted-foreground hover:bg-surface-3"
               >
                 <ArrowUp className="h-3 w-3" /> Reopen
@@ -841,6 +849,7 @@ function TaskCard({ task, onSelect, onStart, onPending, onComplete, onRevise, co
             )}
             <button
               onClick={(e) => { e.stopPropagation(); onSelect(task); }}
+              onPointerDown={(e) => e.stopPropagation()}
               className="flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-muted-foreground hover:bg-surface-3 ml-auto"
             >
               <FileText className="h-3 w-3" /> Details
