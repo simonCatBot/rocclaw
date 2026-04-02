@@ -179,7 +179,7 @@ function parseTileId(id: string): { colId: string; unique: string } | null {
   return { colId: id.slice(0, idx), unique: id.slice(idx + 2) };
 }
 
-const COLUMN_IDS = new Set(["queued", "scheduled", "executing", "done"]);
+const COLUMN_IDS = new Set(["queued", "pending", "executing", "done"]);
 
 function isColumnId(id: string): boolean {
   return COLUMN_IDS.has(id);
@@ -1103,7 +1103,7 @@ export function TasksDashboard() {
     [sortedFilteredJobs]
   );
 
-  const scheduledJobs = useMemo(
+  const pendingJobs = useMemo(
     () => sortedFilteredJobs.filter(
       (j) => j.state.runningAtMs == null && (j.state.nextRunAtMs == null || !j.enabled)
     ),
@@ -1217,7 +1217,7 @@ export function TasksDashboard() {
       if (!activeParsed || !targetCol) return;
       if (activeParsed.colId === targetCol) return;
       if (targetCol !== "executing") return;
-      if (activeParsed.colId !== "queued" && activeParsed.colId !== "scheduled") return;
+      if (activeParsed.colId !== "queued" && activeParsed.colId !== "pending") return;
 
       const job = cronJobs.find((j) => j.id === activeParsed.unique);
       if (!job) return;
@@ -1487,20 +1487,20 @@ export function TasksDashboard() {
             </SortableContext>
           </ColumnZone>
 
-          {/* ── Scheduled ── */}
-          <ColumnZone id="scheduled" isDropTarget={dragOverColumnRef.current === "scheduled"} count={scheduledJobs.length}>
-            <ColumnHeader label="Scheduled" Icon={Calendar} accent="text-amber-400" count={scheduledJobs.length} />
-            <SortableContext items={scheduledJobs.map((j) => tileId("scheduled", j.id))}>
+          {/* ── Pending ── */}
+          <ColumnZone id="pending" isDropTarget={dragOverColumnRef.current === "pending"} count={pendingJobs.length}>
+            <ColumnHeader label="Pending" Icon={Calendar} accent="text-amber-400" count={pendingJobs.length} />
+            <SortableContext items={pendingJobs.map((j) => tileId("pending", j.id))}>
               <div className="space-y-2">
-                {scheduledJobs.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground/40">No scheduled tasks</p>
+                {pendingJobs.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">No pending tasks</p>
                 ) : (
-                  scheduledJobs.map((job) => {
+                  pendingJobs.map((job) => {
                     const agent = agents.find((a) => a.agentId === job.agentId);
                     return (
-                      <div key={tileId("scheduled", job.id)} onClick={() => setExpandedTask(job)} className={compactView ? "scale-95" : ""}>
+                      <div key={tileId("pending", job.id)} onClick={() => setExpandedTask(job)} className={compactView ? "scale-95" : ""}>
                         <SortableCronJobTile
-                          id={tileId("scheduled", job.id)}
+                          id={tileId("pending", job.id)}
                           job={job}
                           agentName={agent?.name ?? job.agentId ?? "Unknown"}
                           agentAvatarSeed={agent?.avatarSeed}
