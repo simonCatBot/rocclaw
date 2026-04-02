@@ -52,7 +52,13 @@ export async function GET(request: Request) {
     }
     
     // Aggregate token usage from nested usage objects
-    const aggregated = aggregateUsage(sessions);
+    let aggregated;
+    try {
+      aggregated = aggregateUsage(sessions);
+    } catch (aggError) {
+      console.error("[usage] Aggregation error:", aggError);
+      throw new Error(`Aggregation failed: ${aggError}`);
+    }
     
     return NextResponse.json({
       sessions,
@@ -65,8 +71,10 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("[usage] Failed to fetch usage data:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
-      { error: "Failed to fetch usage data", details: String(error) },
+      { error: "Failed to fetch usage data", details: errorMessage, stack: errorStack },
       { status: 500 }
     );
   }
