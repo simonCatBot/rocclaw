@@ -1336,6 +1336,13 @@ const AgentStudioPage = () => {
     }
   }, [gatewayError]);
 
+  // Close connection tab when connected
+  useEffect(() => {
+    if (gatewayConnected && activeTabs.includes("connection")) {
+      setActiveTabs((current) => current.filter((id) => id !== "connection"));
+    }
+  }, [gatewayConnected, activeTabs]);
+
   if (
     !agentsLoadedOnce &&
     !coreConnected &&
