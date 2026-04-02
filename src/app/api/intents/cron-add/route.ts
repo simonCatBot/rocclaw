@@ -11,9 +11,13 @@ export async function POST(request: Request) {
   }
 
   const name = typeof bodyOrError.name === "string" ? bodyOrError.name.trim() : "";
-  const agentId = typeof bodyOrError.agentId === "string" ? bodyOrError.agentId.trim() : "";
-  if (!name || !agentId) {
-    return NextResponse.json({ error: "name and agentId are required." }, { status: 400 });
+  if (!name) {
+    return NextResponse.json({ error: "name is required." }, { status: 400 });
+  }
+
+  // agentId is optional - gateway will use default if not provided
+  if (bodyOrError.agentId && typeof bodyOrError.agentId === "string") {
+    bodyOrError.agentId = bodyOrError.agentId.trim();
   }
 
   return await executeGatewayIntent("cron.add", bodyOrError);
