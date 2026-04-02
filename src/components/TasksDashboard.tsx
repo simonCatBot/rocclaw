@@ -525,8 +525,11 @@ function ColumnZone({ id, isDropTarget, wipLimit, count, children }: ColumnZoneP
             ? "border-red-500/50 bg-red-500/5"
             : "border-border bg-surface-1"
       }`}
+      style={{ maxHeight: "calc(100vh - 200px)" }}
     >
-      {children}
+      <div className="overflow-y-auto flex-1">
+        {children}
+      </div>
 
       {wipExceeded && (
         <div className="mt-2 flex items-center gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-[10px] text-red-400">
