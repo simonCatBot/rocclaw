@@ -1487,38 +1487,6 @@ export function TasksDashboard() {
             </SortableContext>
           </ColumnZone>
 
-          {/* ── Pending ── */}
-          <ColumnZone id="pending" isDropTarget={dragOverColumnRef.current === "pending"} count={pendingJobs.length}>
-            <ColumnHeader label="Pending" Icon={Calendar} accent="text-amber-400" count={pendingJobs.length} />
-            <SortableContext items={pendingJobs.map((j) => tileId("pending", j.id))}>
-              <div className="space-y-2">
-                {pendingJobs.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground/40">No pending tasks</p>
-                ) : (
-                  pendingJobs.map((job) => {
-                    const agent = agents.find((a) => a.agentId === job.agentId);
-                    return (
-                      <div key={tileId("pending", job.id)} onClick={() => setExpandedTask(job)} className={compactView ? "scale-95" : ""}>
-                        <SortableCronJobTile
-                          id={tileId("pending", job.id)}
-                          job={job}
-                          agentName={agent?.name ?? job.agentId ?? "Unknown"}
-                          agentAvatarSeed={agent?.avatarSeed}
-                          onRun={handleRun}
-                          onToggle={handleToggle}
-                          onDelete={handleDelete}
-                          runBusy={runBusy}
-                          deleteBusy={deleteBusy === job.id}
-                          compact={compactView}
-                        />
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </SortableContext>
-          </ColumnZone>
-
           {/* ── Executing ── */}
           <ColumnZone
             id="executing"
@@ -1573,6 +1541,38 @@ export function TasksDashboard() {
                       );
                     })}
                   </>
+                )}
+              </div>
+            </SortableContext>
+          </ColumnZone>
+
+          {/* ── Pending ── */}
+          <ColumnZone id="pending" isDropTarget={dragOverColumnRef.current === "pending"} count={pendingJobs.length}>
+            <ColumnHeader label="Pending" Icon={Calendar} accent="text-amber-400" count={pendingJobs.length} />
+            <SortableContext items={pendingJobs.map((j) => tileId("pending", j.id))}>
+              <div className="space-y-2">
+                {pendingJobs.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">No pending tasks</p>
+                ) : (
+                  pendingJobs.map((job) => {
+                    const agent = agents.find((a) => a.agentId === job.agentId);
+                    return (
+                      <div key={tileId("pending", job.id)} onClick={() => setExpandedTask(job)} className={compactView ? "scale-95" : ""}>
+                        <SortableCronJobTile
+                          id={tileId("pending", job.id)}
+                          job={job}
+                          agentName={agent?.name ?? job.agentId ?? "Unknown"}
+                          agentAvatarSeed={agent?.avatarSeed}
+                          onRun={handleRun}
+                          onToggle={handleToggle}
+                          onDelete={handleDelete}
+                          runBusy={runBusy}
+                          deleteBusy={deleteBusy === job.id}
+                          compact={compactView}
+                        />
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </SortableContext>
