@@ -80,6 +80,7 @@ export async function GET(request: Request) {
       sessions,
       aggregated,
       cost: costResult,
+      totalMessages: aggregated.totalMessages,
       timeRange: {
         startDate: usageResult?.startDate,
         endDate: usageResult?.endDate,

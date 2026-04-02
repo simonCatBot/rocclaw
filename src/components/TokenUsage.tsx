@@ -9,6 +9,7 @@ interface TokenMetrics {
     output: number;
     total: number;
   };
+  totalMessages: number;
   costEstimate: {
     total: number;
     currency: string;
@@ -48,6 +49,7 @@ const STATIC_TOKEN_DATA: TokenMetrics = {
     output: 89805826,  // ~89.8M output tokens
     total: 137612122,  // ~137.6M total
   },
+  totalMessages: 2814,  // Approximate message count
   costEstimate: {
     total: 0,         // No cost data available
     currency: "USD",
@@ -177,6 +179,7 @@ export function TokenUsage() {
           
           const transformedMetrics: TokenMetrics = {
             totalTokens: { input: totalInput, output: totalOutput, total: totalTokens },
+            totalMessages: data.aggregated?.totalMessages ?? 0,
             costEstimate: { total: data.cost?.totalCost ?? 0, currency: "USD" },
             byAgent,
             byModel,
@@ -305,6 +308,11 @@ export function TokenUsage() {
             </p>
           </div>
         </div>
+        {metrics.totalMessages > 0 && (
+          <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+            {formatNumber(metrics.totalMessages)} messages
+          </div>
+        )}
       </div>
 
       {/* Budget Progress */}
