@@ -1404,7 +1404,10 @@ const AgentStudioPage = () => {
               onSaveSettings={() => void saveSettings()}
               onTestConnection={() => void testConnection()}
               onDisconnect={() => void disconnect()}
-              onConnect={() => void saveSettings()}
+              onConnect={() => {
+                setShowConnectSetup(false);
+                void saveSettings();
+              }}
             />
           </div>
         </div>
