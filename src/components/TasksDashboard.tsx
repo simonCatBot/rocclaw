@@ -49,6 +49,7 @@ import {
   DragOverlay,
   type CollisionDetection,
   closestCenter,
+  useDroppable,
 } from "@dnd-kit/core";
 import { useSortable, SortableContext } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -511,9 +512,11 @@ interface ColumnZoneProps {
 
 function ColumnZone({ id, isDropTarget, wipLimit, count, children }: ColumnZoneProps) {
   const wipExceeded = wipLimit != null && count > wipLimit;
+  const { setNodeRef } = useDroppable({ id });
 
   return (
     <div
+      ref={setNodeRef}
       data-column={id}
       className={`flex min-w-[240px] flex-1 flex-col rounded-2xl border p-3 transition-all ${
         isDropTarget
