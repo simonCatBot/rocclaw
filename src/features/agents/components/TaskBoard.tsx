@@ -1248,15 +1248,20 @@ function CreateTaskModal({ agents, onClose, onCreated, onCronCreated }: CreateTa
     setLoading(true);
     setError(null);
     try {
+      const sessionTarget = agentId ? `session:${agentId}` : "isolated";
       const res = await fetch("/api/intents/cron-add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: title.trim(),
           agentId: agentId || undefined,
-          everyMs,
-          message: description.trim() || `Scheduled task: ${title.trim()}`,
-          priority: priority === "urgent" ? "high" : priority === "low" ? "low" : "normal",
+          schedule: { kind: "every", everyMs },
+          payload: {
+            kind: "agentTurn",
+            message: description.trim() || `Scheduled task: ${title.trim()}`,
+          },
+          sessionTarget,
+          wakeMode: "next-heartbeat",
         }),
       });
       if (!res.ok) {
