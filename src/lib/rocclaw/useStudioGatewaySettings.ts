@@ -339,7 +339,6 @@ export const useStudioGatewaySettings = (
     // Reset refs to allow auto-connect after explicit save
     manualDisconnectRef.current = false;
     didAutoConnectRef.current = false;
-    console.log("[Kapu] saveSettings: refs reset, calling API...");
     try {
       await settingsCoordinator.flushPending();
       const patch: StudioSettingsPatch = {
@@ -449,13 +448,6 @@ export const useStudioGatewaySettings = (
   }, [applyRuntimeSummary, disconnecting]);
 
   useEffect(() => {
-    console.log("[Kapu] Auto-connect effect running", {
-      settingsLoaded,
-      manualDisconnect: manualDisconnectRef.current,
-      didAutoConnect: didAutoConnectRef.current,
-      status,
-      gatewayUrl: gatewayUrl?.trim() ? "set" : "empty",
-    });
     if (!settingsLoaded) return;
     if (manualDisconnectRef.current) return;
     if (didAutoConnectRef.current) return;
@@ -465,10 +457,8 @@ export const useStudioGatewaySettings = (
     setStatus("connecting");
     setStatusReason(null);
     setConnectionError(null);
-    console.log("[Kapu] Starting refreshRuntimeStatus...");
     void refreshRuntimeStatus().catch((nextError) => {
       const message = formatGatewayError(nextError);
-      console.log("[Kapu] refreshRuntimeStatus failed:", message);
       setStatus("error");
       setStatusReason(message);
       setConnectionError(message);
