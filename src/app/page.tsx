@@ -1382,7 +1382,7 @@ const AgentStudioPage = () => {
                 </button>
               </div>
             ) : null}
-            <GatewayConnectScreen
+            <ConnectionPage
               savedGatewayUrl={gatewayUrl}
               draftGatewayUrl={draftGatewayUrl}
               token={token}
@@ -1404,6 +1404,7 @@ const AgentStudioPage = () => {
               onSaveSettings={() => void saveSettings()}
               onTestConnection={() => void testConnection()}
               onDisconnect={() => void disconnect()}
+              onConnect={() => void saveSettings()}
             />
           </div>
         </div>
