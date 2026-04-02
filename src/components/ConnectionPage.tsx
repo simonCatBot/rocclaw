@@ -366,7 +366,7 @@ export function ConnectionPage({
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">SSH Tunnel Access</p>
-                <p className="text-xs text-muted-foreground">For when Tailscale isn't set up</p>
+                <p className="text-xs text-muted-foreground">For when Tailscale isn&apos;t set up</p>
               </div>
             </div>
             <div className="space-y-3">
