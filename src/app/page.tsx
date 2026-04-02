@@ -17,6 +17,7 @@ import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
 import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
+import { SettingsPanel } from "@/components/SettingsPanel";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
@@ -1770,12 +1771,7 @@ const AgentStudioPage = () => {
                 {/* Settings Tab */}
                 {activeTabs.includes("settings") ? (
                   <div className="ui-panel ui-depth-workspace flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <EmptyStatePanel
-                      title="Settings"
-                      description="Configure your workspace settings here."
-                      fillHeight
-                      className="items-center p-6 text-center text-sm"
-                    />
+                    <SettingsPanel />
                   </div>
                 ) : null}
               </div>
