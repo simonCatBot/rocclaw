@@ -455,205 +455,195 @@ export function ConnectionPage({
         </div>
       </div>
 
-      {/* Content - scrollable */}
+      {/* Content - two column layout */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
-        <div className="mx-auto max-w-2xl space-y-4 sm:space-y-6">
-          {/* Tab description */}
-          <div className="ui-card p-4">
-            <p className="text-sm font-semibold text-foreground">{currentTab.title}</p>
-            <p className="text-xs text-muted-foreground mt-1">{currentTab.description}</p>
-          </div>
-
-          {/* Tab-specific content */}
-          {currentTab.content}
-
-          {/* Connection Form */}
-          <div className="ui-card p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="ui-card p-2 rounded-lg">
-                <Key className="h-5 w-5 text-primary" />
+        <div className="mx-auto max-w-5xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {/* Left Column - Instructions */}
+            <div className="space-y-4 sm:space-y-6">
+              {/* Tab description */}
+              <div className="ui-card p-4">
+                <p className="text-sm font-semibold text-foreground">{currentTab.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{currentTab.description}</p>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Gateway URL & Token</p>
-                <p className="text-xs text-muted-foreground">Enter your connection details</p>
-              </div>
+
+              {/* Tab-specific content */}
+              {currentTab.content}
+
+              {/* Warnings */}
+              {warnings.length > 0 && (
+                <div className="space-y-2">
+                  {warnings.map((warning) => (
+                    <div
+                      key={warning.id}
+                      className={
+                        warning.tone === "warn"
+                          ? "ui-alert-danger rounded-md px-4 py-2 text-sm"
+                          : "ui-card rounded-md px-4 py-2 text-sm text-muted-foreground"
+                      }
+                    >
+                      {warning.message}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Gateway URL
-                </label>
-                <input
-                  type="text"
-                  value={draftGatewayUrl}
-                  onChange={(e) => onGatewayUrlChange(e.target.value)}
-                  placeholder={activeTab === "local" ? `ws://localhost:${localPort}` : "wss://gateway.ts.net"}
-                  className="ui-input h-11 w-full rounded-md px-4 text-sm"
-                  spellCheck={false}
-                />
-              </div>
+            {/* Right Column - Connection Form */}
+            <div className="space-y-4 sm:space-y-6">
+              {/* Connection Form */}
+              <div className="ui-card p-5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="ui-card p-2 rounded-lg">
+                    <Key className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Gateway URL & Token</p>
+                    <p className="text-xs text-muted-foreground">Enter your connection details</p>
+                  </div>
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Token
-                </label>
-                <div className="relative">
-                  <input
-                    type={showToken ? "text" : "password"}
-                    value={token}
-                    onChange={(e) => onTokenChange(e.target.value)}
-                    placeholder={hasStoredToken || localGatewayDefaultsHasToken ? "keep existing" : "gateway token"}
-                    className="ui-input h-11 w-full rounded-md px-4 pr-10 text-sm"
-                    spellCheck={false}
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Gateway URL
+                    </label>
+                    <input
+                      type="text"
+                      value={draftGatewayUrl}
+                      onChange={(e) => onGatewayUrlChange(e.target.value)}
+                      placeholder={activeTab === "local" ? `ws://localhost:${localPort}` : "wss://gateway.ts.net"}
+                      className="ui-input h-11 w-full rounded-md px-4 text-sm"
+                      spellCheck={false}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Token
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showToken ? "text" : "password"}
+                        value={token}
+                        onChange={(e) => onTokenChange(e.target.value)}
+                        placeholder={hasStoredToken || localGatewayDefaultsHasToken ? "keep existing" : "gateway token"}
+                        className="ui-input h-11 w-full rounded-md px-4 pr-10 text-sm"
+                        spellCheck={false}
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 my-auto h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowToken((prev) => !prev)}
+                      >
+                        {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground">{tokenHelper}</p>
+
+                {hasUnsavedChanges && (
+                  <p className="text-xs font-mono font-semibold text-muted-foreground">
+                    Unsaved changes
+                  </p>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-2 pt-2">
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 my-auto h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowToken((prev) => !prev)}
+                    className="ui-btn-primary h-10 px-5 text-xs font-semibold tracking-wide"
+                    onClick={() => void onSaveSettings()}
+                    disabled={actionBusy || !draftGatewayUrl.trim()}
                   >
-                    {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Save Settings
                   </button>
+                  <button
+                    type="button"
+                    className="ui-btn-secondary h-10 px-5 text-xs font-semibold tracking-wide"
+                    onClick={() => void onTestConnection()}
+                    disabled={actionBusy || !draftGatewayUrl.trim()}
+                  >
+                    {testing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Test Connection
+                  </button>
+                  {isConnected && (
+                    <button
+                      type="button"
+                      className="ui-btn-ghost h-10 px-5 text-xs font-semibold tracking-wide text-foreground"
+                      onClick={() => void onDisconnect()}
+                      disabled={actionBusy}
+                    >
+                      {disconnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Disconnect
+                    </button>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <p className="text-xs text-muted-foreground">{tokenHelper}</p>
-
-            {hasUnsavedChanges && (
-              <p className="text-xs font-mono font-semibold text-muted-foreground">
-                Unsaved changes
-              </p>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex flex-wrap gap-2 pt-2">
-              <button
-                type="button"
-                className="ui-btn-primary h-10 px-5 text-xs font-semibold tracking-wide"
-                onClick={() => void onSaveSettings()}
-                disabled={actionBusy || !draftGatewayUrl.trim()}
-              >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Save Settings
-              </button>
-              <button
-                type="button"
-                className="ui-btn-secondary h-10 px-5 text-xs font-semibold tracking-wide"
-                onClick={() => void onTestConnection()}
-                disabled={actionBusy || !draftGatewayUrl.trim()}
-              >
-                {testing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Test Connection
-              </button>
-              {isConnected && (
-                <button
-                  type="button"
-                  className="ui-btn-ghost h-10 px-5 text-xs font-semibold tracking-wide text-foreground"
-                  onClick={() => void onDisconnect()}
-                  disabled={actionBusy}
-                >
-                  {disconnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Disconnect
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Warnings */}
-          {warnings.length > 0 && (
-            <div className="space-y-2">
-              {warnings.map((warning) => (
-                <div
-                  key={warning.id}
-                  className={
-                    warning.tone === "warn"
-                      ? "ui-alert-danger rounded-md px-4 py-2 text-sm"
-                      : "ui-card rounded-md px-4 py-2 text-sm text-muted-foreground"
-                  }
-                >
-                  {warning.message}
+              {/* Status */}
+              <div className="ui-card p-4">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full ${
+                      status === "connected"
+                        ? "bg-green-500"
+                        : status === "connecting" || status === "reconnecting"
+                          ? "bg-yellow-500 animate-pulse"
+                          : "bg-muted"
+                    }`}
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {status === "connected" && "Connected to OpenClaw"}
+                      {status === "connecting" && "Connecting..."}
+                      {status === "reconnecting" && "Reconnecting..."}
+                      {status === "error" && "Connection Error"}
+                      {status === "disconnected" && "Disconnected"}
+                    </p>
+                    {statusReason && (
+                      <p className="text-xs text-muted-foreground">{statusReason}</p>
+                    )}
+                  </div>
+                  {isConnected && (
+                    <span className="ui-chip text-xs font-mono font-semibold tracking-wide bg-green-500/10 text-green-500">
+                      Connected
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
 
-          {/* Test Result */}
-          {testResult && (
-            <div
-              className={
-                testResult.kind === "error"
-                  ? "ui-alert-danger rounded-md px-4 py-2 text-sm"
-                  : "ui-card-success rounded-md px-4 py-2 text-sm"
-              }
-            >
-              {testResult.message}
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <p className="ui-text-danger text-sm">{error}</p>
-          )}
-
-          {/* Status */}
-          <div className="ui-card p-4">
-            <div className="flex items-center gap-3">
-              <span
-                className={`h-2.5 w-2.5 rounded-full ${
-                  status === "connected"
-                    ? "bg-green-500"
-                    : status === "connecting" || status === "reconnecting"
-                      ? "bg-yellow-500 animate-pulse"
-                      : "bg-muted"
+              {/* Connect Now Button */}
+              <button
+                type="button"
+                className={`ui-btn-primary w-full h-12 text-sm font-semibold tracking-wide rounded-lg ${
+                  isConnected ? "bg-green-600 hover:bg-green-700" : ""
                 }`}
-              />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">
-                  {status === "connected" && "Connected to OpenClaw"}
-                  {status === "connecting" && "Connecting..."}
-                  {status === "reconnecting" && "Reconnecting..."}
-                  {status === "error" && "Connection Error"}
-                  {status === "disconnected" && "Disconnected"}
-                </p>
-                {statusReason && (
-                  <p className="text-xs text-muted-foreground">{statusReason}</p>
+                onClick={() => {
+                  if (isConnected) {
+                    onDisconnect?.();
+                  } else {
+                    onConnect?.() || onSaveSettings?.();
+                  }
+                }}
+                disabled={actionBusy || (!draftGatewayUrl.trim() && !isConnected)}
+              >
+                {actionBusy ? (
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                ) : isConnected ? (
+                  "Disconnect"
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 mr-2 inline" />
+                    Connect Now
+                  </>
                 )}
-              </div>
-              {isConnected && (
-                <span className="ui-chip text-xs font-mono font-semibold tracking-wide bg-green-500/10 text-green-500">
-                  Connected
-                </span>
-              )}
+              </button>
             </div>
           </div>
-
-          {/* Connect Now Button */}
-          <button
-            type="button"
-            className={`ui-btn-primary w-full h-12 text-sm font-semibold tracking-wide rounded-lg ${
-              isConnected ? "bg-green-600 hover:bg-green-700" : ""
-            }`}
-            onClick={() => {
-              if (isConnected) {
-                onDisconnect?.();
-              } else {
-                onConnect?.() || onSaveSettings?.();
-              }
-            }}
-            disabled={actionBusy || (!draftGatewayUrl.trim() && !isConnected)}
-          >
-            {actionBusy ? (
-              <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-            ) : isConnected ? (
-              "Disconnect"
-            ) : (
-              <>
-                <Zap className="h-4 w-4 mr-2 inline" />
-                Connect Now
-              </>
-            )}
-          </button>
         </div>
       </div>
     </div>
