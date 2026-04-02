@@ -40,6 +40,8 @@ const DEFAULT_METHOD_ALLOWLIST = new Set<string>([
   "sessions.preview",
   "sessions.patch",
   "sessions.reset",
+  "sessions.usage",
+  "usage.cost",
   "cron.list",
   "cron.run",
   "cron.remove",
