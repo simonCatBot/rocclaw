@@ -1337,17 +1337,19 @@ const AgentStudioPage = () => {
   }, [gatewayError]);
 
   // Close connection tab when connected (only auto-hide, don't prevent user from re-enabling)
+  const activeTabsRef = useRef(activeTabs);
+  activeTabsRef.current = activeTabs;
   useEffect(() => {
-    if (gatewayConnected && activeTabs.includes("connection")) {
-      // Use setTimeout to avoid removing immediately after user enables it
-      const timer = setTimeout(() => {
+    if (!gatewayConnected) return;
+    const timer = setTimeout(() => {
+      if (activeTabsRef.current.includes("connection")) {
         setActiveTabs((current) => 
           current.includes("connection") ? current.filter((id) => id !== "connection") : current
         );
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [gatewayConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [gatewayConnected]);
 
   if (
     !agentsLoadedOnce &&
