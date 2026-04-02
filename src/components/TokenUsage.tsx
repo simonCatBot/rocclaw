@@ -116,7 +116,7 @@ export function TokenUsage() {
     main: "Main",
   };
 
-  const fetchTokenMetrics = useCallback(async () => {
+  const fetchTokenMetrics = useCallback(async (retries = 3) => {
     try {
       // Calculate date range for "today"
       const now = new Date();
@@ -126,10 +126,25 @@ export function TokenUsage() {
       const startDate = startOfDay.toISOString();
       const endDate = endOfDay.toISOString();
       
-      const response = await fetch(`/api/usage?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
+      let response;
+      for (let i = 0; i < retries; i++) {
+        try {
+          response = await fetch(`/api/usage?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
+          if (response.ok) break;
+          // If 503 (gateway not ready), wait and retry
+          if (response.status === 503 && i < retries - 1) {
+            await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+            continue;
+          }
+          break;
+        } catch (err) {
+          if (i === retries - 1) throw err;
+          await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        }
+      }
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch usage data: ${response.status}`);
+      if (!response?.ok) {
+        throw new Error(`Failed to fetch usage data: ${response?.status ?? 'unknown'}`);
       }
       
       const data: UsageApiResponse = await response.json();
