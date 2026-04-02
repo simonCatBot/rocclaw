@@ -1,182 +1,459 @@
-# Contributing
+# 🤝 Contributing to rocCLAW
 
-Thanks for helping improve rocCLAW.
+Thank you for your interest in making rocCLAW better! This guide will help you get set up and contribute effectively.
 
-- For external bugs and feature requests: please use GitHub Issues.
-- For repo work tracked by our on-host agent squad: we use Notion.
+---
 
-## Before you start
+## 📋 Table of Contents
 
-### Prerequisites
+1. [Prerequisites](#prerequisites) — What you need before starting
+2. [Understanding the Scope](#understanding-the-scope) — What this repo is and isn't
+3. [Setup Guide](#local-setup) — Step-by-step installation
+4. [Development Workflow](#development-scripts) — Commands you'll use daily
+5. [Testing](#testing) — How to ensure quality
+6. [Commit Guidelines](#commit-message-convention) — How to write good commits
+7. [Pull Requests](#pull-requests) — Submission guidelines
 
-- **Node.js ≥ 20.9.0** (LTS recommended). The repo targets Next.js 16 and React 19, which have specific Node version requirements. Using an older or unstable Node may cause build or runtime issues.
-- **OpenClaw Gateway** installed and running. rocCLAW is a dashboard — it reads config from `~/.openclaw` and connects to your gateway via WebSocket.
-- **npm ≥ 10.x** (bundled with Node 20+).
+---
 
-### What this repo is (and isn't)
+## Prerequisites
 
-- **UI-only.** This repo does not build or run the OpenClaw gateway.
-- It reads existing config from `~/.openclaw/openclaw.json` and communicates with the gateway via its WebSocket API.
-- If you want to work on the gateway itself, see the [openclaw/openclaw](https://github.com/openclaw/openclaw) repo.
+Before you begin, ensure you have:
 
-## Local setup
+| Requirement | Version | Why |
+|-------------|---------|-----|
+| **Node.js** | ≥ 20.9.0 (LTS) | Next.js 16 and React 19 compatibility |
+| **npm** | ≥ 10.x | Bundled with Node 20+ |
+| **OpenClaw Gateway** | Latest | For testing integration |
+
+### Checking Your Environment
 
 ```bash
-# Clone the repo
+# Verify Node version
+node --version
+# Should output: v20.9.0 or higher
+
+# Verify npm version
+npm --version
+# Should output: 10.x.x or higher
+
+# Check if using nvm
+nvm --version
+# If installed, you can use: nvm use (reads .nvmrc)
+```
+
+---
+
+## Understanding the Scope
+
+### ✅ This Repo Is...
+
+- **UI-only** — A dashboard interface for OpenClaw
+- **Gateway Client** — Reads config from `~/.openclaw`, communicates via WebSocket
+- **Server-Side Proxy** — Browser never connects directly to gateway
+
+### ❌ This Repo Is NOT...
+
+- The OpenClaw gateway itself
+- A standalone AI runtime
+- A replacement for `openclaw` CLI commands
+
+**Want to work on the gateway?** → See [openclaw/openclaw](https://github.com/openclaw/openclaw)
+
+---
+
+## Local Setup
+
+### Step 1: Clone the Repository
+
+```bash
 git clone https://github.com/simonCatBot/rocclaw.git
 cd rocclaw
+```
 
-# Install dependencies
+### Step 2: Install Dependencies
+
+```bash
 npm install
+```
 
-# Copy and edit env defaults (optional — defaults point to ~/.openclaw)
+### Step 3: Configure Environment (Optional)
+
+```bash
+# Copy the example environment file
 cp .env.example .env
 
-# Verify native runtime dependencies are available
-# This runs automatically before `npm run dev` and `npm run start`.
-# If you see SQLite errors, run the repair script:
-npm run verify:native-runtime:repair
+# Edit as needed
+nano .env  # or your preferred editor
+```
 
-# Start the dev server
+**Default `.env`:**
+```bash
+# Gateway connection (default: local development)
+NEXT_PUBLIC_GATEWAY_URL=ws://127.0.0.1:18789
+OPENCLAW_STATE_DIR=~/.openclaw
+```
+
+### Step 4: Verify Native Runtime
+
+```bash
+# Check if native dependencies are healthy
+npm run verify:native-runtime:check
+
+# If you see errors, repair them:
+npm run verify:native-runtime:repair
+```
+
+### Step 5: Start Development Server
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and connect to your gateway at `ws://localhost:18789` (or your gateway's URL + token from `openclaw config get gateway.auth.token`).
-
-### Troubleshooting setup issues
-
-**`better-sqlite3` fails to compile**
+**Expected output:**
 ```
+ready - started server on 0.0.0.0:3000, url: http://localhost:3000
+```
+
+### Step 6: Connect to Gateway
+
+1. Open [http://localhost:3000](http://localhost:3000)
+2. Enter your gateway URL: `ws://127.0.0.1:18789`
+3. Get your token:
+   ```bash
+   openclaw config get gateway.auth.token
+   ```
+4. Paste the token and click **Save Settings**
+
+🎉 You're ready to develop!
+
+---
+
+## Troubleshooting Setup
+
+### ❌ `better-sqlite3` Fails to Compile
+
+**Symptoms:** Native module compilation errors during `npm install`
+
+**Solution:**
+
+```bash
+# Step 1: Try the repair script
+npm run verify:native-runtime:repair
+
+# Step 2: Install build tools if still failing
+
+# macOS:
+xcode-select --install
+
+# Ubuntu/Debian:
+sudo apt install build-essential python3
+
+# Alpine:
+apk add python3 make g++
+
+# Step 3: Rebuild
 npm run verify:native-runtime:repair
 ```
-If that doesn't work, ensure you have the proper build tools:
-- macOS: `xcode-select --install`
-- Ubuntu/Debian: `sudo apt install build-essential python3`
-- Alpine: `apk add python3 make g++`
 
-**`npm run dev` exits immediately with status 1**
-Set `OPENCLAW_SKIP_NATIVE_RUNTIME_VERIFY=1` to bypass the native runtime check (not recommended for development):
+### ❌ `npm run dev` Exits Immediately
+
+**Symptoms:** Process exits with status 1, no error message
+
+**Solution (Last Resort):**
+
 ```bash
+# Skip native runtime verification (NOT recommended for development)
 OPENCLAW_SKIP_NATIVE_RUNTIME_VERIFY=1 npm run dev
 ```
-This should only be used as a last resort — native dependency issues will surface at runtime instead.
 
-**Node version mismatch**
-Ensure `node` and `npm` point to the same runtime:
+**⚠️ Warning:** This only hides the problem. Native dependency issues will surface at runtime.
+
+### ❌ Node Version Mismatch
+
+**Symptoms:** Build errors, unexpected behavior
+
+**Solution:**
+
 ```bash
+# Check active version
 node --version
 npm --version
-```
-If you're using nvm: `nvm use` (reads `.nvmrc` automatically).
 
-**SQLite errors on startup**
+# If using nvm:
+nvm use
+# Reads .nvmrc and switches automatically
+
+# If not using nvm, manually switch:
+nvm install 20
+nvm use 20
+```
+
+### ❌ SQLite Errors on Startup
+
+**Symptoms:** Database connection errors
+
+**Solution:**
+
 ```bash
+# Re-link native module against current Node
 npm run verify:native-runtime:repair
 ```
-This re-links the native `better-sqlite3` module against your current Node version.
 
-## Development scripts
+---
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server (with native runtime repair) |
-| `npm run dev:turbo` | Start dev server with Turbopack |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run typecheck` | Run TypeScript type checker |
-| `npm run test` | Run unit tests (Vitest, `tests/unit/**/*.test.ts`) |
-| `npm run e2e` | Run Playwright end-to-end tests |
-| `npm run verify:native-runtime:check` | Check if native runtime is healthy |
-| `npm run verify:native-runtime:repair` | Repair/rebuild native runtime |
-| `npm run cleanup:ux-artifacts` | Clear UX audit artifacts before committing |
+## Development Scripts
 
-### Running the full test suite
+### Daily Development
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `npm run dev` | Start dev server with hot reload | Every development session |
+| `npm run dev:turbo` | Start with Turbopack (experimental) | When you want faster builds |
+| `npm run build` | Production build | Before deploying |
+| `npm run start` | Production server | After building |
+
+### Code Quality
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `npm run lint` | ESLint check | Before committing |
+| `npm run typecheck` | TypeScript validation | Before committing |
+| `npm run lint:fix` | Auto-fix linting issues | When lint fails |
+
+### Testing
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `npm run test` | Unit tests (Vitest) | After changes to logic |
+| `npm run test:watch` | Unit tests in watch mode | During TDD |
+
+### Maintenance
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `npm run verify:native-runtime:check` | Check native dependencies | When something feels off |
+| `npm run verify:native-runtime:repair` | Fix native dependencies | When check fails |
+| `npm run cleanup:ux-artifacts` | Clean UX audit files | Before committing UX work |
+
+### Running the Full Test Suite
+
+Before submitting a PR:
 
 ```bash
+# Full validation pipeline
 npm run lint
 npm run typecheck
 npm run test
-npm run e2e   # Requires: npx playwright install
+npm run e2e
 ```
 
-## UX audit cleanup
-
-For `localhost-ux-improvement` runs, always clean generated UX artifacts before committing:
+**⚠️ Note:** E2E tests require Playwright installation:
 ```bash
+npx playwright install
+```
+
+---
+
+## Testing
+
+### Unit Tests (Vitest)
+
+Located in: `tests/unit/**/*.test.ts`
+
+**Running tests:**
+
+```bash
+# Run once
+npm run test
+
+# Run in watch mode (for development)
+npm run test:watch
+
+# Run with coverage
+npm run test -- --coverage
+```
+
+**Example test:**
+
+```typescript
+// tests/unit/example.test.ts
+import { describe, it, expect } from 'vitest';
+
+describe('My Feature', () => {
+  it('should do something', () => {
+    const result = myFunction();
+    expect(result).toBe(true);
+  });
+});
+```
+
+### End-to-End Tests (Playwright)
+
+Located in: `tests/e2e/**/*.spec.ts`
+
+**Running tests:**
+
+```bash
+# Install Playwright browsers (one-time)
+npx playwright install
+
+# Run all E2E tests
+npm run e2e
+
+# Run with UI mode (for debugging)
+npx playwright test --ui
+
+# Run specific test file
+npx playwright test tests/e2e/chat.spec.ts
+```
+
+---
+
+## UX Audit Cleanup
+
+When running UX audits or localhost testing:
+
+```bash
+# Always run this before committing UX-related work
 npm run cleanup:ux-artifacts
 ```
-This clears `output/playwright/ux-audit/`, `.agent/ux-audit.md`, and `.agent/execplan-pending.md`.
+
+**This clears:**
+- `output/playwright/ux-audit/`
+- `.agent/ux-audit.md`
+- `.agent/execplan-pending.md`
+
+---
 
 ## Commit Message Convention
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-- `feat:` — New features
-- `fix:` — Bug fixes
-- `docs:` — Documentation changes
-- `chore:` — Maintenance tasks (deps, config, CI)
-- `refactor:` — Code refactoring (no behavior change)
-- `test:` — Test changes
+### Format
 
-## Task tracking
+```
+<type>(<scope>): <subject>
 
-We track implementation work for this repo in Notion.
+[optional body]
 
-## Pull requests
+[optional footer]
+```
 
-- Keep PRs focused and small. Prefer **one task → one PR**.
-- Include the tests you ran.
-- Link to the relevant issue/task.
-- If you changed gateway behavior, call it out explicitly.
-- Run `npm run cleanup:ux-artifacts` before committing if you've done UX audit work.
+### Types
 
-## Reporting issues
+| Type | Use For | Example |
+|------|---------|---------|
+| `feat:` | New features | `feat: add dark mode toggle` |
+| `fix:` | Bug fixes | `fix: resolve connection retry loop` |
+| `docs:` | Documentation | `docs: update setup instructions` |
+| `chore:` | Maintenance | `chore: update dependencies` |
+| `refactor:` | Code restructuring | `refactor: simplify auth flow` |
+| `test:` | Testing | `test: add agent store tests` |
+| `style:` | Formatting | `style: fix indentation` |
 
-When filing an issue, please include:
+### Examples
 
-- Reproduction steps
-- OS and Node version (`node --version`)
-- UI version/commit (`git log -1 --oneline`)
-- Gateway version and whether it's running (yes/no)
-- Any relevant logs or screenshots
+```bash
+# Good commits
+git commit -m "feat: add cron job scheduling UI"
+git commit -m "fix: handle gateway disconnect gracefully"
+git commit -m "docs: add troubleshooting section to README"
+git commit -m "refactor: extract event handler into module"
+```
 
-## Minimal PR template
+---
 
-```md
+## Pull Requests
+
+### Guidelines
+
+✅ **Do:**
+- Keep PRs focused and small
+- Prefer **one task → one PR**
+- Link to relevant issue/task
+- Include tests you ran
+- Call out gateway behavior changes explicitly
+- Run `npm run cleanup:ux-artifacts` if applicable
+
+❌ **Don't:**
+- Submit PRs with failing tests
+- Mix unrelated changes
+- Include UX artifacts in commits
+
+### PR Template
+
+```markdown
 ## Summary
--
+Brief description of what this PR does.
+
+## Changes
+- Change 1
+- Change 2
 
 ## Testing
-- [ ] Not run (explain why)
-- [ ] `npm run lint`
-- [ ] `npm run typecheck`
-- [ ] `npm run test`
-- [ ] `npm run e2e`
+- [ ] `npm run lint` (results: ✅)
+- [ ] `npm run typecheck` (results: ✅)
+- [ ] `npm run test` (results: ✅)
+- [ ] `npm run e2e` (results: N/A or ✅)
+
+## Screenshots (if UI changes)
+Before/after screenshots
 
 ## AI-assisted
-- [ ] AI-assisted (briefly describe what and include prompts/logs if helpful)
+- [ ] Yes (describe what and include prompts/logs)
+- [ ] No
 ```
 
-## Minimal issue template
+---
 
-```md
+## Reporting Issues
+
+### Issue Template
+
+```markdown
 ## Summary
+One-line description of the issue.
 
-## Steps to reproduce
-1.
+## Steps to Reproduce
+1. Go to '...'
+2. Click on '...'
+3. See error
 
-## Expected
+## Expected Behavior
+What should happen.
 
-## Actual
+## Actual Behavior
+What actually happens.
 
 ## Environment
-- OS:
-- Node:
-- UI version/commit:
-- Gateway version:
-- Gateway running? (yes/no)
+- OS: macOS 14.2 / Ubuntu 22.04 / Windows 11
+- Node: 20.9.0
+- UI version/commit: abc1234
+- Gateway version: 1.2.3
+- Gateway running: yes/no
 
-## Logs/screenshots
+## Logs/Screenshots
 ```
-```
+
+---
+
+## Getting Help
+
+- **Discord:** [Join our community](https://discord.gg/EFkFHbZw)
+- **Issues:** [GitHub Issues](../../issues)
+- **Documentation:** [README](../README.md), [Architecture](../ARCHITECTURE.md)
+
+---
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the [MIT License](../LICENSE).
+
+---
+
+<div align="center">
+
+**Happy coding! 🚀**
+
+</div>

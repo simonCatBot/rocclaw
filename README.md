@@ -1,46 +1,123 @@
-# rocCLAW
+<div align="center">
 
-**Focused operator studio for OpenClaw.** Connect to your gateway, manage agents, run chats, monitor system metrics, configure cron schedules, and handle exec approvals — all from one interface.
+# 🎛️ rocCLAW
 
-[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/EFkFHbZw)
-[![Node](https://img.shields.io/badge/Node.js-20.9%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
+**Your focused operator studio for OpenClaw**
+
+<p align="center">
+  <a href="https://discord.gg/EFkFHbZw"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-20.9%2B-339933?logo=nodedotjs&logoColor=white" alt="Node.js"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+</p>
+
+</div>
+
+## ✨ What is rocCLAW?
+
+rocCLAW is a sleek, modern dashboard that puts you in control of your OpenClaw AI agents. Instead of juggling command lines and config files, you get an intuitive web interface to:
+
+- 🤖 **Manage agents** — Create, configure, and organize your AI assistants
+- 💬 **Chat in real-time** — Interactive conversations with streaming responses
+- 📊 **Monitor systems** — Live CPU, memory, GPU, disk, and network metrics
+- ⏰ **Schedule tasks** — Cron jobs that run your agents on autopilot
+- 🔒 **Control execution** — Approve or deny commands inline
 
 ---
 
-## How to connect
+## 🚀 Quick Start
 
-### Prerequisites
+> **Prerequisites:** Node.js 20.9+ and OpenClaw running on your gateway
 
-- **Node.js 20.9+** with `npm`
-- **OpenClaw** installed and running on your gateway machine
-- **GitHub CLI (`gh`)** authenticated (for auto-fix skill)
-
-### Quick Start
+### Step 1: Install
 
 ```bash
 git clone https://github.com/simonCatBot/rocclaw.git
 cd rocclaw
 npm install
+```
+
+### Step 2: Configure
+
+**For same-machine setup** (OpenClaw + rocCLAW on one computer):
+
+```bash
+# Allow gateway to accept connections
+openclaw config set gateway.bind lan
+openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
+openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
+openclaw gateway restart
+
+# Get your token
+openclaw config get gateway.auth.token
+# → copy this token for the next step
+```
+
+**Create environment file:**
+
+```bash
+cat > .env << 'EOF'
+# Point to your OpenClaw state directory
+OPENCLAW_STATE_DIR=/home/$USER/.openclaw
+
+# Gateway URL (MUST use localhost/127.0.0.1)
+NEXT_PUBLIC_GATEWAY_URL=ws://127.0.0.1:18789
+EOF
+```
+
+### Step 3: Launch
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and paste your gateway token. Click **Test Connection**, then **Save Settings**.
+
+🎉 You're in!
 
 ---
 
-### Same-Machine Setup (OpenClaw + rocCLAW on one host)
+## 📖 Documentation
 
-If OpenClaw and rocCLAW run on the same machine, you need extra configuration because browsers block WebSocket connections to non-localhost origins.
+| Guide | What you'll learn |
+|-------|-------------------|
+| [📚 Setup & Configuration](README.md#setup-guides) | Detailed installation for different scenarios |
+| [🖥️ UI Guide](docs/ui-guide.md) | How to use each feature in the interface |
+| [🔐 Permissions & Sandboxing](docs/permissions-sandboxing.md) | Security settings explained |
+| [🏗️ Architecture](ARCHITECTURE.md) | Technical deep-dive for developers |
+| [🤝 Contributing](CONTRIBUTING.md) | Development setup and contribution guide |
 
-#### 1. Configure OpenClaw Gateway
+---
 
-Set the gateway to allow LAN connections and disable strict device identity checks:
+## 🏗️ Architecture Overview
+
+```
+┌──────────────┐      HTTP/SSE       ┌──────────────┐     WebSocket      ┌──────────────┐
+│   Browser    │ ◄──────────────────► │  rocCLAW     │ ◄────────────────► │  OpenClaw    │
+│   (React)    │    Events/UI       │   Server     │    Commands        │   Gateway    │
+└──────────────┘                     │   (SQLite)   │                     │              │
+                                     │  • Outbox    │                     │ • AI Runtime │
+                                     │  • Replay    │                     │ • Config     │
+                                     └──────────────┘                     └──────────────┘
+```
+
+**Key design:** The browser never connects directly to the gateway. rocCLAW acts as a secure proxy, managing authentication, event replay, and rate limiting.
+
+---
+
+## 📋 Setup Guides
+
+<details>
+<summary><b>🏠 Same-Machine Setup (Recommended for Beginners)</b></summary>
+
+Running OpenClaw and rocCLAW on the same machine? Follow these steps:
+
+**1. Configure OpenClaw Gateway**
 
 ```bash
-# Allow connections from LAN (not just 127.0.0.1)
+# Allow connections from LAN (not just localhost)
 openclaw config set gateway.bind lan
 
-# Allow control-ui to connect without strict HTTPS/localhost checks
+# Allow control-ui to connect without strict HTTPS checks
 openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
 openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
 
@@ -48,250 +125,255 @@ openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
 openclaw gateway restart
 ```
 
-> ⚠️ **Security note**: These settings relax security checks. Only use them on trusted local networks or single-user machines.
+> ⚠️ **Security:** These settings relax security checks. Only use on trusted local networks.
 
-#### 2. Configure rocCLAW Environment
-
-Create a `.env` file in your rocCLAW directory. Replace `YOUR_USERNAME` with your actual username:
+**2. Create rocCLAW Environment File**
 
 ```bash
 cat > .env << 'EOF'
-# rocclaw .env - Local development configuration
-
-# Point to your OpenClaw state directory (update YOUR_USERNAME)
-OPENCLAW_STATE_DIR=/home/YOUR_USERNAME/.openclaw
+# Point to your OpenClaw state directory
+OPENCLAW_STATE_DIR=/home/$(whoami)/.openclaw
 
 # Gateway URL - MUST use localhost for browser security
 NEXT_PUBLIC_GATEWAY_URL=ws://127.0.0.1:18789
-
-# SSH target for gateway operations (optional - for agent workspace cleanup)
-# Only needed if rocCLAW and OpenClaw are on different machines
-OPENCLAW_GATEWAY_SSH_TARGET=
-OPENCLAW_GATEWAY_SSH_USER=
 EOF
 ```
 
-**Example for user "alice":**
-```bash
-OPENCLAW_STATE_DIR=/home/alice/.openclaw
-NEXT_PUBLIC_GATEWAY_URL=ws://127.0.0.1:18789
-```
-
-> **Important**: `NEXT_PUBLIC_GATEWAY_URL` must use `127.0.0.1` or `localhost`, not your machine's LAN IP.
-
-#### 3. Get Your Gateway Token
+**3. Get Your Gateway Token**
 
 ```bash
 openclaw config get gateway.auth.token
+# Example output: eyJhbGciOiJIUzI1NiIs...
 ```
 
-Copy this token — you'll paste it into rocCLAW.
-
-#### 4. Start rocCLAW and Connect
+**4. Start and Connect**
 
 ```bash
 npm run dev
 ```
 
-1. Open [http://localhost:3000](http://localhost:3000) (**must** use `localhost`, not IP)
-2. Enter gateway URL: `ws://127.0.0.1:18789`
+1. Open [http://localhost:3000](http://localhost:3000) (must use `localhost`, not IP)
+2. Enter URL: `ws://127.0.0.1:18789`
 3. Paste the token from step 3
-4. Click **Test Connection** — should show "Connection test succeeded"
+4. Click **Test Connection** → should show ✅ "Connection test succeeded"
 5. Click **Save Settings**
 
----
+</details>
 
-### Remote Gateway Setup
+<details>
+<summary><b>🌐 Remote Gateway via Tailscale</b></summary>
 
-| Gateway location | Upstream URL | Prerequisites |
-|------------------|-------------|---------------|
-| Same machine | `ws://localhost:18789` | See same-machine setup above |
-| Tailscale | `wss://<gateway-host>.ts.net` | Tailscale on both ends, HTTPS enabled |
-| SSH tunnel | `ws://localhost:18789` | Run `ssh -L 18789:127.0.0.1:18789 user@gateway-host` |
-| Cloud with TLS | `wss://<vm-address>` | Valid SSL certificate on gateway |
+**On the gateway machine:**
 
----
-
-### Troubleshooting Connection Issues
-
-#### "Control ui requires device identity" or "INVALID_REQUEST"
-
-Your OpenClaw gateway is rejecting the connection because the browser's security context doesn't match. Fix:
-
-1. Ensure you're accessing rocCLAW via `http://localhost:3000`, not `http://<ip>:3000`
-2. Add these OpenClaw settings:
-   ```bash
-   openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
-   openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
-   openclaw gateway restart
-   ```
-
-#### "Connection test succeeded" but dashboard won't load
-
-The test uses a different path than the actual WebSocket. Make sure:
-- `NEXT_PUBLIC_GATEWAY_URL` uses `127.0.0.1` or `localhost`, not a LAN IP
-- You restarted rocCLAW after creating `.env`
-
-#### "Could not connect to saved gateway settings"
-
-Delete the saved settings to reset:
 ```bash
-rm ~/.openclaw/openclaw-studio/settings.json
+# Find your Tailscale IP
+ip addr show tailscale0 | grep inet
+# → 100.x.x.x
+
+openclaw config set gateway.bind 100.x.x.x
+openclaw gateway restart
 ```
 
-Then reconnect via `http://localhost:3000`.
+**On your local machine:**
 
-#### "npm install" fails with git reference error
+```bash
+cat > .env << 'EOF'
+NEXT_PUBLIC_GATEWAY_URL=wss://my-gateway.ts.net
+EOF
+```
 
-If you see `The git reference could not be found`, the `@multiavatar/multiavatar` dependency has an invalid commit hash. This was fixed in PR #10 — pull the latest code:
+Use `wss://` (WebSocket Secure) when connecting via Tailscale.
+
+</details>
+
+<details>
+<summary><b>🔒 Remote Gateway via SSH Tunnel</b></summary>
+
+Create an SSH tunnel to forward the gateway port:
+
+```bash
+ssh -L 18789:127.0.0.1:18789 user@gateway-host
+```
+
+Keep this terminal open, then connect rocCLAW to `ws://localhost:18789`.
+
+</details>
+
+---
+
+## 🎯 Core Features
+
+### 🤖 Agent Management
+
+Create and manage AI agents with personality files:
+
+| File | Purpose | Example Content |
+|------|---------|-----------------|
+| `SOUL.md` | Agent's core identity | "I am a helpful coding assistant..." |
+| `AGENTS.md` | Operating rules | "Always ask before running commands..." |
+| `USER.md` | Human context | "My name is Alex, I prefer TypeScript..." |
+| `IDENTITY.md` | Agent metadata | Name, emoji, avatar settings |
+
+**Quick tip:** After creating an agent, rocCLAW automatically applies permissive defaults (auto commands, web access, file tools).
+
+### 💬 Real-Time Chat
+
+The chat interface includes powerful controls:
+
+- **New session** — Clear conversation context (agent forgets previous messages)
+- **Model** — Override the default model for this session
+- **Thinking** — `off` / `low` / `medium` / `high` (how much reasoning to show)
+- **Tool calls** — Toggle visibility of tool usage in the transcript
+- **Thinking traces** — Show the model's internal reasoning
+- **Stop run** — Emergency brake for long-running operations
+
+**Example workflow:**
+1. Send a message → Agent starts "thinking"
+2. Agent uses tools (visible if "Tool calls" enabled)
+3. Response streams in real-time
+4. Click "New session" to start fresh
+
+### 📊 System Metrics
+
+Live monitoring of:
+
+- **CPU** — Per-core and average usage
+- **Memory** — RAM utilization
+- **GPU** — Graphics card load (if available)
+- **Disk** — Storage usage
+- **Network** — I/O statistics
+
+*Data comes from the machine running rocCLAW (via `systeminformation` package).*
+
+### ⏰ Cron Jobs
+
+Schedule automated agent runs:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Template: "Daily Standup"                               │
+│  Task: "Summarize yesterday's commits and today's plan" │
+│  Schedule: 0 9 * * 1-5  (9 AM weekdays)                │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Schedules survive gateway restarts
+- Run immediately or on the timer
+- Each agent can have multiple cron jobs
+
+### 🔒 Exec Approvals
+
+When an agent tries to run a command that needs approval:
+
+```
+┌────────────────────────────────────────────────────────┐
+│  ⚠️ Command needs approval                              │
+│  > rm -rf /important/data                              │
+│                                                        │
+│  [ Allow once ]  [ Allow always ]  [ Deny ]          │
+└────────────────────────────────────────────────────────┘
+```
+
+- **Allow once** — Approve just this time
+- **Allow always** — Add to permanent allowlist
+- **Deny** — Block this attempt
+
+*Approvals are enforced by the gateway — they work even if rocCLAW is offline.*
+
+---
+
+## ⚙️ Permission Settings
+
+Control what each agent can do:
+
+| Setting | Options | Description |
+|---------|---------|-------------|
+| **Command Mode** | `Off` / `Ask` / `Auto` | Whether commands need approval |
+| **Sandbox Mode** | `Off` / `Non-main` / `All` | Container isolation for sessions |
+| **Workspace Access** | `None` / `Read-only` / `Read-write` | Filesystem visibility |
+| **Tools Profile** | `Minimal` / `Coding` / `Messaging` / `Full` | Available tool groups |
+
+> ⚠️ **Note:** `Read-only` workspace access **disables** `write`, `edit`, and `apply_patch` tools in sandboxed sessions, even if the tools profile allows them.
+
+---
+
+## 🐛 Troubleshooting
+
+### Connection Issues
+
+<table>
+<tr><th>Problem</th><th>Solution</th></tr>
+<tr>
+<td><code>Control ui requires device identity</code></td>
+<td>
+
+```bash
+openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
+openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
+openclaw gateway restart
+```
+
+</td>
+</tr>
+<tr>
+<td><code>Connection test succeeded</code> but dashboard won't load</td>
+<td>
+Ensure `NEXT_PUBLIC_GATEWAY_URL` uses <code>127.0.0.1</code> or <code>localhost</code>, not a LAN IP. Restart rocCLAW after editing <code>.env</code>.
+
+</td>
+</tr>
+<tr>
+<td><code>npm install</code> fails with git error</td>
+<td>
+
 ```bash
 git pull origin main
 npm install
 ```
 
----
+</td>
+</tr>
+<tr>
+<td>SQLite errors on startup</td>
+<td>
 
-## How it works
-
-rocCLAW is a **server-side dashboard** — the browser never connects directly to the gateway.
-
-```
-Browser  ──HTTP/SSE──►  rocCLAW Server  ──WebSocket──►  OpenClaw Gateway
-                        (Next.js + ws)                    (your AI runtime)
-                        • owns the gateway connection
-                        • writes events to SQLite outbox
-                        • redacts the gateway token from the browser
-                        • enforces rate limits
-```
-
-The server maintains a **SQLite outbox** of all gateway events. When the browser reconnects, it replays from its last-seen event ID so nothing is missed.
-
----
-
-## Features
-
-### Agents
-Create, rename, and delete agents. Each agent has personality files (`SOUL.md`, `AGENTS.md`, `USER.md`, `IDENTITY.md`) that live in its workspace directory on the gateway host.
-
-**Agent creation** captures only a name and avatar. rocCLAW then applies a permissive default: commands set to Auto, web access on, file tools on.
-
-### Chat
-Real-time messaging via SSE. Controls in the chat header:
-
-- **New session** — clears the conversation context
-- **Model** / **Thinking level** — per-session overrides
-- **Tool calls** / **Thinking traces** — toggle visibility of internal reasoning and tool use in the transcript
-- **Stop run** — halt the current agent run
-
-### System Metrics
-Live gauges for CPU, memory, GPU, disk, and network. Data comes from the machine running rocCLAW.
-
-### Cron Jobs
-Schedule agent runs using cron expressions. Schedules survive gateway restarts. Run immediately or on a timer.
-
-### Exec Approvals
-When an agent's command is blocked by the approval policy, rocCLAW shows an in-chat card:
-
-- **Allow once** — approve this exact command for this run
-- **Allow always** — add the command pattern to the agent's permanent allowlist
-- **Deny** — block this time
-
-Approvals are enforced by the gateway — they survive rocCLAW being offline.
-
-### Token Usage
-Per-agent token consumption dashboard.
-
----
-
-## Permissions
-
-rocCLAW exposes four settings that control what an agent can do. For the full model, see [Permissions & Sandboxing](docs/permissions-sandboxing.md).
-
-| Setting | Options | What it controls |
-|---------|---------|-----------------|
-| **Command mode** | Off / Ask / Auto | Whether exec commands need approval, run silently, or are blocked |
-| **Sandbox mode** | Off / Non-main / All | Whether sessions run sandboxed (`non-main` = everything except the main session) |
-| **Workspace access** | None / Read-only / Read-write | What the sandbox can see of the agent's workspace |
-| **Tools profile** | Minimal / Coding / Messaging / Full | Which tool groups are available |
-
-> [!WARNING]
-> `workspaceAccess = Read-only` does more than it sounds. It also **disables** the agent's `write`, `edit`, and `apply_patch` tools inside sandboxed sessions — even when those tools are nominally allowed by the tools profile. This is enforced by the gateway.
-
----
-
-## Connecting to a remote gateway
-
-### Tailscale (recommended)
-
-Both machines on the same tailnet. On the gateway machine, set `gateway.bind` to your Tailscale IP or hostname:
-
-```bash
-# On the gateway machine — find your Tailscale IP
-ip addr show tailscale0 | grep inet
-
-# Set and restart
-openclaw config set gateway.bind <tailscale-ip>
-openclaw restart
-```
-
-Then use `wss://<gateway-host>.ts.net` as the Upstream URL in rocCLAW.
-
-### SSH tunnel
-
-```bash
-# On your laptop
-ssh -L 18789:127.0.0.1:18789 user@gateway-host
-```
-
-Keep the tunnel open. Connect rocCLAW to `ws://localhost:18789`.
-
----
-
-## Troubleshooting
-
-### "Connect" fails
-1. Is the gateway running? `openclaw status`
-2. Is the URL correct? (`ws://` for plain, `wss://` for TLS — mixing them causes `EPROTO`)
-3. Is the token correct? `openclaw config get gateway.auth.token`
-4. Is the port right? `openclaw config get gateway.port`
-5. Is the network/firewall allowing outbound WebSocket connections?
-
-### Two kinds of 401
-- **rocCLAW itself**: if you set `ROCCLAW_ACCESS_TOKEN` on the server, clients must send it as a bearer header
-- **Gateway**: the gateway token is wrong or expired — re-run the config command and paste fresh
-
-### SQLite errors
 ```bash
 npm run verify:native-runtime:repair
 ```
-If that fails: `xcode-select --install` (macOS) or `sudo apt install build-essential python3` (Ubuntu).
 
-### Gateway keeps dropping
-The server reconnects with exponential back-off (1s → 15s max). Frequent drops usually mean the gateway machine is under memory or GPU pressure.
+</td>
+</tr>
+</table>
 
-### Agent won't respond
-1. Check the sidebar: ● running, ○ offline
-2. Look for a pending exec approval card in chat
-3. Try a new session (chat header → New session)
-4. Check gateway logs on the host
+### Runtime Issues
 
----
-
-## Document map
-
-Not sure where to look? Start here:
-
-| What you want | Go to |
-|--------------|-------|
-| How to connect, what it looks like | This README |
-| How each settings tab works | [UI Guide](docs/ui-guide.md) |
-| How chat events flow from gateway to browser | [Chat Streaming](docs/pi-chat-streaming.md) |
-| Sandbox modes, workspace access, exec approvals in depth | [Permissions & Sandboxing](docs/permissions-sandboxing.md) |
-| Project structure, route inventory, event model | [Architecture](ARCHITECTURE.md) |
-| Dev setup, testing, contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Symptom | Check |
+|---------|-------|
+| Agent won't respond | Sidebar shows ○ (offline)? Try "New session" |
+| Gateway keeps disconnecting | Check gateway machine memory/GPU pressure |
+| 401 errors | Regenerate token: `openclaw config get gateway.auth.token` |
+| Agent ignores commands | Check "Command Mode" setting — is it `Off`? |
 
 ---
 
-## License
+## 🤝 Contributing
 
-See [LICENSE](LICENSE)
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
+- Development environment setup
+- Testing procedures
+- PR guidelines
+
+---
+
+## 📜 License
+
+[MIT License](LICENSE) © simonCatBot
+
+---
+
+<div align="center">
+
+**[Documentation](docs/) · [Issues](../../issues) · [Discussions](../../discussions)**
+
+</div>
