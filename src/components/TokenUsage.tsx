@@ -126,13 +126,9 @@ export function TokenUsage() {
 
   const fetchTokenMetrics = useCallback(async () => {
     try {
-      // Try to fetch from API first
-      const now = new Date();
-      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-      
+      // Try to fetch from API first (no date filters - gateway will return all)
       const response = await fetch(
-        `/api/usage?startDate=${encodeURIComponent(startOfDay.toISOString())}&endDate=${encodeURIComponent(endOfDay.toISOString())}`,
+        `/api/usage`,
         { signal: AbortSignal.timeout(5000) }
       );
       

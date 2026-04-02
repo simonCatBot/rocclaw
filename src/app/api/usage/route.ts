@@ -21,27 +21,43 @@ export async function GET(request: Request) {
   const controlPlane = runtimeBootstrap.runtime;
   
   const { searchParams } = new URL(request.url);
-  const startDate = searchParams.get("startDate") ?? undefined;
-  const endDate = searchParams.get("endDate") ?? undefined;
+  
+  // Helper to convert ISO date to YYYY-MM-DD format required by gateway
+  const parseDate = (dateStr: string | null): string | undefined => {
+    if (!dateStr) return undefined;
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return undefined;
+      return date.toISOString().split("T")[0]; // YYYY-MM-DD
+    } catch {
+      return undefined;
+    }
+  };
+  
+  const startDate = parseDate(searchParams.get("startDate"));
+  const endDate = parseDate(searchParams.get("endDate"));
   const agentId = searchParams.get("agentId") ?? undefined;
   const tz = searchParams.get("tz") ?? undefined;
   
   try {
-    // Fetch usage data from gateway
-    const usageResult = await controlPlane.callGateway("sessions.usage", {
-      startDate,
-      endDate,
+    // Fetch usage data from gateway (dates are optional)
+    const usageParams: Record<string, unknown> = {
       includeContextWeight: true,
       limit: 1000,
-      ...(tz ? { tz } : {}),
-    }) as { sessions?: SessionInfo[]; startDate?: string; endDate?: string } | undefined;
+    };
+    if (startDate) usageParams.startDate = startDate;
+    if (endDate) usageParams.endDate = endDate;
+    if (tz) usageParams.tz = tz;
     
-    // Fetch cost data from gateway
-    const costResult = await controlPlane.callGateway("usage.cost", {
-      startDate,
-      endDate,
-      ...(tz ? { tz } : {}),
-    }) as { totalCost?: number } | undefined;
+    const usageResult = await controlPlane.callGateway("sessions.usage", usageParams) as { sessions?: SessionInfo[]; startDate?: string; endDate?: string } | undefined;
+    
+    // Fetch cost data from gateway (dates are optional)
+    const costParams: Record<string, unknown> = {};
+    if (startDate) costParams.startDate = startDate;
+    if (endDate) costParams.endDate = endDate;
+    if (tz) costParams.tz = tz;
+    
+    const costResult = await controlPlane.callGateway("usage.cost", costParams) as { totalCost?: number } | undefined;
     
     // Process sessions - usage data is nested inside session.usage
     let sessions = usageResult?.sessions ?? [] as SessionInfo[];
