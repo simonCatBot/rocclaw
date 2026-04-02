@@ -34,17 +34,17 @@ export async function GET(request: Request) {
       includeContextWeight: true,
       limit: 1000,
       ...(tz ? { tz } : {}),
-    });
+    }) as { sessions?: SessionInfo[]; startDate?: string; endDate?: string } | undefined;
     
     // Fetch cost data from gateway
     const costResult = await controlPlane.callGateway("usage.cost", {
       startDate,
       endDate,
       ...(tz ? { tz } : {}),
-    });
+    }) as { totalCost?: number } | undefined;
     
     // Process sessions - usage data is nested inside session.usage
-    let sessions = usageResult?.sessions ?? [];
+    let sessions = usageResult?.sessions ?? [] as SessionInfo[];
     
     // Filter by agent if specified
     if (agentId) {
