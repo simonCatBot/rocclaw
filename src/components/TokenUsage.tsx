@@ -381,12 +381,14 @@ export function TokenUsage() {
               <div key={model.model} className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground capitalize">{model.model}</span>
-                  <span className="text-foreground font-medium">{model.percentage}%</span>
+                  <span className="text-foreground font-medium">
+                    {formatNumber(model.tokens)} ({model.percentage}%)
+                  </span>
                 </div>
                 <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary/70 rounded-full transition-all duration-500"
-                    style={{ width: `${model.percentage}%` }}
+                    style={{ width: `${Math.max(model.percentage, 1)}%` }}
                   />
                 </div>
               </div>
