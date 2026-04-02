@@ -386,13 +386,13 @@ export function TokenUsage() {
         </div>
       )}
 
-      {/* By Model */}
+      {/* By Model - Token Usage */}
       {metrics.byModel.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Cpu className="w-3 h-3 text-muted-foreground" />
             <h3 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-              By Model
+              By Model (Tokens)
             </h3>
           </div>
           <div className="space-y-2">
@@ -403,7 +403,7 @@ export function TokenUsage() {
                     {model.model === 'gateway-injected' ? 'Gateway Injected' : model.model}
                   </span>
                   <span className="text-foreground font-medium">
-                    {formatNumber(model.tokens)} ({model.percentage}%) • {formatNumber(model.messageCount)} msg
+                    {formatNumber(model.tokens)} ({model.percentage}%)
                   </span>
                 </div>
                 <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
@@ -417,6 +417,44 @@ export function TokenUsage() {
           </div>
         </div>
       )}
+
+      {/* By Model - Messages */}
+      {metrics.byModel.length > 0 && (() => {
+        const totalMsgs = metrics.byModel.reduce((sum, m) => sum + (m.messageCount || 0), 0);
+        return totalMsgs > 0 ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-3 h-3 text-muted-foreground" />
+              <h3 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                By Model (Messages)
+              </h3>
+            </div>
+            <div className="space-y-2">
+            {metrics.byModel.filter(m => m.messageCount > 0).map((model) => {
+              const msgPercent = totalMsgs > 0 ? Math.round((model.messageCount / totalMsgs) * 100) : 0;
+              return (
+                <div key={model.model} className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground capitalize">
+                      {model.model === 'gateway-injected' ? 'Gateway Injected' : model.model}
+                    </span>
+                    <span className="text-foreground font-medium">
+                      {formatNumber(model.messageCount)} ({msgPercent}%)
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-surface-2 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-secondary/70 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(msgPercent, 1)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            </div>
+          </div>
+        ) : null;
+      })()}
 
       {/* Rate */}
       <div className="pt-3 border-t border-border/50">
