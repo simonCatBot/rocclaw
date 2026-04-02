@@ -2,8 +2,12 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import {
-  Search,
+  buildCronJobCreateInput,
+  type CronCreateDraft,
+} from "@/lib/cron/createPayloadBuilder";
+import {
   Plus,
+  Search,
   Clock,
   CheckCircle,
   AlertTriangle,
@@ -53,6 +57,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { useAgentStore } from "@/features/agents/state/store";
 import type { CronJobSummary } from "@/lib/cron/types";
+import { createDomainCronJob } from "@/lib/controlplane/domain-runtime-client";
 import { formatCronSchedule, sortCronJobsByUpdatedAt } from "@/lib/cron/types";
 import type {
   Task,
@@ -1206,8 +1211,7 @@ function CreateTaskModal({ agents, onClose, onCreated, onCronCreated }: CreateTa
   const everyMs = useMemo(() => {
     const v = parseInt(everyValue) || 0;
     if (everyUnit === "h") return v * 3600000;
-    if (everyUnit === "m") return v * 60000;
-    return v * 1000;
+    return v * 60000; // minutes
   }, [everyValue, everyUnit]);
 
   const handleCreateTask = async () => {
@@ -1244,30 +1248,26 @@ function CreateTaskModal({ agents, onClose, onCreated, onCronCreated }: CreateTa
   };
 
   const handleCreateScheduled = async () => {
-    if (!title.trim() || everyMs <= 0) return;
+    if (!title.trim()) return;
+    if (everyMs <= 0 && !title.trim()) return;
     setLoading(true);
     setError(null);
     try {
-      const sessionTarget = agentId ? `session:${agentId}` : "isolated";
-      const res = await fetch("/api/intents/cron-add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: title.trim(),
-          agentId: agentId || undefined,
-          schedule: { kind: "every", everyMs },
-          payload: {
-            kind: "agentTurn",
-            message: description.trim() || `Scheduled task: ${title.trim()}`,
-          },
-          sessionTarget,
-          wakeMode: "next-heartbeat",
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error ?? "Failed to create scheduled task");
+      if (!agentId) {
+        throw new Error("An agent must be selected to create a scheduled task.");
       }
+      const everyAmount = parseInt(everyValue, 10) || 1;
+      const draft: CronCreateDraft = {
+        templateId: "custom",
+        name: title.trim(),
+        taskText: description.trim() || `Scheduled task: ${title.trim()}`,
+        scheduleKind: "every",
+        everyAmount,
+        everyUnit: everyUnit === "h" ? "hours" : "minutes",
+        deliveryMode: "none",
+      };
+      const input = buildCronJobCreateInput(agentId, draft);
+      await createDomainCronJob(input);
       onCronCreated?.();
       onClose();
     } catch (err) {
@@ -1402,7 +1402,6 @@ function CreateTaskModal({ agents, onClose, onCreated, onCronCreated }: CreateTa
                     value={everyUnit}
                     onChange={(e) => setEveryUnit(e.target.value as "s" | "m" | "h")}
                   >
-                    <option value="s">seconds</option>
                     <option value="m">minutes</option>
                     <option value="h">hours</option>
                   </select>
