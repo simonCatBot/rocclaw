@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   Bell,
@@ -34,7 +34,6 @@ import { parsePersonalityFiles, serializePersonalityFiles } from "@/lib/agents/p
 import {
   AvatarSelector,
   buildDefaultAvatarSelectorValue,
-  type AvatarSelectorHandle,
 } from "@/features/agents/components/AvatarSelector";
 
 const AgentInspectHeader = ({
@@ -1323,7 +1322,6 @@ export const AgentBrainPanel = ({
     gatewayStatus,
   });
   const draft = useMemo(() => parsePersonalityFiles(agentFiles), [agentFiles]);
-  const avatarRef = useRef<AvatarSelectorHandle | null>(null);
   const [avatarValue, setAvatarValue] = useState<{
     avatarSource: "auto" | "default" | "custom";
     avatarSeed: string;
@@ -1334,7 +1332,7 @@ export const AgentBrainPanel = ({
   );
 
   // Sync avatar value when selected agent changes
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (selectedAgent) {
       setAvatarValue({
         avatarSource: (selectedAgent.avatarSource ?? "auto") as "auto" | "default" | "custom",
