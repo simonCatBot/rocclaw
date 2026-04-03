@@ -54,6 +54,8 @@ import {
 import { useSortable, SortableContext } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
+import { buildDefaultAvatarUrl } from "@/features/agents/components/AgentAvatar";
+import { useAvatarMode, type AvatarDisplayMode } from "@/components/AvatarModeContext";
 
 // ─── Priority ─────────────────────────────────────────────────────────────────
 
@@ -65,8 +67,26 @@ const PRIORITY_CONFIG: Record<CronPriority, { label: string; color: string; icon
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
-function agentAvatarSrc(agentId: string, avatarSeed: string | null | undefined) {
+function agentAvatarSrc(
+  agentId: string,
+  avatarSeed: string | null | undefined,
+  footerMode: AvatarDisplayMode,
+  defaultAvatarIndex: number = 0
+) {
   const seed = avatarSeed?.trim() || agentId;
+  if (footerMode === "default") {
+    return buildDefaultAvatarUrl(
+      ((agentId.split("").reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0) + defaultAvatarIndex) %
+        6 +
+        6) %
+        6
+    );
+  }
+  if (footerMode === "custom") {
+    // Custom URL is stored on the agent in the store — we can't access it here
+    // Fall back to auto avatar for custom mode in task dashboard
+    return buildAvatarDataUrl(seed);
+  }
   return buildAvatarDataUrl(seed);
 }
 
@@ -238,6 +258,7 @@ interface CronJobTileProps {
   job: CronJobSummary;
   agentName: string;
   agentAvatarSeed?: string | null;
+  footerMode: AvatarDisplayMode;
   onRun: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string) => void;
@@ -251,6 +272,7 @@ function CronJobTile({
   job,
   agentName,
   agentAvatarSeed,
+  footerMode,
   onRun,
   onToggle,
   onDelete,
@@ -260,7 +282,7 @@ function CronJobTile({
   compact = false,
 }: CronJobTileProps) {
   const state = job.state;
-  const avatarUrl = agentAvatarSrc(job.agentId ?? agentName, agentAvatarSeed);
+  const avatarUrl = agentAvatarSrc(job.agentId ?? agentName, agentAvatarSeed, footerMode);
   const priority = job.priority ?? "normal";
 
   const dot = job.enabled
@@ -393,6 +415,7 @@ interface RunTileProps {
   agentName: string;
   agentId: string;
   avatarSeed?: string | null;
+  footerMode: AvatarDisplayMode;
   status: "thinking" | "running" | "completed" | "failed";
   label: string;
   startedAtMs: number;
@@ -409,6 +432,7 @@ function RunTile({
   agentName,
   agentId,
   avatarSeed,
+  footerMode,
   status,
   label,
   startedAtMs,
@@ -423,7 +447,7 @@ function RunTile({
   const durationMs = endedAtMs ? endedAtMs - startedAtMs : null;
   const dot = dotColors[status] ?? "bg-neutral-400";
   const Icon = status === "completed" ? CheckCircle : status === "failed" ? XCircle : Activity;
-  const avatarUrl = agentAvatarSrc(agentId, avatarSeed);
+  const avatarUrl = agentAvatarSrc(agentId, avatarSeed, footerMode);
 
   return (
     <div
@@ -590,6 +614,7 @@ function AgentFilterChips({
   selected: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const footerMode = useAvatarMode();
   if (agents.length <= 1) return null;
 
   return (
@@ -612,7 +637,7 @@ function AgentFilterChips({
             }`}
           >
             <Image
-              src={agentAvatarSrc(agent.agentId, agent.avatarSeed)}
+              src={agentAvatarSrc(agent.agentId, agent.avatarSeed, footerMode)}
               alt={agent.name}
               width={14}
               height={14}
@@ -1052,6 +1077,7 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
 function TaskDetailPanel({
   job,
   agentName,
+  footerMode,
   onClose,
   onRun,
   onToggle,
@@ -1061,6 +1087,7 @@ function TaskDetailPanel({
 }: {
   job: CronJobSummary;
   agentName: string;
+  footerMode: AvatarDisplayMode;
   onClose: () => void;
   onRun: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
@@ -1079,7 +1106,7 @@ function TaskDetailPanel({
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-3">
             <Image
-              src={agentAvatarSrc(job.agentId ?? agentName, undefined)}
+              src={agentAvatarSrc(job.agentId ?? agentName, undefined, footerMode)}
               alt={agentName}
               width={40}
               height={40}
@@ -1191,6 +1218,7 @@ const WIP_LIMIT_EXECUTING = 5;
 export function TasksDashboard() {
   const { state } = useAgentStore();
   const agents = state.agents;
+  const footerMode = useAvatarMode();
 
   const [cronJobs, setCronJobs] = useState<CronJobSummary[]>([]);
   const [runBusy, setRunBusy] = useState(false);
@@ -1256,7 +1284,7 @@ export function TasksDashboard() {
 
   // ── Build run entries from agent state ──────────────────────────────────
   const runEntries = useMemo(() => {
-    const entries: Omit<RunTileProps, "avatarSeed" | "isPendingExecution">[] = [];
+    const entries: Omit<RunTileProps, "isPendingExecution">[] = [];
     for (const agent of agents) {
       const isRunning = agent.status === "running" && agent.runStartedAt !== null;
       if (isRunning) {
@@ -1273,6 +1301,8 @@ export function TasksDashboard() {
         entries.push({
           agentName: agent.name,
           agentId: agent.agentId,
+          avatarSeed: agent.avatarSeed,
+          footerMode,
           status: "thinking",
           label,
           startedAtMs: agent.runStartedAt ?? 0,
@@ -1285,6 +1315,8 @@ export function TasksDashboard() {
         entries.push({
           agentName: agent.name,
           agentId: agent.agentId,
+          avatarSeed: agent.avatarSeed,
+          footerMode,
           status: agent.status === "error" ? "failed" : "completed",
           label:
             agent.lastUserMessage?.split("\n")[0]?.slice(0, 60) ??
@@ -1303,7 +1335,7 @@ export function TasksDashboard() {
       return b.startedAtMs - a.startedAtMs;
     });
     return entries;
-  }, [agents, now]);
+  }, [agents, now, footerMode]);
 
   // ── Filter jobs by agent + priority + search ────────────────────────────
   const filteredJobs = useMemo(() => {
@@ -1724,6 +1756,7 @@ export function TasksDashboard() {
                           job={job}
                           agentName={agent?.name ?? job.agentId ?? "Unknown"}
                           agentAvatarSeed={agent?.avatarSeed}
+                          footerMode={footerMode}
                           onRun={handleRun}
                           onToggle={handleToggle}
                           onDelete={handleDelete}
@@ -1765,6 +1798,7 @@ export function TasksDashboard() {
                         agentName={p.agentName}
                         agentId={p.agentId}
                         avatarSeed={p.avatarSeed}
+                        footerMode={footerMode}
                         status="running"
                         label={p.label}
                         startedAtMs={p.startedAtMs}
@@ -1782,6 +1816,7 @@ export function TasksDashboard() {
                           agentName={run.agentName}
                           agentId={run.agentId}
                           avatarSeed={agent?.avatarSeed}
+                          footerMode={footerMode}
                           status={run.status}
                           label={run.label}
                           startedAtMs={run.startedAtMs}
@@ -1815,6 +1850,7 @@ export function TasksDashboard() {
                           job={job}
                           agentName={agent?.name ?? job.agentId ?? "Unknown"}
                           agentAvatarSeed={agent?.avatarSeed}
+                          footerMode={footerMode}
                           onRun={handleRun}
                           onToggle={handleToggle}
                           onDelete={handleDelete}
@@ -1846,6 +1882,7 @@ export function TasksDashboard() {
                               job={job}
                               agentName={agent?.name ?? job.agentId ?? "Unknown"}
                               agentAvatarSeed={agent?.avatarSeed}
+                              footerMode={footerMode}
                               onRun={handleRun}
                               onToggle={handleToggle}
                               onDelete={handleDelete}
@@ -1878,6 +1915,7 @@ export function TasksDashboard() {
                             agentName={run.agentName}
                             agentId={run.agentId}
                             avatarSeed={agent?.avatarSeed}
+                            footerMode={footerMode}
                             status={run.status}
                             label={run.label}
                             startedAtMs={run.startedAtMs}
@@ -1910,6 +1948,7 @@ export function TasksDashboard() {
               job={activeJob}
               agentName={agent?.name ?? activeJob.agentId ?? "Agent"}
               agentAvatarSeed={agent?.avatarSeed}
+              footerMode={footerMode}
               onRun={handleRun}
               onToggle={handleToggle}
               onDelete={handleDelete}
@@ -1924,6 +1963,7 @@ export function TasksDashboard() {
           <RunTile
             {...activeRunEntry}
             avatarSeed={"avatarSeed" in activeRunEntry ? activeRunEntry.avatarSeed : undefined}
+                          footerMode={footerMode}
             isPendingExecution={"isPendingExecution" in activeRunEntry ? activeRunEntry.isPendingExecution : false}
             compact={compactView}
           />
@@ -1947,6 +1987,7 @@ export function TasksDashboard() {
           <TaskDetailPanel
             job={expandedTask}
             agentName={agent?.name ?? expandedTask.agentId ?? "Unknown"}
+            footerMode={footerMode}
             onClose={() => setExpandedTask(null)}
             onRun={handleRun}
             onToggle={handleToggle}
@@ -1967,6 +2008,7 @@ interface SortableCronJobTileProps {
   job: CronJobSummary;
   agentName: string;
   agentAvatarSeed?: string | null;
+  footerMode: AvatarDisplayMode;
   onRun: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string) => void;
@@ -1976,7 +2018,7 @@ interface SortableCronJobTileProps {
 }
 
 function SortableCronJobTile({
-  id, job, agentName, agentAvatarSeed, onRun, onToggle, onDelete, runBusy, deleteBusy, compact,
+  id, job, agentName, agentAvatarSeed, footerMode, onRun, onToggle, onDelete, runBusy, deleteBusy, compact,
 }: SortableCronJobTileProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
@@ -1998,6 +2040,7 @@ function SortableCronJobTile({
         job={job}
         agentName={agentName}
         agentAvatarSeed={agentAvatarSeed}
+        footerMode={footerMode}
         onRun={onRun}
         onToggle={onToggle}
         onDelete={onDelete}
