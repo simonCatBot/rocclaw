@@ -5,27 +5,33 @@ import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
 
 test("connection settings save to the rocclaw settings API", async ({ page }) => {
   await stubRocclawRoute(page);
-  await stubRuntimeRoutes(page);
+  // Must pass disconnected status so Connection tab is visible
+  await stubRuntimeRoutes(page, {
+    summary: {
+      status: "disconnected",
+      reason: null,
+      error: "Control-plane start failed: rocCLAW gateway token is not configured.",
+    },
+  });
 
   await page.goto("/");
-  await page.locator('button[title="Gateway connection settings"]').click();
-  await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toBeVisible();
+  
+  // Connection tab should be visible when disconnected
+  await page.waitForLoadState("networkidle");
+  
+  // Wait for the form to be visible - Connection tab auto-shows when disconnected
+  await expect(page.getByText("Gateway URL & Token")).toBeVisible({ timeout: 5000 });
+  
+  // Fill URL input - use CSS id selector
+  await page.locator('#gateway-url').fill('ws://gateway.example:18789');
+  
+  // Fill token input
+  await page.locator('#gateway-token').fill('token-123');
 
-  // Fill and verify local input state before clicking
-  await page.getByLabel(/Upstream (gateway )?URL/i).fill("ws://gateway.example:18789");
-  await page.getByLabel("Upstream token").fill("token-123");
-  await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toHaveValue("ws://gateway.example:18789");
-  await expect(page.getByLabel("Upstream token")).toHaveValue("token-123");
+  // Click save
+  await page.getByRole("button", { name: "Save Settings" }).click();
 
-  // Click save and wait for the UI to transition to the post-save state.
-  // force:true bypasses Playwright's stability check, which is important
-  // because React's concurrent rendering may still be finalising the panel
-  // DOM when we attempt the click (causing "element not stable" flakiness).
-  await page.getByRole("button", { name: "Save settings" }).click({ force: true });
-  await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible({ timeout: 10_000 });
-
-  // Verify the settings persisted by fetching via the browser context
-  // (not page.request, which bypasses route stubs).
+  // Verify the settings persisted
   const savedSettings = await page.evaluate(async () => {
     const res = await fetch("/api/rocclaw");
     return res.json();
@@ -34,12 +40,9 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
     .settings?.gateway;
   expect(gateway?.url).toBe("ws://gateway.example:18789");
   expect(gateway?.token).toBe("token-123");
-
-  // Verify the UI transitions to the post-save state.
-  await expect(page.getByRole("button", { name: "Test connection" })).toBeVisible();
 });
 
-test("same-host cloud onboarding keeps the upstream on localhost", async ({ page }) => {
+test("cloud tab uses local defaults when available", async ({ page }) => {
   const installContext = defaultStudioInstallContext();
   installContext.studioHost.remoteShell = true;
   installContext.tailscale.loggedIn = true;
@@ -73,17 +76,17 @@ test("same-host cloud onboarding keeps the upstream on localhost", async ({ page
   });
 
   await page.goto("/");
-  await expect(page.getByText("rocCLAW and OpenClaw on the same cloud machine")).toBeVisible();
-  await page.getByRole("button", { name: /rocCLAW and OpenClaw on the same cloud machine/i }).click();
-  await expect(page.getByText(/rocCLAW is on a remote host\./i)).toBeVisible();
-  await expect(
-    page.getByText("tailscale serve --yes --bg --https 443 http://127.0.0.1:3000")
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Use local defaults" }).click();
-  await expect(page.getByLabel("Upstream URL")).toHaveValue("ws://localhost:18789");
+  // Connection tab is active by default - click Cloud tab
+  await page.getByRole("button", { name: /^Cloud$/ }).click();
+  
+  // Should show Cloud tab content
+  await expect(page.getByText("Cloud Setup")).toBeVisible();
+  await page.getByRole("button", { name: "Use Local Defaults" }).click();
+  // The Gateway URL input is in the right column - when Cloud tab is active, placeholder is wss://gateway.ts.net
+  await expect(page.getByPlaceholder(/wss:\/\/gateway.ts.net/)).toHaveValue("ws://localhost:18789");
 });
 
-test("remote gateway onboarding warns about ws tailscale urls", async ({ page }) => {
+test("client tab warns about ws tailscale urls", async ({ page }) => {
   await stubRocclawRoute(page);
   await stubRuntimeRoutes(page, {
     summary: {
@@ -94,8 +97,9 @@ test("remote gateway onboarding warns about ws tailscale urls", async ({ page })
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /rocCLAW here, OpenClaw in the cloud/i }).click();
-  await page.getByLabel("Upstream URL").fill("ws://gateway-host.ts.net");
+  // Connection tab is active by default - click Client tab
+  await page.getByRole("button", { name: /^Client$/ }).click();
+  await page.getByPlaceholder(/wss:\/\/gateway.ts.net/).fill("ws://gateway-host.ts.net");
   await expect(
     page.getByText(/Use wss:\/\/ for \.ts\.net gateway URLs\./i)
   ).toBeVisible();

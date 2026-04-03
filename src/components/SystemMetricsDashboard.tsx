@@ -160,16 +160,23 @@ function ProminentCard({
 
 export function SystemMetricsDashboard() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+  const [metricsSource, setMetricsSource] = useState<"local" | "gateway" | "unavailable" | null>(null);
+  const [connectionMode, setConnectionMode] = useState<string | null>(null);
+  const [gatewayHostname, setGatewayHostname] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPerCore, setShowPerCore] = useState(false);
   const [showGpuHardware, setShowGpuHardware] = useState(false);
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const response = await fetch("/api/system/metrics");
+      const response = await fetch("/api/gateway-metrics");
       const result = await response.json();
-      if (result.success) {
+      
+      if (result.success && result.data) {
         setMetrics(result.data);
+        setMetricsSource(result.source as "local" | "gateway");
+        setConnectionMode(result.connectionMode || "local");
+        setGatewayHostname(result.hostname || null);
         setError(null);
       } else {
         setError(result.error || "Failed to fetch metrics");
@@ -184,6 +191,9 @@ export function SystemMetricsDashboard() {
     const interval = setInterval(fetchMetrics, 5000);
     return () => clearInterval(interval);
   }, [fetchMetrics]);
+
+  // Determine if metrics are from local or remote
+  const isRemoteMetrics = connectionMode && connectionMode !== "local";
 
   if (!metrics && !error) {
     return (
@@ -255,6 +265,16 @@ export function SystemMetricsDashboard() {
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50">
         <Server className="w-4 h-4 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">System Metrics</h2>
+        {isRemoteMetrics && gatewayHostname && (
+          <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-blue-500/20 text-blue-500 border border-blue-500/30">
+            Remote: {gatewayHostname}
+          </span>
+        )}
+        {!isRemoteMetrics && (
+          <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-green-500/20 text-green-500 border border-green-500/30">
+            Local
+          </span>
+        )}
         <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1">
           <Clock className="w-3 h-3" />
           {Math.floor(metrics.uptime / 3600)}h {Math.floor((metrics.uptime % 3600) / 60)}m

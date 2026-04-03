@@ -27,6 +27,8 @@ const CONNECT_CAPABILITIES = ["tool-events"];
 
 const DEFAULT_METHOD_ALLOWLIST = new Set<string>([
   "status",
+  "system-presence",
+  "system.metrics",
   "chat.send",
   "chat.abort",
   "chat.history",
@@ -40,6 +42,8 @@ const DEFAULT_METHOD_ALLOWLIST = new Set<string>([
   "sessions.preview",
   "sessions.patch",
   "sessions.reset",
+  "sessions.usage",
+  "usage.cost",
   "cron.list",
   "cron.run",
   "cron.remove",

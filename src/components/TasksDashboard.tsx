@@ -49,6 +49,7 @@ import {
   DragOverlay,
   type CollisionDetection,
   closestCenter,
+  useDroppable,
 } from "@dnd-kit/core";
 import { useSortable, SortableContext } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -179,7 +180,7 @@ function parseTileId(id: string): { colId: string; unique: string } | null {
   return { colId: id.slice(0, idx), unique: id.slice(idx + 2) };
 }
 
-const COLUMN_IDS = new Set(["queued", "scheduled", "executing", "done"]);
+const COLUMN_IDS = new Set(["queued", "pending", "executing", "done"]);
 
 function isColumnId(id: string): boolean {
   return COLUMN_IDS.has(id);
@@ -511,9 +512,11 @@ interface ColumnZoneProps {
 
 function ColumnZone({ id, isDropTarget, wipLimit, count, children }: ColumnZoneProps) {
   const wipExceeded = wipLimit != null && count > wipLimit;
+  const { setNodeRef } = useDroppable({ id });
 
   return (
     <div
+      ref={setNodeRef}
       data-column={id}
       className={`flex min-w-[240px] flex-1 flex-col rounded-2xl border p-3 transition-all ${
         isDropTarget
@@ -522,8 +525,11 @@ function ColumnZone({ id, isDropTarget, wipLimit, count, children }: ColumnZoneP
             ? "border-red-500/50 bg-red-500/5"
             : "border-border bg-surface-1"
       }`}
+      style={{ maxHeight: "calc(100vh - 200px)" }}
     >
-      {children}
+      <div className="overflow-y-auto flex-1">
+        {children}
+      </div>
 
       {wipExceeded && (
         <div className="mt-2 flex items-center gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-[10px] text-red-400">
@@ -651,32 +657,94 @@ interface CreateCronModalProps {
   onCreated: () => void;
 }
 
+type JobType = "onetime" | "recurring";
+type SchedulePreset = "minutely" | "5min" | "15min" | "30min" | "hourly" | "daily" | "weekly" | "monthly";
+
 function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }: CreateCronModalProps) {
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [agentId, setAgentId] = useState(defaultAgentId);
   const [message, setMessage] = useState("");
-  const [everyValue, setEveryValue] = useState("60");
-  const [everyUnit, setEveryUnit] = useState<"s" | "m" | "h">("m");
-  const [priority, setPriority] = useState<CronPriority>("normal");
+  
+  // Job type toggle
+  const [jobType, setJobType] = useState<JobType>("recurring");
+  
+  // One-time specific
+  const [runAtDate, setRunAtDate] = useState("");
+  const [runAtTime, setRunAtTime] = useState("");
+  
+  // Recurring schedule
+  const [schedulePreset, setSchedulePreset] = useState<SchedulePreset>("daily");
+  const [scheduleTime, setScheduleTime] = useState("09:00");
+  const [scheduleDayOfWeek, setScheduleDayOfWeek] = useState("1");
+  const [scheduleDayOfMonth, setScheduleDayOfMonth] = useState("1");
+  const [scheduleTz, setScheduleTz] = useState("");
+  
+  // Common options
+  const [enabled, setEnabled] = useState(true);
+  const [deleteAfterRun, setDeleteAfterRun] = useState(false);
+  const [sessionTarget, setSessionTarget] = useState<"main" | "isolated">("isolated");
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const everyMs = useMemo(() => {
-    const v = parseInt(everyValue) || 0;
-    if (everyUnit === "h") return v * 3600000;
-    if (everyUnit === "m") return v * 60000;
-    return v * 1000;
-  }, [everyValue, everyUnit]);
+  const buildSchedule = () => {
+    if (jobType === "onetime") {
+      if (!runAtDate || !runAtTime) return null;
+      const at = new Date(`${runAtDate}T${runAtTime}`).toISOString();
+      return { kind: "at" as const, at };
+    }
+    // recurring - convert preset to schedule
+    const tz = scheduleTz.trim() || undefined;
+    switch (schedulePreset) {
+      case "minutely":
+        return { kind: "every" as const, everyMs: 60_000 };
+      case "5min":
+        return { kind: "every" as const, everyMs: 5 * 60_000 };
+      case "15min":
+        return { kind: "every" as const, everyMs: 15 * 60_000 };
+      case "30min":
+        return { kind: "every" as const, everyMs: 30 * 60_000 };
+      case "hourly":
+        return { kind: "every" as const, everyMs: 3600_000 };
+      case "daily":
+        return { kind: "cron" as const, expr: `0 ${scheduleTime.split(":")[0]} * * *`, tz };
+      case "weekly": {
+        const [hour, minute] = scheduleTime.split(":");
+        return { kind: "cron" as const, expr: `${minute} ${hour} * * ${scheduleDayOfWeek}`, tz };
+      }
+      case "monthly": {
+        const [hour, minute] = scheduleTime.split(":");
+        return { kind: "cron" as const, expr: `${minute} ${hour} ${scheduleDayOfMonth} * *`, tz };
+      }
+      default:
+        return { kind: "every" as const, everyMs: 3600_000 };
+    }
+  };
 
   const handleCreate = async () => {
-    if (!name.trim() || !message.trim() || everyMs <= 0) return;
+    if (!name.trim() || !message.trim()) return;
+    const schedule = buildSchedule();
+    if (!schedule) return;
+    
     setLoading(true);
     setError(null);
     try {
+      const payload: Record<string, unknown> = {
+        name: name.trim(),
+        agentId: agentId || undefined,
+        schedule,
+        enabled,
+        deleteAfterRun,
+        sessionTarget,
+        description: description.trim() || undefined,
+        payload: { kind: "agentTurn", message: message.trim() },
+      };
+      
       const res = await fetch("/api/intents/cron-add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), agentId: agentId || undefined, everyMs, message: message.trim(), priority }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Unknown error" }));
@@ -691,23 +759,73 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
     }
   };
 
+  // Validation
+  const isValid = useMemo(() => {
+    if (!name.trim() || !message.trim()) return false;
+    if (jobType === "onetime") {
+      return !!(runAtDate && runAtTime);
+    }
+    // recurring - all presets are always valid
+    return true;
+  }, [name, message, jobType, runAtDate, runAtTime]);
+
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface-1 p-5 shadow-2xl">
-        <h3 className="mb-4 text-base font-semibold text-foreground">Create Scheduled Task</h3>
+      <div className="flex h-[90vh] w-full max-w-lg flex-col rounded-xl border border-border bg-surface-1 p-5 shadow-2xl">
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-foreground">Create Task</h3>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-        <div className="space-y-3">
+        {/* Scrollable form */}
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+          {/* Job Type Toggle */}
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Task name</label>
+            <label className="mb-2 block text-xs text-muted-foreground">Job Type</label>
+            <div className="flex rounded-md border border-border bg-surface-2 p-0.5">
+              <button
+                type="button"
+                onClick={() => setJobType("recurring")}
+                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                  jobType === "recurring"
+                    ? "bg-surface-1 text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Recurring
+              </button>
+              <button
+                type="button"
+                onClick={() => setJobType("onetime")}
+                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                  jobType === "onetime"
+                    ? "bg-surface-1 text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                One-time
+              </button>
+            </div>
+          </div>
+
+          {/* Task Name */}
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Task name *</label>
             <input
               className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Daily summary"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              autoFocus
             />
           </div>
 
+          {/* Agent */}
           {agents.length > 1 && (
             <div>
               <label className="mb-1 block text-xs text-muted-foreground">Agent</label>
@@ -724,8 +842,132 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
             </div>
           )}
 
+          {/* Schedule Section */}
+          <div className="space-y-3">
+            <label className="block text-xs text-muted-foreground">Schedule *</label>
+            
+            {jobType === "onetime" ? (
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="mb-1 block text-[10px] text-muted-foreground">Date</label>
+                  <input
+                    type="date"
+                    className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    value={runAtDate}
+                    onChange={(e) => setRunAtDate(e.target.value)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-[10px] text-muted-foreground">Time</label>
+                  <input
+                    type="time"
+                    className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    value={runAtTime}
+                    onChange={(e) => setRunAtTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Simple Schedule Builder */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-[10px] text-muted-foreground">Frequency</label>
+                    <select
+                      className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                      value={schedulePreset}
+                      onChange={(e) => setSchedulePreset(e.target.value as SchedulePreset)}
+                    >
+                      <option value="minutely">Every minute</option>
+                      <option value="5min">Every 5 minutes</option>
+                      <option value="15min">Every 15 minutes</option>
+                      <option value="30min">Every 30 minutes</option>
+                      <option value="hourly">Every hour</option>
+                      <option value="daily">Daily at specific time</option>
+                      <option value="weekly">Weekly on specific day/time</option>
+                      <option value="monthly">Monthly on specific day/time</option>
+                    </select>
+                  </div>
+
+                  {/* Daily time picker */}
+                  {(schedulePreset === "daily" || schedulePreset === "weekly") && (
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        {schedulePreset === "weekly" ? "Day of week" : ""} Time
+                      </label>
+                      <input
+                        type="time"
+                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                        value={scheduleTime}
+                        onChange={(e) => setScheduleTime(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Weekly day picker */}
+                  {schedulePreset === "weekly" && (
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">Day of week</label>
+                      <select
+                        className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                        value={scheduleDayOfWeek}
+                        onChange={(e) => setScheduleDayOfWeek(e.target.value)}
+                      >
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Monthly day picker */}
+                  {schedulePreset === "monthly" && (
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <label className="mb-1 block text-[10px] text-muted-foreground">Day of month</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="31"
+                          className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                          value={scheduleDayOfMonth}
+                          onChange={(e) => setScheduleDayOfMonth(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="mb-1 block text-[10px] text-muted-foreground">Time</label>
+                        <input
+                          type="time"
+                          className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                          value={scheduleTime}
+                          onChange={(e) => setScheduleTime(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Timezone */}
+                  <div>
+                    <label className="mb-1 block text-[10px] text-muted-foreground">Timezone (optional)</label>
+                    <input
+                      className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
+                      placeholder="America/Los_Angeles"
+                      value={scheduleTz}
+                      onChange={(e) => setScheduleTz(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Prompt / Message */}
           <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Prompt / message</label>
+            <label className="mb-1 block text-xs text-muted-foreground">Prompt / message *</label>
             <textarea
               className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="What should this task do?"
@@ -735,47 +977,57 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
             />
           </div>
 
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Run every</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  className="w-20 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                  value={everyValue}
-                  onChange={(e) => setEveryValue(e.target.value)}
-                />
-                <select
-                  className="flex-1 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                  value={everyUnit}
-                  onChange={(e) => setEveryUnit(e.target.value as "s" | "m" | "h")}
-                >
-                  <option value="s">seconds</option>
-                  <option value="m">minutes</option>
-                  <option value="h">hours</option>
-                </select>
-              </div>
-            </div>
+          {/* Description */}
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Description (optional)</label>
+            <input
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Brief description of what this task does"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
 
-            <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Priority</label>
-              <select
-                className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as CronPriority)}
-              >
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-              </select>
-            </div>
+          {/* Options Row */}
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Session</label>
+            <select
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+              value={sessionTarget}
+              onChange={(e) => setSessionTarget(e.target.value as "main" | "isolated")}
+            >
+              <option value="isolated">Isolated</option>
+              <option value="main">Main</option>
+            </select>
+          </div>
+
+          {/* Checkboxes */}
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-surface-2 text-primary focus:ring-primary"
+              />
+              Start enabled
+            </label>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={deleteAfterRun}
+                onChange={(e) => setDeleteAfterRun(e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-surface-2 text-primary focus:ring-primary"
+              />
+              Delete after run (for one-time jobs)
+            </label>
           </div>
 
           {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
+        {/* Footer */}
+        <div className="mt-4 flex justify-end gap-2 border-t border-border pt-4">
           <button
             onClick={onClose}
             className="rounded-md border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-surface-2"
@@ -784,7 +1036,7 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
           </button>
           <button
             onClick={handleCreate}
-            disabled={loading || !name.trim() || !message.trim() || everyMs <= 0}
+            disabled={loading || !isValid}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {loading ? "Creating..." : "Create Task"}
@@ -1103,7 +1355,7 @@ export function TasksDashboard() {
     [sortedFilteredJobs]
   );
 
-  const scheduledJobs = useMemo(
+  const pendingJobs = useMemo(
     () => sortedFilteredJobs.filter(
       (j) => j.state.runningAtMs == null && (j.state.nextRunAtMs == null || !j.enabled)
     ),
@@ -1217,7 +1469,7 @@ export function TasksDashboard() {
       if (!activeParsed || !targetCol) return;
       if (activeParsed.colId === targetCol) return;
       if (targetCol !== "executing") return;
-      if (activeParsed.colId !== "queued" && activeParsed.colId !== "scheduled") return;
+      if (activeParsed.colId !== "queued" && activeParsed.colId !== "pending") return;
 
       const job = cronJobs.find((j) => j.id === activeParsed.unique);
       if (!job) return;
@@ -1487,38 +1739,6 @@ export function TasksDashboard() {
             </SortableContext>
           </ColumnZone>
 
-          {/* ── Scheduled ── */}
-          <ColumnZone id="scheduled" isDropTarget={dragOverColumnRef.current === "scheduled"} count={scheduledJobs.length}>
-            <ColumnHeader label="Scheduled" Icon={Calendar} accent="text-amber-400" count={scheduledJobs.length} />
-            <SortableContext items={scheduledJobs.map((j) => tileId("scheduled", j.id))}>
-              <div className="space-y-2">
-                {scheduledJobs.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-muted-foreground/40">No scheduled tasks</p>
-                ) : (
-                  scheduledJobs.map((job) => {
-                    const agent = agents.find((a) => a.agentId === job.agentId);
-                    return (
-                      <div key={tileId("scheduled", job.id)} onClick={() => setExpandedTask(job)} className={compactView ? "scale-95" : ""}>
-                        <SortableCronJobTile
-                          id={tileId("scheduled", job.id)}
-                          job={job}
-                          agentName={agent?.name ?? job.agentId ?? "Unknown"}
-                          agentAvatarSeed={agent?.avatarSeed}
-                          onRun={handleRun}
-                          onToggle={handleToggle}
-                          onDelete={handleDelete}
-                          runBusy={runBusy}
-                          deleteBusy={deleteBusy === job.id}
-                          compact={compactView}
-                        />
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </SortableContext>
-          </ColumnZone>
-
           {/* ── Executing ── */}
           <ColumnZone
             id="executing"
@@ -1573,6 +1793,38 @@ export function TasksDashboard() {
                       );
                     })}
                   </>
+                )}
+              </div>
+            </SortableContext>
+          </ColumnZone>
+
+          {/* ── Pending ── */}
+          <ColumnZone id="pending" isDropTarget={dragOverColumnRef.current === "pending"} count={pendingJobs.length}>
+            <ColumnHeader label="Pending" Icon={Calendar} accent="text-amber-400" count={pendingJobs.length} />
+            <SortableContext items={pendingJobs.map((j) => tileId("pending", j.id))}>
+              <div className="space-y-2">
+                {pendingJobs.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground/40">No pending tasks</p>
+                ) : (
+                  pendingJobs.map((job) => {
+                    const agent = agents.find((a) => a.agentId === job.agentId);
+                    return (
+                      <div key={tileId("pending", job.id)} onClick={() => setExpandedTask(job)} className={compactView ? "scale-95" : ""}>
+                        <SortableCronJobTile
+                          id={tileId("pending", job.id)}
+                          job={job}
+                          agentName={agent?.name ?? job.agentId ?? "Unknown"}
+                          agentAvatarSeed={agent?.avatarSeed}
+                          onRun={handleRun}
+                          onToggle={handleToggle}
+                          onDelete={handleDelete}
+                          runBusy={runBusy}
+                          deleteBusy={deleteBusy === job.id}
+                          compact={compactView}
+                        />
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </SortableContext>
