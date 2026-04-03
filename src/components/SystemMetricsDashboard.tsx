@@ -160,7 +160,7 @@ function ProminentCard({
 
 export function SystemMetricsDashboard() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [metricsSource, setMetricsSource] = useState<"local" | "gateway" | "unavailable" | null>(null);
+  const [, setMetricsSource] = useState<"local" | "gateway" | "unavailable" | null>(null);
   const [connectionMode, setConnectionMode] = useState<string | null>(null);
   const [gatewayHostname, setGatewayHostname] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

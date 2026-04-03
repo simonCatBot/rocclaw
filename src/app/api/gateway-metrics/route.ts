@@ -331,7 +331,7 @@ export async function GET(): Promise<NextResponse> {
     // Determine if we're connected to local or remote gateway by URL
     const isLocal = await isLocalConnection();
     const presence = await getGatewayPresence(controlPlane);
-    const presenceMode = presence?.mode ?? (isLocal ? "local" : "client");
+    void presence; // presence.mode kept for future use
     const gatewayHostname = presence?.host;
 
     // Get local metrics
