@@ -156,7 +156,7 @@ test.describe("Settings Panel", () => {
 
     // Click on Settings tab - use exact match to avoid matching the gateway settings button
     await page.getByRole("button", { name: "Settings", exact: true }).click();
-    await expect(page.getByText("Settings")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({ timeout: 5000 });
     // Should show gateway section with heading
     await expect(page.getByRole("heading", { name: "Gateway Connection" })).toBeVisible();
   });
