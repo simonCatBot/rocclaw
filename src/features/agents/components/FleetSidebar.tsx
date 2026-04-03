@@ -139,9 +139,9 @@ export const FleetSidebar = ({
                     {displayName}
                   </p>
 
-                  {/* Agent Name */}
+                  {/* Agent ID */}
                   <p className="text-muted-foreground text-xs truncate w-full mb-1.5">
-                    {agent.name}
+                    {agent.agentId}
                   </p>
 
                   {/* Model badge */}
