@@ -15,6 +15,10 @@ import si from "systeminformation";
 import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstrap";
 import { detectROCm, ROCmGPUInfo } from "@/lib/system/rocm";
 
+// Cache to remember when gateway doesn't support system.metrics
+// Set once on first detection, not checked again until server restart
+let gatewayMetricsUnsupported: boolean = false;
+
 export interface SystemMetrics {
   cpu: {
     name: string;
@@ -247,13 +251,19 @@ async function getMetricsFromGateway(
   controlPlane: { callGateway: (method: string, params: unknown) => Promise<unknown> },
   issueUrl: string
 ): Promise<SystemMetrics | { unavailable: true; issueUrl: string } | null> {
+  // Check cache first - if we already know it's unsupported, skip the call
+  if (gatewayMetricsUnsupported) {
+    return { unavailable: true, issueUrl };
+  }
+
   try {
     const result = await controlPlane.callGateway("system.metrics", {}) as SystemMetrics | null;
     return result;
   } catch (error) {
     // Check if it's an "unknown method" error - expected before OpenClaw implements system.metrics
     if (error instanceof Error && error.message.includes("unknown method")) {
-      console.log(`[gateway-metrics] Gateway does not support system.metrics yet. See ${issueUrl}`);
+      // Set the flag - we now know gateway doesn't support this
+      gatewayMetricsUnsupported = true;
       return { unavailable: true, issueUrl };
     }
     // Other errors - log but don't spam
