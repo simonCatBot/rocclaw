@@ -7,8 +7,9 @@ import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { buildDefaultAvatarUrl } from "@/features/agents/components/AgentAvatar";
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
+import { AvatarModeToggle } from "@/components/AvatarModeToggle";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
-import { Users, Plug, ImageIcon } from "lucide-react";
+import { Users, Plug } from "lucide-react";
 
 function StatusDot({ status }: { status: GatewayStatus }) {
   const colorMap: Record<GatewayStatus, string> = {
@@ -31,15 +32,12 @@ interface FooterBarProps {
   onConnectionSettings: () => void;
 }
 
-type FooterAvatarMode = "auto" | "default";
-
-const FOOTER_AVATAR_MODE_KEY = "rocclaw-footer-avatar-mode";
+const AVATAR_MODE_KEY = "rocclaw-footer-avatar-mode";
 
 export function FooterBar({ status, gatewayVersion: initialVersion, onConnectionSettings }: FooterBarProps) {
   const { state } = useAgentStore();
   const agents = state.agents;
   const [gatewayVersion, setGatewayVersion] = useState<string | null>(initialVersion ?? null);
-  const [avatarMode, setAvatarMode] = useState<FooterAvatarMode>("auto");
 
   // Fetch gateway version from /api/gateway-info when connected
   useEffect(() => {
@@ -58,41 +56,26 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
     return () => controller.abort();
   }, [status]);
 
-  // Load avatar mode from localStorage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(FOOTER_AVATAR_MODE_KEY);
-      if (stored === "auto" || stored === "default") {
-        setAvatarMode(stored);
-      }
-    } catch {
-      // localStorage unavailable
-    }
-  }, []);
-
-  const toggleAvatarMode = () => {
-    const next: FooterAvatarMode = avatarMode === "auto" ? "default" : "auto";
-    setAvatarMode(next);
-    try {
-      localStorage.setItem(FOOTER_AVATAR_MODE_KEY, next);
-    } catch {
-      // localStorage unavailable
-    }
-  };
-
   const agentCount = agents.length;
   const runningCount = agents.filter((a) => a.status === "running").length;
   const runningAgents = agents.filter((a) => a.status === "running").slice(0, 5);
 
-  const getFooterAvatarSrc = (agent: ReturnType<typeof useAgentStore>["state"]["agents"][number]) => {
+  const getFooterAvatarSrc = (
+    agent: ReturnType<typeof useAgentStore>["state"]["agents"][number]
+  ) => {
     const source = agent.avatarSource;
+    // custom URL always wins if set
     if (source === "custom" && agent.avatarUrl?.trim()) {
       return agent.avatarUrl.trim();
     }
-    if (avatarMode === "default") {
-      return buildDefaultAvatarUrl(agent.defaultAvatarIndex ?? 0);
+    // Read display mode from localStorage
+    if (typeof window !== "undefined") {
+      const mode = localStorage.getItem(AVATAR_MODE_KEY);
+      if (mode === "default") {
+        return buildDefaultAvatarUrl(agent.defaultAvatarIndex ?? 0);
+      }
     }
-    // auto
+    // auto (or any unrecognized value)
     return buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId);
   };
 
@@ -133,7 +116,7 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
                   <div
                     key={agent.agentId}
                     className="relative overflow-hidden rounded-full ring-1 ring-black/20 dark:ring-white/10"
-                    title={`${agent.name} (${avatarMode})`}
+                    title={agent.name}
                   >
                     <Image
                       src={getFooterAvatarSrc(agent)}
@@ -146,14 +129,7 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
                   </div>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={toggleAvatarMode}
-                className="flex h-5 w-5 items-center justify-center rounded border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
-                title={avatarMode === "auto" ? "Showing auto avatars — click for default avatars" : "Showing default avatars — click for auto avatars"}
-              >
-                <ImageIcon className="h-3 w-3" />
-              </button>
+              <AvatarModeToggle />
             </div>
           </>
         )}
