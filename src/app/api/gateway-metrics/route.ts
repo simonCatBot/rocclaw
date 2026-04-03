@@ -237,15 +237,20 @@ async function getGatewayPresence(controlPlane: { callGateway: (method: string, 
   try {
     const result = await controlPlane.callGateway("system-presence", {}) as GatewayPresence[] | null;
     if (!result || !Array.isArray(result) || result.length === 0) {
+      console.log("[gateway-metrics] system-presence returned no results");
       return null;
     }
+    console.log("[gateway-metrics] system-presence entries:", JSON.stringify(result, null, 2));
     // Look for gateway's own presence entry (has deviceType='gateway' or matches known gateway patterns)
     const gatewayEntry = result.find(
       (entry) => entry.deviceFamily === "gateway" || entry.instanceId?.includes("gateway")
     );
     // Fall back to first entry if no explicit gateway entry found
-    return gatewayEntry || result[0];
-  } catch {
+    const entry = gatewayEntry || result[0];
+    console.log("[gateway-metrics] selected presence entry:", JSON.stringify(entry));
+    return entry;
+  } catch (error) {
+    console.log("[gateway-metrics] system-presence error:", error);
     return null;
   }
 }
