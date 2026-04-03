@@ -243,12 +243,23 @@ async function getGatewayPresence(controlPlane: { callGateway: (method: string, 
   }
 }
 
-async function getMetricsFromGateway(controlPlane: { callGateway: (method: string, params: unknown) => Promise<unknown> }): Promise<SystemMetrics | null> {
+async function getMetricsFromGateway(
+  controlPlane: { callGateway: (method: string, params: unknown) => Promise<unknown> },
+  issueUrl: string
+): Promise<SystemMetrics | { unavailable: true; issueUrl: string } | null> {
   try {
     const result = await controlPlane.callGateway("system.metrics", {}) as SystemMetrics | null;
     return result;
   } catch (error) {
-    console.error("[gateway-metrics] Gateway system.metrics call failed:", error);
+    // Check if it's an "unknown method" error - expected before OpenClaw implements system.metrics
+    if (error instanceof Error && error.message.includes("unknown method")) {
+      console.log(`[gateway-metrics] Gateway does not support system.metrics yet. See ${issueUrl}`);
+      return { unavailable: true, issueUrl };
+    }
+    // Other errors - log but don't spam
+    if (error instanceof Error) {
+      console.error(`[gateway-metrics] Gateway system.metrics call failed: ${error.message}`);
+    }
     return null;
   }
 }
@@ -298,9 +309,23 @@ export async function GET(): Promise<NextResponse> {
       });
     } else {
       // Remote mode (Client/Cloud): try to get metrics from gateway
-      const gatewayMetrics = await getMetricsFromGateway(controlPlane);
+      const issueUrl = "https://github.com/openclaw/openclaw/issues/60074";
+      const gatewayMetrics = await getMetricsFromGateway(controlPlane, issueUrl);
 
-      if (gatewayMetrics) {
+      if (gatewayMetrics && "unavailable" in gatewayMetrics) {
+        // Gateway doesn't have system.metrics method yet
+        // Return 200 with unavailable status - frontend handles graceful degradation
+        return NextResponse.json({
+          success: true,
+          source: "unavailable",
+          connectionMode,
+          gatewayHostname,
+          message: "Remote system metrics unavailable until OpenClaw implements system.metrics",
+          issueUrl: gatewayMetrics.issueUrl,
+        });
+      }
+
+      if (gatewayMetrics && gatewayMetrics.hostname) {
         // Gateway has system.metrics method - use it
         return NextResponse.json({
           success: true,
@@ -309,18 +334,17 @@ export async function GET(): Promise<NextResponse> {
           hostname: gatewayMetrics.hostname,
           data: gatewayMetrics,
         });
-      } else {
-        // Gateway doesn't have system.metrics method yet
-        // Return error indicating remote metrics unavailable
-        return NextResponse.json({
-          success: false,
-          source: "unavailable",
-          connectionMode,
-          gatewayHostname,
-          error: "Remote system metrics not available. The gateway does not support the system.metrics method yet.",
-          issueUrl: "https://github.com/openclaw/openclaw/issues",
-        }, { status: 501 });
       }
+
+      // Fallback: try local metrics if gateway call returned null
+      const metrics = await getLocalMetrics();
+      return NextResponse.json({
+        success: true,
+        source: "local-fallback",
+        connectionMode,
+        hostname: metrics.hostname,
+        data: metrics,
+      });
     }
   } catch (error) {
     console.error("[gateway-metrics] Failed to fetch metrics:", error);
