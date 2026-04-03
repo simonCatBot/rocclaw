@@ -247,8 +247,8 @@ export const deriveHydrateAgentFleetResult = (
     return {
       agentId: agent.id,
       name,
-      identityName: agent.identity?.name || agent.identityName || null,
-      identityEmoji: agent.identity?.emoji || agent.identityEmoji || null,
+      identityName: agent.identityName || agent.identity?.name || null,
+      identityEmoji: agent.identityEmoji || agent.identity?.emoji || null,
       sessionKey: buildAgentMainSessionKey(agent.id, mainKey),
       avatarSeed,
       avatarUrl,
