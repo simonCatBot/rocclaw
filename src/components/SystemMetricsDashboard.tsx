@@ -160,28 +160,35 @@ function ProminentCard({
 
 export function SystemMetricsDashboard() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [gatewayInfo, setGatewayInfo] = useState<{ connected: boolean; presence?: { host?: string; mode?: string }; error?: string } | null>(null);
+  const [metricsSource, setMetricsSource] = useState<"local" | "gateway" | "unavailable" | null>(null);
+  const [connectionMode, setConnectionMode] = useState<string | null>(null);
+  const [gatewayHostname, setGatewayHostname] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPerCore, setShowPerCore] = useState(false);
   const [showGpuHardware, setShowGpuHardware] = useState(false);
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const [metricsRes, gatewayRes] = await Promise.all([
-        fetch("/api/system/metrics"),
-        fetch("/api/gateway-info"),
-      ]);
+      const response = await fetch("/api/gateway-metrics");
+      const result = await response.json();
       
-      const metricsResult = await metricsRes.json();
-      if (metricsResult.success) {
-        setMetrics(metricsResult.data);
+      if (result.success && result.data) {
+        setMetrics(result.data);
+        setMetricsSource(result.source || "local");
+        setConnectionMode(result.connectionMode || "local");
+        setGatewayHostname(result.hostname || null);
         setError(null);
       } else {
-        setError(metricsResult.error || "Failed to fetch metrics");
+        // Remote metrics unavailable - show error state with context
+        setMetricsSource(result.source || "unavailable");
+        setConnectionMode(result.connectionMode || null);
+        setGatewayHostname(result.gatewayHostname || null);
+        if (result.error) {
+          setError(result.source === "unavailable" ? null : (result.error || "Failed to fetch metrics"));
+        } else {
+          setError("Failed to fetch metrics");
+        }
       }
-      
-      const gatewayResult = await gatewayRes.json();
-      setGatewayInfo(gatewayResult);
     } catch {
       setError("Network error fetching metrics");
     }
@@ -192,6 +199,10 @@ export function SystemMetricsDashboard() {
     const interval = setInterval(fetchMetrics, 5000);
     return () => clearInterval(interval);
   }, [fetchMetrics]);
+
+  // Determine if metrics are from local or remote
+  const isRemoteMetrics = connectionMode && connectionMode !== "local";
+  const metricsUnavailable = metricsSource === "unavailable";
 
   if (!metrics && !error) {
     return (
@@ -210,6 +221,33 @@ export function SystemMetricsDashboard() {
         <div className="flex items-center gap-2 text-red-500">
           <Activity className="w-4 h-4" />
           <span className="text-sm">{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (metricsUnavailable) {
+    // Remote gateway doesn't support system.metrics yet
+    return (
+      <div className="ui-panel ui-depth-workspace p-4 h-full">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50">
+          <Server className="w-4 h-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">System Metrics</h2>
+          <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
+            Remote Unavailable
+          </span>
+        </div>
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <AlertTriangle className="w-8 h-8 text-yellow-500 mb-3" />
+          <p className="text-sm text-foreground mb-2">Remote System Metrics Unavailable</p>
+          <p className="text-xs text-muted-foreground max-w-xs">
+            The gateway does not support fetching remote system metrics. File an issue with OpenClaw to add the <code className="bg-surface-2 px-1 rounded">system.metrics</code> method.
+          </p>
+          {gatewayHostname && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Connected to: {gatewayHostname}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -257,24 +295,25 @@ export function SystemMetricsDashboard() {
 
   const primaryGpu = metrics.gpu.length > 0 ? metrics.gpu[0] : null;
 
-  // Determine connection mode from gateway info
-  const isLocalConnection = !gatewayInfo?.connected || gatewayInfo?.presence?.mode === "local";
-  const gatewayHostname = gatewayInfo?.presence?.host || metrics.hostname;
-
   return (
     <div className="ui-panel ui-depth-workspace p-4 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50">
         <Server className="w-4 h-4 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">System Metrics</h2>
-        {!isLocalConnection && gatewayInfo?.connected && (
+        {isRemoteMetrics && gatewayHostname && (
           <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-blue-500/20 text-blue-500 border border-blue-500/30">
             Remote: {gatewayHostname}
           </span>
         )}
-        {isLocalConnection && (
+        {!isRemoteMetrics && !metricsUnavailable && (
           <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-green-500/20 text-green-500 border border-green-500/30">
             Local
+          </span>
+        )}
+        {metricsUnavailable && (
+          <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
+            Remote Unavailable
           </span>
         )}
         <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1">
