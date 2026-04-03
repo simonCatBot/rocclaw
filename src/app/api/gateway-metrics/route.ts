@@ -237,53 +237,43 @@ async function getGatewayPresence(controlPlane: { callGateway: (method: string, 
   try {
     const result = await controlPlane.callGateway("system-presence", {}) as GatewayPresence[] | null;
     if (!result || !Array.isArray(result) || result.length === 0) {
-      console.log("[gateway-metrics] system-presence returned no results");
       return null;
     }
-    console.log("[gateway-metrics] system-presence entries:", JSON.stringify(result, null, 2));
     // Look for gateway's own presence entry (has deviceType='gateway' or matches known gateway patterns)
     const gatewayEntry = result.find(
       (entry) => entry.deviceFamily === "gateway" || entry.instanceId?.includes("gateway")
     );
     // Fall back to first entry if no explicit gateway entry found
-    const entry = gatewayEntry || result[0];
-    console.log("[gateway-metrics] selected presence entry:", JSON.stringify(entry));
-    return entry;
-  } catch (error) {
-    console.log("[gateway-metrics] system-presence error:", error);
+    return gatewayEntry || result[0];
+  } catch {
     return null;
   }
 }
 
 /**
- * Determines if the gateway connection is local (same machine) based on the gateway URL.
- * Returns true if connected to localhost, 127.0.0.1, or the machine's actual hostname.
+ * Gets the gateway URL from the rocCLAW settings store.
+ * Returns null if we can't determine it.
  */
-function isLocalGateway(gatewayUrl: string | null, localHostname: string): boolean {
+async function getGatewayUrlFromSettings(): Promise<string | null> {
+  try {
+    // Import settings store dynamically to avoid circular deps
+    const { loadStudioSettings } = await import("@/lib/rocclaw/settings-store");
+    const settings = loadStudioSettings();
+    return settings.gateway?.url || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Determines if we're connected to a local gateway by checking if the URL is localhost/127.0.0.1.
+ */
+async function isLocalConnection(): Promise<boolean> {
+  const gatewayUrl = await getGatewayUrlFromSettings();
   if (!gatewayUrl) return true; // Default to local if unknown
   
-  const normalizedUrl = gatewayUrl.toLowerCase().trim();
-  const localHostnames = [
-    "localhost",
-    "127.0.0.1",
-    localHostname.toLowerCase(),
-    // Also check if the URL host matches the local hostname
-  ];
-  
-  // Extract host from URL (handles ws://, http://, wss://, https://)
-  let urlHost = normalizedUrl;
-  try {
-    const url = new URL(normalizedUrl.startsWith("http") ? normalizedUrl : `ws://${normalizedUrl}`);
-    urlHost = url.hostname.toLowerCase();
-  } catch {
-    // If URL parsing fails, just use the raw value
-    urlHost = normalizedUrl.replace(/^(ws|wss|http|https):\/\//, "").split(":")[0].toLowerCase();
-  }
-  
-  // Check if the URL host matches any local identifier
-  return localHostnames.some((local) => 
-    urlHost === local || urlHost === `${local}:${normalizedUrl.includes(":") ? normalizedUrl.split(":")[1]?.split("/")[0] : "18789"}`
-  );
+  const normalized = gatewayUrl.toLowerCase().trim();
+  return normalized.includes("localhost") || normalized.includes("127.0.0.1");
 }
 
 async function getMetricsFromGateway(
@@ -338,22 +328,17 @@ export async function GET(): Promise<NextResponse> {
   const controlPlane = bootstrap.runtime;
 
   try {
-    // Get gateway presence to determine connection mode and gateway hostname
+    // Determine if we're connected to local or remote gateway by URL
+    const isLocal = await isLocalConnection();
     const presence = await getGatewayPresence(controlPlane);
-    const presenceMode = presence?.mode ?? "local";
+    const presenceMode = presence?.mode ?? (isLocal ? "local" : "client");
     const gatewayHostname = presence?.host;
 
-    // Get local hostname for comparison
+    // Get local metrics
     const localMetrics = await getLocalMetrics();
     const localHostname = localMetrics.hostname;
 
-    // Determine if we're in local or remote mode by checking:
-    // 1. Is the presence mode explicitly "local"? (most reliable indicator)
-    // 2. Is the gateway URL pointing to localhost/local machine?
-    // If presence says local OR gateway URL is localhost, treat as local
-    const isLocalMode = presenceMode === "local";
-
-    if (isLocalMode) {
+    if (isLocal) {
       // Local mode: always use local systeminformation directly
       return NextResponse.json({
         success: true,
@@ -373,7 +358,7 @@ export async function GET(): Promise<NextResponse> {
         return NextResponse.json({
           success: true,
           source: "gateway",
-          connectionMode: presenceMode,
+          connectionMode: "client",
           hostname: gatewayMetrics.hostname,
           data: gatewayMetrics,
           remoteAvailable: true,
@@ -381,15 +366,15 @@ export async function GET(): Promise<NextResponse> {
       }
 
       // Gateway doesn't support system.metrics - fall back to local with warning
-      // But still show the gateway's hostname (from presence) to indicate where we're connected
+      // Show gateway hostname from presence to indicate where we're connected
       return NextResponse.json({
         success: true,
         source: "local",
-        connectionMode: presenceMode,
+        connectionMode: "client",
         hostname: gatewayHostname || localHostname,
         data: localMetrics,
         remoteAvailable: false,
-        warning: presenceMode === "client" ? `Connected to remote gateway (${gatewayHostname || "unknown"})` : undefined,
+        warning: `Connected to remote gateway (${gatewayHostname || "unknown"})`,
       });
     }
   } catch (error) {
