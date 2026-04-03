@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { useAgentStore } from "@/features/agents/state/store";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
@@ -29,9 +30,27 @@ interface FooterBarProps {
   onConnectionSettings: () => void;
 }
 
-export function FooterBar({ status, gatewayVersion, onConnectionSettings }: FooterBarProps) {
+export function FooterBar({ status, gatewayVersion: initialVersion, onConnectionSettings }: FooterBarProps) {
   const { state } = useAgentStore();
   const agents = state.agents;
+  const [gatewayVersion, setGatewayVersion] = useState<string | null>(initialVersion ?? null);
+
+  // Fetch gateway version from /api/gateway-info when connected
+  useEffect(() => {
+    if (status !== "connected") return;
+    const controller = new AbortController();
+    fetch("/api/gateway-info", { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.connected && data.presence?.version) {
+          setGatewayVersion(data.presence.version);
+        }
+      })
+      .catch(() => {
+        // Best-effort — leave existing value
+      });
+    return () => controller.abort();
+  }, [status]);
 
   const agentCount = agents.length;
   const runningCount = agents.filter((a) => a.status === "running").length;
