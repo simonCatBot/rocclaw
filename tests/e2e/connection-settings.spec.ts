@@ -3,40 +3,33 @@ import { stubRocclawRoute } from "./helpers/rocclawRoute";
 import { stubRuntimeRoutes } from "./helpers/runtimeRoute";
 import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
 
-// TODO: This test needs updating for the new ConnectionPage UI architecture
-// The test was designed for GatewayConnectScreen but we now use ConnectionPage with tabs
-test.skip("connection settings save to the rocclaw settings API", async ({ page }) => {
+test("connection settings save to the rocclaw settings API", async ({ page }) => {
   await stubRocclawRoute(page);
-  await stubRuntimeRoutes(page);
+  // Must pass disconnected status so Connection tab is visible
+  await stubRuntimeRoutes(page, {
+    summary: {
+      status: "disconnected",
+      reason: null,
+      error: "Control-plane start failed: rocCLAW gateway token is not configured.",
+    },
+  });
 
   await page.goto("/");
+  
+  // Connection tab should be visible when disconnected
   await page.waitForLoadState("networkidle");
   
-  // Click the Connection tab
-  await page.evaluate(() => {
-    const tabs = Array.from(document.querySelectorAll('button'));
-    const connectionTab = tabs.find(btn => btn.textContent?.trim() === 'Connection');
-    connectionTab?.click();
-  });
+  // Wait for the form to be visible - Connection tab auto-shows when disconnected
+  await expect(page.getByText("Gateway URL & Token")).toBeVisible({ timeout: 5000 });
   
-  await page.waitForTimeout(500);
-  
-  // Fill URL input
-  const urlInput = page.locator('#gateway-url');
-  await expect(urlInput).toBeVisible({ timeout: 5000 });
-  await urlInput.fill('ws://gateway.example:18789', { force: true });
+  // Fill URL input - use CSS id selector
+  await page.locator('#gateway-url').fill('ws://gateway.example:18789');
   
   // Fill token input
-  const tokenInput = page.locator('#gateway-token');
-  await expect(tokenInput).toBeVisible({ timeout: 5000 });
-  await tokenInput.fill('token-123', { force: true });
+  await page.locator('#gateway-token').fill('token-123');
 
   // Click save
-  await page.evaluate(() => {
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const saveBtn = buttons.find(btn => btn.textContent?.includes('Save Settings'));
-    saveBtn?.click();
-  });
+  await page.getByRole("button", { name: "Save Settings" }).click();
 
   // Verify the settings persisted
   const savedSettings = await page.evaluate(async () => {
