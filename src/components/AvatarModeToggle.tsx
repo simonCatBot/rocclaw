@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ImageIcon, Shuffle } from "lucide-react";
+import { useAvatarMode, useSetAvatarMode } from "@/components/AvatarModeContext";
+import type { AvatarDisplayMode } from "@/components/AvatarModeContext";
 
-const AVATAR_MODE_KEY = "rocclaw-footer-avatar-mode";
-
-export type AvatarDisplayMode = "auto" | "default" | "custom";
+export type { AvatarDisplayMode } from "@/components/AvatarModeContext";
 
 const MODES: { id: AvatarDisplayMode; label: string; description: string }[] = [
   {
@@ -25,20 +25,10 @@ const MODES: { id: AvatarDisplayMode; label: string; description: string }[] = [
   },
 ];
 
-function getInitialMode(): AvatarDisplayMode {
-  if (typeof window === "undefined") return "auto";
-  const stored = localStorage.getItem(AVATAR_MODE_KEY);
-  if (stored === "auto" || stored === "default" || stored === "custom") return stored;
-  return "auto";
-}
-
-function applyMode(mode: AvatarDisplayMode) {
-  localStorage.setItem(AVATAR_MODE_KEY, mode);
-}
-
 export function AvatarModeToggle() {
   const [open, setOpen] = useState(false);
-  const [activeMode, setActiveMode] = useState<AvatarDisplayMode>(getInitialMode);
+  const activeMode = useAvatarMode();
+  const setMode = useSetAvatarMode();
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -53,8 +43,7 @@ export function AvatarModeToggle() {
   }, [open]);
 
   const handleSelect = (id: AvatarDisplayMode) => {
-    setActiveMode(id);
-    applyMode(id);
+    setMode(id);
     setOpen(false);
   };
 

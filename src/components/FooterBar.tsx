@@ -8,6 +8,7 @@ import { buildDefaultAvatarUrl } from "@/features/agents/components/AgentAvatar"
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import { AvatarModeToggle } from "@/components/AvatarModeToggle";
+import { useAvatarMode, type AvatarDisplayMode } from "@/components/AvatarModeContext";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import { Users, Plug } from "lucide-react";
 
@@ -32,12 +33,11 @@ interface FooterBarProps {
   onConnectionSettings: () => void;
 }
 
-const AVATAR_MODE_KEY = "rocclaw-footer-avatar-mode";
-
 export function FooterBar({ status, gatewayVersion: initialVersion, onConnectionSettings }: FooterBarProps) {
   const { state } = useAgentStore();
   const agents = state.agents;
   const [gatewayVersion, setGatewayVersion] = useState<string | null>(initialVersion ?? null);
+  const avatarMode = useAvatarMode();
 
   // Fetch gateway version from /api/gateway-info when connected
   useEffect(() => {
@@ -61,21 +61,19 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
   const runningAgents = agents.filter((a) => a.status === "running").slice(0, 5);
 
   const getFooterAvatarSrc = (
-    agent: ReturnType<typeof useAgentStore>["state"]["agents"][number]
+    agent: ReturnType<typeof useAgentStore>["state"]["agents"][number],
+    avatarMode: AvatarDisplayMode
   ) => {
     const source = agent.avatarSource;
     // custom URL always wins if set
     if (source === "custom" && agent.avatarUrl?.trim()) {
       return agent.avatarUrl.trim();
     }
-    // Read display mode from localStorage
-    if (typeof window !== "undefined") {
-      const mode = localStorage.getItem(AVATAR_MODE_KEY);
-      if (mode === "default") {
-        return buildDefaultAvatarUrl(agent.defaultAvatarIndex ?? 0);
-      }
+    // Use context mode
+    if (avatarMode === "default") {
+      return buildDefaultAvatarUrl(agent.defaultAvatarIndex ?? 0);
     }
-    // auto (or any unrecognized value)
+    // auto
     return buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId);
   };
 
@@ -118,7 +116,7 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
                   title={agent.name}
                 >
                   <Image
-                    src={getFooterAvatarSrc(agent)}
+                    src={getFooterAvatarSrc(agent, avatarMode)}
                     alt={agent.name}
                     width={24}
                     height={24}
