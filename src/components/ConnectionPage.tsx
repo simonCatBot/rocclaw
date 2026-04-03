@@ -505,10 +505,11 @@ export function ConnectionPage({
 
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label htmlFor="gateway-url" className="text-xs font-medium text-muted-foreground">
                       Gateway URL
                     </label>
                     <input
+                      id="gateway-url"
                       type="text"
                       value={draftGatewayUrl}
                       onChange={(e) => onGatewayUrlChange(e.target.value)}
@@ -519,11 +520,12 @@ export function ConnectionPage({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
+                    <label htmlFor="gateway-token" className="text-xs font-medium text-muted-foreground">
                       Token
                     </label>
                     <div className="relative">
                       <input
+                        id="gateway-token"
                         type={showToken ? "text" : "password"}
                         value={token}
                         onChange={(e) => onTokenChange(e.target.value)}
