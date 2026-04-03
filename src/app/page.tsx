@@ -1778,8 +1778,6 @@ const AgentStudioPage = () => {
                       installContext={installContext}
                       status={gatewayStatus}
                       statusReason={statusReason}
-                      error={gatewayError}
-                      testResult={testResult}
                       saving={gatewaySaving}
                       testing={gatewayTesting}
                       disconnecting={gatewayDisconnecting}
