@@ -83,7 +83,7 @@ export const FleetSidebar = ({
         {agents.length === 0 ? (
           <EmptyStatePanel title="No agents available." compact className="p-3 text-xs" />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
             {agents.map((agent) => {
               const selected = selectedAgentId === agent.agentId;
               const avatarSeed = agent.avatarSeed ?? agent.agentId;
