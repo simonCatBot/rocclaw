@@ -135,8 +135,13 @@ export const FleetSidebar = ({
                   </div>
 
                   {/* Identity Name */}
-                  <p className="font-bold text-foreground text-base truncate w-full mb-1.5">
+                  <p className="font-semibold text-muted-foreground text-xs truncate w-full mb-0.5">
                     {displayName}
+                  </p>
+
+                  {/* Agent Name */}
+                  <p className="font-bold text-foreground text-sm truncate w-full mb-1.5">
+                    {agent.name}
                   </p>
 
                   {/* Model badge */}
