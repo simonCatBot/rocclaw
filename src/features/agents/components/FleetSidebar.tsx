@@ -144,7 +144,7 @@ export const FleetSidebar = ({
                       avatarUrl={agent.avatarUrl ?? null}
                       avatarSource={agent.avatarSource}
                       defaultAvatarIndex={agent.defaultAvatarIndex ?? 0}
-                      size={80}
+                      size={96}
                       isSelected={selected}
                     />
                   </div>
