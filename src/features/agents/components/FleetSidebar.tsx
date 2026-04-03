@@ -68,20 +68,6 @@ export const FleetSidebar = ({
     return agent.model || "default";
   };
 
-  // Get soul name from agent identity
-  const getSoulName = (agent: AgentState) => {
-    // DEBUG: Force identity names based on agent ID
-    const forcedNames: Record<string, string> = {
-      developer: "Kapu",
-      main: "Simon", 
-      work: "Miaman",
-      coding: "Ahan",
-      social: "Salma",
-      "new-agent": "Debbie"
-    };
-    return forcedNames[agent.agentId] || agent.identityName || null;
-  };
-
   return (
     <aside
       className={`glass-panel fade-up-delay ui-panel ui-depth-sidepanel relative flex h-full flex-1 flex-col gap-3 bg-sidebar p-3 border-r border-sidebar-border ${className || ""}`}
@@ -102,7 +88,7 @@ export const FleetSidebar = ({
               const selected = selectedAgentId === agent.agentId;
               const avatarSeed = agent.avatarSeed ?? agent.agentId;
               const modelName = getModelName(agent);
-              const soulName = getSoulName(agent);
+              const displayName = agent.identityName ?? agent.name;
               
               return (
                 <button
@@ -136,8 +122,8 @@ export const FleetSidebar = ({
                     }`}
                   />
                   
-                  {/* Avatar - fills available space */}
-                  <div className="relative mb-2 min-h-0 w-full flex-1">
+                  {/* Avatar - centered, fills available space */}
+                  <div className="relative mb-2 min-h-0 w-full flex-1 flex items-center justify-center">
                     <AgentAvatar
                       seed={avatarSeed}
                       name={agent.name}
@@ -147,30 +133,19 @@ export const FleetSidebar = ({
                       isSelected={selected}
                     />
                   </div>
-                  
-                  {/* Identity Name - BOLD, FIRST (no emoji, normal color) */}
-                  {soulName ? (
-                    <p className="font-bold text-foreground text-lg truncate w-full mb-1">
-                      {soulName}
-                    </p>
-                  ) : (
-                    <p className="font-bold text-foreground text-lg truncate w-full mb-1">
-                      {agent.name}
-                    </p>
-                  )}
-                  
-                  {/* Agent Name - below identity, muted, smaller */}
-                  <p className="text-muted-foreground text-sm truncate w-full mb-2">
-                    {agent.name}
+
+                  {/* Identity Name */}
+                  <p className="font-bold text-foreground text-base truncate w-full mb-0.5">
+                    {displayName}
                   </p>
-                  
-                  {/* Model & Status - Push to bottom */}
-                  <div className="flex items-center justify-center gap-2 mt-auto w-full">
-                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-surface-2 px-2 py-1 rounded-md">
+
+                  {/* Model badge */}
+                  <div className="flex items-center justify-center gap-1.5 mt-auto w-full">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-surface-2 px-2 py-0.5 rounded-md">
                       <Cpu className="w-3 h-3" />
                       {modelName}
                     </span>
-                    <span className={`text-[10px] px-2 py-1 rounded-md ${resolveAgentStatusBadgeClass(agent.status)}`}>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-md ${resolveAgentStatusBadgeClass(agent.status)}`}>
                       {resolveAgentStatusLabel(agent.status)}
                     </span>
                   </div>
