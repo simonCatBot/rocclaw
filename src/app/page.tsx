@@ -530,6 +530,8 @@ const AgentROCclawPage = () => {
     setMobilePaneChat,
     setError,
     useDomainIntents: true,
+    gatewayUrl,
+    schedulePatch: settingsCoordinator.schedulePatch.bind(settingsCoordinator),
   });
 
   const hasRenameMutationBlock = settingsMutationController.hasRenameMutationBlock;
@@ -1624,6 +1626,15 @@ const AgentROCclawPage = () => {
                         agents={agents}
                         selectedAgentId={inspectSidebarAgent.agentId}
                         onUnsavedChangesChange={setPersonalityHasUnsavedChanges}
+                        onAvatarChange={(agentId, value) => {
+                          settingsMutationController.handleUpdateAgentAvatar(
+                            agentId,
+                            value.avatarSource,
+                            value.avatarSeed,
+                            value.defaultAvatarIndex,
+                            value.avatarUrl
+                          );
+                        }}
                       />
                     ) : (
                       <div className="h-full overflow-y-auto px-6 py-6">

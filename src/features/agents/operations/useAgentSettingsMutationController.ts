@@ -69,6 +69,8 @@ type UseAgentSettingsMutationControllerParams = {
   setMobilePaneChat: () => void;
   setError: (message: string) => void;
   useDomainIntents: boolean;
+  gatewayUrl: string;
+  schedulePatch: (patch: Record<string, unknown>, delayMs?: number) => void;
 };
 
 export function useAgentSettingsMutationController(params: UseAgentSettingsMutationControllerParams) {
@@ -560,6 +562,62 @@ export function useAgentSettingsMutationController(params: UseAgentSettingsMutat
     [mutationContext, params]
   );
 
+  const handleUpdateAgentAvatar = useCallback(
+    async (
+      agentId: string,
+      avatarSource: string,
+      avatarSeed: string,
+      defaultAvatarIndex: number,
+      avatarUrl: string
+    ) => {
+      const decision = planAgentSettingsMutation(
+        { kind: "update-agent-avatar", agentId },
+        mutationContext
+      );
+      if (decision.kind === "deny") {
+        return;
+      }
+
+      const resolvedAgentId = decision.normalizedAgentId.trim();
+      const key = params.gatewayUrl.trim();
+      if (!resolvedAgentId || !key) return;
+
+      const resolvedSource = avatarSource.trim();
+      const resolvedSeed = avatarSeed.trim();
+      const resolvedUrl = avatarUrl.trim();
+
+      // Dispatch to local store immediately for responsive UI
+      params.dispatchUpdateAgent(resolvedAgentId, {
+        avatarSource: resolvedSource as "auto" | "default" | "custom",
+        avatarSeed: resolvedSeed || resolvedAgentId,
+        defaultAvatarIndex,
+        avatarUrl: resolvedUrl || null,
+      });
+
+      // Persist to settings
+      params.schedulePatch(
+        {
+          avatars: {
+            [key]: {
+              [resolvedAgentId]: resolvedSeed || null,
+            },
+          },
+          avatarSources: {
+            [key]: {
+              [resolvedAgentId]: {
+                source: resolvedSource || "auto",
+                defaultIndex: defaultAvatarIndex,
+                url: resolvedUrl || null,
+              },
+            },
+          },
+        },
+        0
+      );
+    },
+    [mutationContext, params]
+  );
+
   return {
     settingsCronJobs,
     settingsCronLoading,
@@ -577,5 +635,6 @@ export function useAgentSettingsMutationController(params: UseAgentSettingsMutat
     handleDeleteCronJob,
     handleRenameAgent,
     handleUpdateAgentPermissions,
+    handleUpdateAgentAvatar,
   };
 }

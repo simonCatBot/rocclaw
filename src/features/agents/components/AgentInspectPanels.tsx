@@ -31,6 +31,11 @@ import {
   isAgentFileName,
 } from "@/lib/agents/agentFiles";
 import { parsePersonalityFiles, serializePersonalityFiles } from "@/lib/agents/personalityBuilder";
+import {
+  AvatarSelector,
+  buildDefaultAvatarSelectorValue,
+  type AvatarSelectorHandle,
+} from "@/features/agents/components/AvatarSelector";
 
 const AgentInspectHeader = ({
   label,
@@ -1261,11 +1266,19 @@ const useAgentFilesEditor = (params: {
   };
 };
 
+type AvatarSelectorValue = {
+  avatarSource: string;
+  avatarSeed: string;
+  defaultAvatarIndex: number;
+  avatarUrl: string;
+};
+
 type AgentBrainPanelProps = {
   gatewayStatus: GatewayStatus;
   agents: AgentState[];
   selectedAgentId: string | null;
   onUnsavedChangesChange?: (dirty: boolean) => void;
+  onAvatarChange?: (agentId: string, value: AvatarSelectorValue) => void;
 };
 
 const AgentBrainPanelSection = ({
@@ -1286,6 +1299,7 @@ export const AgentBrainPanel = ({
   agents,
   selectedAgentId,
   onUnsavedChangesChange,
+  onAvatarChange,
 }: AgentBrainPanelProps) => {
   const selectedAgent = useMemo(
     () =>
@@ -1309,6 +1323,48 @@ export const AgentBrainPanel = ({
     gatewayStatus,
   });
   const draft = useMemo(() => parsePersonalityFiles(agentFiles), [agentFiles]);
+  const avatarRef = useRef<AvatarSelectorHandle | null>(null);
+  const [avatarValue, setAvatarValue] = useState<{
+    avatarSource: "auto" | "default" | "custom";
+    avatarSeed: string;
+    defaultAvatarIndex: number;
+    avatarUrl: string;
+  }>(() =>
+    buildDefaultAvatarSelectorValue(selectedAgent?.avatarSeed ?? undefined)
+  );
+
+  // Sync avatar value when selected agent changes
+  useEffect(() => {
+    if (selectedAgent) {
+      setAvatarValue({
+        avatarSource: (selectedAgent.avatarSource ?? "auto") as "auto" | "default" | "custom",
+        avatarSeed: selectedAgent.avatarSeed ?? selectedAgent.agentId,
+        defaultAvatarIndex: selectedAgent.defaultAvatarIndex ?? 0,
+        avatarUrl: selectedAgent.avatarUrl ?? "",
+      });
+    }
+  }, [selectedAgent]);
+
+  const handleAvatarChange = useCallback(
+    (value: { avatarSource: string; avatarSeed: string; defaultAvatarIndex: number; avatarUrl: string }) => {
+      const resolved: {
+        avatarSource: "auto" | "default" | "custom";
+        avatarSeed: string;
+        defaultAvatarIndex: number;
+        avatarUrl: string;
+      } = {
+        avatarSource: value.avatarSource as "auto" | "default" | "custom",
+        avatarSeed: value.avatarSeed,
+        defaultAvatarIndex: value.defaultAvatarIndex,
+        avatarUrl: value.avatarUrl,
+      };
+      setAvatarValue(resolved);
+      if (selectedAgent && onAvatarChange) {
+        onAvatarChange(selectedAgent.agentId, resolved);
+      }
+    },
+    [selectedAgent, onAvatarChange]
+  );
 
   const setIdentityField = useCallback(
     (field: "name" | "creature" | "vibe" | "emoji" | "avatar", value: string) => {
@@ -1455,17 +1511,17 @@ export const AgentBrainPanel = ({
                   />
                 </label>
               </div>
-              <label className="flex flex-col gap-2 text-xs text-muted-foreground">
-                Avatar
-                <input
-                  className="h-10 rounded-md border border-border/80 bg-background px-3 text-sm text-foreground outline-none"
-                  value={draft.identity.avatar}
+              <div className="grid justify-items-center gap-2 border-t border-border/40 pt-3">
+                <div className="text-xs font-semibold tracking-wide text-muted-foreground">
+                  Agent Avatar
+                </div>
+                <AvatarSelector
+                  name={selectedAgent?.name ?? "Agent"}
+                  value={avatarValue}
+                  onChange={handleAvatarChange}
                   disabled={agentFilesLoading || agentFilesSaving}
-                  onChange={(event) => {
-                    setIdentityField("avatar", event.target.value);
-                  }}
                 />
-              </label>
+              </div>
             </section>
           </div>
         </section>

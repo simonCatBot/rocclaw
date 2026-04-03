@@ -9,7 +9,8 @@ const RESERVED_MAIN_AGENT_ID = "main";
 type GuardedActionKind =
   | "delete-agent"
   | "rename-agent"
-  | "update-agent-permissions";
+  | "update-agent-permissions"
+  | "update-agent-avatar";
 type CronActionKind = "run-cron-job" | "delete-cron-job";
 
 type AgentSettingsMutationRequest =
