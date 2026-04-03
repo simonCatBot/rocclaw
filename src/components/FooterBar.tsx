@@ -130,12 +130,6 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
             </div>
           </>
         )}
-        {agentCount > 0 && (
-          <>
-            <div className="h-4 w-px bg-border/60" />
-            <AvatarModeToggle />
-          </>
-        )}
         <div className="h-4 w-px bg-border/60" />
 
         {/* Connection settings button */}
@@ -147,6 +141,11 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
         >
           <Plug className="h-3.5 w-3.5" />
         </button>
+
+        <div className="h-4 w-px bg-border/60" />
+
+        {/* Avatar mode + theme — always visible, side by side */}
+        <AvatarModeToggle />
 
         <div className="h-4 w-px bg-border/60" />
 
