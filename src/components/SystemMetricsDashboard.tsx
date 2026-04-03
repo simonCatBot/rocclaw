@@ -174,20 +174,11 @@ export function SystemMetricsDashboard() {
       
       if (result.success && result.data) {
         setMetrics(result.data);
-        setMetricsSource(result.source || "local");
+        setMetricsSource(result.source as "local" | "gateway");
         setConnectionMode(result.connectionMode || "local");
         setGatewayHostname(result.hostname || null);
         setError(null);
-      } else if (result.source === "unavailable") {
-        // Gateway doesn't support system.metrics yet - graceful degradation
-        setMetrics(null);
-        setMetricsSource("unavailable");
-        setConnectionMode(result.connectionMode || null);
-        setGatewayHostname(result.gatewayHostname || null);
-        setError(null);
       } else {
-        // Actual error
-        setMetricsSource(null);
         setError(result.error || "Failed to fetch metrics");
       }
     } catch {
@@ -203,7 +194,6 @@ export function SystemMetricsDashboard() {
 
   // Determine if metrics are from local or remote
   const isRemoteMetrics = connectionMode && connectionMode !== "local";
-  const metricsUnavailable = metricsSource === "unavailable";
 
   if (!metrics && !error) {
     return (
@@ -222,33 +212,6 @@ export function SystemMetricsDashboard() {
         <div className="flex items-center gap-2 text-red-500">
           <Activity className="w-4 h-4" />
           <span className="text-sm">{error}</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (metricsUnavailable) {
-    // Remote gateway doesn't support system.metrics yet
-    return (
-      <div className="ui-panel ui-depth-workspace p-4 h-full">
-        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50">
-          <Server className="w-4 h-4 text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">System Metrics</h2>
-          <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
-            Remote Unavailable
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <AlertTriangle className="w-8 h-8 text-yellow-500 mb-3" />
-          <p className="text-sm text-foreground mb-2">Remote System Metrics Unavailable</p>
-          <p className="text-xs text-muted-foreground max-w-xs">
-            The gateway does not support fetching remote system metrics. File an issue with OpenClaw to add the <code className="bg-surface-2 px-1 rounded">system.metrics</code> method.
-          </p>
-          {gatewayHostname && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Connected to: {gatewayHostname}
-            </p>
-          )}
         </div>
       </div>
     );
@@ -307,14 +270,9 @@ export function SystemMetricsDashboard() {
             Remote: {gatewayHostname}
           </span>
         )}
-        {!isRemoteMetrics && !metricsUnavailable && (
+        {!isRemoteMetrics && (
           <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-green-500/20 text-green-500 border border-green-500/30">
             Local
-          </span>
-        )}
-        {metricsUnavailable && (
-          <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
-            Remote Unavailable
           </span>
         )}
         <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1">

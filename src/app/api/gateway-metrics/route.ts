@@ -298,7 +298,7 @@ export async function GET(): Promise<NextResponse> {
     const isLocalMode = connectionMode === "local";
 
     if (isLocalMode) {
-      // Local mode: get metrics from local systeminformation
+      // Local mode: always use local systeminformation directly
       const metrics = await getLocalMetrics();
       return NextResponse.json({
         success: true,
@@ -306,26 +306,14 @@ export async function GET(): Promise<NextResponse> {
         connectionMode: "local",
         hostname: metrics.hostname,
         data: metrics,
+        remoteAvailable: false,
       });
     } else {
-      // Remote mode (Client/Cloud): try to get metrics from gateway
+      // Remote/Client mode: try gateway method first, fall back to local
       const issueUrl = "https://github.com/openclaw/openclaw/issues/60074";
       const gatewayMetrics = await getMetricsFromGateway(controlPlane, issueUrl);
 
-      if (gatewayMetrics && "unavailable" in gatewayMetrics) {
-        // Gateway doesn't have system.metrics method yet
-        // Return 200 with unavailable status - frontend handles graceful degradation
-        return NextResponse.json({
-          success: true,
-          source: "unavailable",
-          connectionMode,
-          gatewayHostname,
-          message: "Remote system metrics unavailable until OpenClaw implements system.metrics",
-          issueUrl: gatewayMetrics.issueUrl,
-        });
-      }
-
-      if (gatewayMetrics && gatewayMetrics.hostname) {
+      if (gatewayMetrics && "hostname" in gatewayMetrics && gatewayMetrics.hostname) {
         // Gateway has system.metrics method - use it
         return NextResponse.json({
           success: true,
@@ -333,17 +321,20 @@ export async function GET(): Promise<NextResponse> {
           connectionMode,
           hostname: gatewayMetrics.hostname,
           data: gatewayMetrics,
+          remoteAvailable: true,
         });
       }
 
-      // Fallback: try local metrics if gateway call returned null
+      // Gateway doesn't support system.metrics - fall back to local with warning flag
       const metrics = await getLocalMetrics();
       return NextResponse.json({
         success: true,
-        source: "local-fallback",
+        source: "local",
         connectionMode,
         hostname: metrics.hostname,
         data: metrics,
+        remoteAvailable: false,
+        warning: `Using local metrics. Remote gateway (${gatewayHostname || "unknown"}) doesn't support system.metrics. See ${issueUrl}`,
       });
     }
   } catch (error) {
