@@ -11,7 +11,7 @@ import type {
 import { deriveControlPlaneEventKey } from "@/lib/controlplane/outbox";
 import { resolveStateDir } from "@/lib/clawdbot/paths";
 
-const RUNTIME_DB_DIRNAME = "openclaw-studio";
+const RUNTIME_DB_DIRNAME = "openclaw-rocclaw";
 const RUNTIME_DB_FILENAME = "runtime.db";
 
 const DEFAULT_STATUS = "stopped" as const;

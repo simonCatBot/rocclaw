@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { stubRocclawRoute } from "./helpers/rocclawRoute";
 import { stubRuntimeRoutes } from "./helpers/runtimeRoute";
-import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
+import { defaultROCclawInstallContext } from "@/lib/rocclaw/install-context";
 
 test("connection settings save to the rocclaw settings API", async ({ page }) => {
   await stubRocclawRoute(page);
@@ -43,10 +43,10 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
 });
 
 test("cloud tab uses local defaults when available", async ({ page }) => {
-  const installContext = defaultStudioInstallContext();
-  installContext.studioHost.remoteShell = true;
+  const installContext = defaultROCclawInstallContext();
+  installContext.rocclawHost.remoteShell = true;
   installContext.tailscale.loggedIn = true;
-  installContext.tailscale.dnsName = "studio-host.tailnet.ts.net";
+  installContext.tailscale.dnsName = "rocclaw-host.tailnet.ts.net";
 
   await stubRocclawRoute(
     page,

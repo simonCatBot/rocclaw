@@ -127,7 +127,7 @@ describe("execApprovalLifecycleWorkflow", () => {
       payload: {
         id: "approval-1",
         decision: "allow-once",
-        resolvedBy: "studio",
+        resolvedBy: "rocclaw",
         ts: 999,
       },
     };

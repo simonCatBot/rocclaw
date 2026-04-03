@@ -7,7 +7,7 @@ import { AgentSettingsPanel } from "@/features/agents/components/AgentInspectPan
 const createAgent = (): AgentState => ({
   agentId: "agent-1",
   name: "Web Researcher",
-  sessionKey: "agent:agent-1:studio:test-session",
+  sessionKey: "agent:agent-1:rocclaw:test-session",
   status: "idle",
   sessionCreated: true,
   awaitingUserInput: false,

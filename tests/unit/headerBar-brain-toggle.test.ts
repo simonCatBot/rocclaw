@@ -45,6 +45,6 @@ describe("HeaderBar", () => {
 
   it("does_not_render_hamburger_menu", () => {
     render(createElement(HeaderBar, {}));
-    expect(screen.queryByTestId("studio-menu-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("rocclaw-menu-toggle")).not.toBeInTheDocument();
   });
 });

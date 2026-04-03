@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-describe("studio test-connection route", () => {
+describe("rocclaw test-connection route", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
@@ -47,7 +47,7 @@ describe("studio test-connection route", () => {
       };
     });
     vi.doMock("@/lib/rocclaw/settings-store", () => ({
-      loadStudioSettings: () => ({
+      loadROCclawSettings: () => ({
         version: 1,
         gateway: { url: "ws://localhost:18789", token: "stored-secret" },
         gatewayAutoStart: true,

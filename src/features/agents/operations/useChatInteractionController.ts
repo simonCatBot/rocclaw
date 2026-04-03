@@ -7,7 +7,7 @@ import {
   planNewSessionIntent,
   planStopRunIntent,
 } from "@/features/agents/operations/chatInteractionWorkflow";
-import { sendChatMessageViaStudio } from "@/features/agents/operations/chatSendOperation";
+import { sendChatMessageViaROCclaw } from "@/features/agents/operations/chatSendOperation";
 import { mergePendingLivePatch } from "@/features/agents/state/livePatchQueue";
 import { buildNewSessionAgentPatch, type AgentState } from "@/features/agents/state/store";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
@@ -218,7 +218,7 @@ export function useChatInteractionController(
         return;
       }
       clearPendingLivePatch(agent.agentId);
-      await sendChatMessageViaStudio({
+      await sendChatMessageViaROCclaw({
         client: params.client,
         runtimeWriteTransport: params.runtimeWriteTransport,
         dispatch: params.dispatch,
@@ -251,7 +251,7 @@ export function useChatInteractionController(
       const nextMessage = agent.nextMessage.trim();
       if (!nextMessage) return;
       clearPendingLivePatch(agent.agentId);
-      const result = await sendChatMessageViaStudio({
+      const result = await sendChatMessageViaROCclaw({
         client: params.client,
         runtimeWriteTransport: params.runtimeWriteTransport,
         dispatch: params.dispatch,

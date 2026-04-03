@@ -23,11 +23,11 @@ vi.mock("node:child_process", async () => {
 const mockedSpawnSync = vi.mocked(spawnSync);
 const mockedConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-const writeStudioSettings = (gatewayUrl: string) => {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "studio-state-"));
+const writeROCclawSettings = (gatewayUrl: string) => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "rocclaw-state-"));
   process.env.OPENCLAW_STATE_DIR = stateDir;
 
-  const settingsDir = path.join(stateDir, "openclaw-studio");
+  const settingsDir = path.join(stateDir, "openclaw-rocclaw");
   fs.mkdirSync(settingsDir, { recursive: true });
   fs.writeFileSync(
     path.join(settingsDir, "settings.json"),
@@ -77,7 +77,7 @@ describe("agent state route", () => {
   });
 
   it("moves agent state via ssh", async () => {
-    writeStudioSettings("ws://example.test:18789");
+    writeROCclawSettings("ws://example.test:18789");
 
     mockedSpawnSync.mockReturnValueOnce({
       status: 0,
@@ -120,7 +120,7 @@ describe("agent state route", () => {
   });
 
   it("restores agent state via ssh", async () => {
-    writeStudioSettings("ws://example.test:18789");
+    writeROCclawSettings("ws://example.test:18789");
 
     mockedSpawnSync.mockReturnValueOnce({
       status: 0,
@@ -156,7 +156,7 @@ describe("agent state route", () => {
     );
   });
 
-  it("uses configured ssh target without studio settings", async () => {
+  it("uses configured ssh target without rocclaw settings", async () => {
     process.env.OPENCLAW_GATEWAY_SSH_TARGET = "me@host.test";
 
     mockedSpawnSync.mockReturnValueOnce({

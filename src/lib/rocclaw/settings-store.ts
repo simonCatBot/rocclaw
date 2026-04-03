@@ -3,18 +3,18 @@ import path from "node:path";
 
 import { resolveStateDir } from "@/lib/clawdbot/paths";
 import {
-  defaultStudioSettings,
-  mergeStudioSettings,
-  normalizeStudioSettings,
-  type StudioSettings,
-  type StudioSettingsPatch,
+  defaultROCclawSettings,
+  mergeROCclawSettings,
+  normalizeROCclawSettings,
+  type ROCclawSettings,
+  type ROCclawSettingsPatch,
 } from "@/lib/rocclaw/settings";
 
-const SETTINGS_DIRNAME = "openclaw-studio";
+const SETTINGS_DIRNAME = "openclaw-rocclaw";
 const SETTINGS_FILENAME = "settings.json";
 const OPENCLAW_CONFIG_FILENAME = "openclaw.json";
 
-const resolveStudioSettingsPath = () =>
+const resolveROCclawSettingsPath = () =>
   path.join(resolveStateDir(), SETTINGS_DIRNAME, SETTINGS_FILENAME);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -45,7 +45,7 @@ export const loadLocalGatewayDefaults = () => {
   return readOpenclawGatewayDefaults();
 };
 
-export const redactStudioSettingsSecrets = (settings: StudioSettings): StudioSettings => {
+export const redactROCclawSettingsSecrets = (settings: ROCclawSettings): ROCclawSettings => {
   if (!settings.gateway) return settings;
   return {
     ...settings,
@@ -66,16 +66,16 @@ export const redactLocalGatewayDefaultsSecrets = (
   };
 };
 
-export const loadStudioSettings = (): StudioSettings => {
-  const settingsPath = resolveStudioSettingsPath();
+export const loadROCclawSettings = (): ROCclawSettings => {
+  const settingsPath = resolveROCclawSettingsPath();
   if (!fs.existsSync(settingsPath)) {
-    const defaults = defaultStudioSettings();
+    const defaults = defaultROCclawSettings();
     const gateway = loadLocalGatewayDefaults();
     return gateway ? { ...defaults, gateway } : defaults;
   }
   const raw = fs.readFileSync(settingsPath, "utf8");
   const parsed = JSON.parse(raw) as unknown;
-  const settings = normalizeStudioSettings(parsed);
+  const settings = normalizeROCclawSettings(parsed);
   if (!settings.gateway?.token) {
     const gateway = loadLocalGatewayDefaults();
     if (gateway) {
@@ -90,8 +90,8 @@ export const loadStudioSettings = (): StudioSettings => {
   return settings;
 };
 
-const saveStudioSettings = (next: StudioSettings) => {
-  const settingsPath = resolveStudioSettingsPath();
+const saveROCclawSettings = (next: ROCclawSettings) => {
+  const settingsPath = resolveROCclawSettingsPath();
   const dir = path.dirname(settingsPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -99,9 +99,9 @@ const saveStudioSettings = (next: StudioSettings) => {
   fs.writeFileSync(settingsPath, JSON.stringify(next, null, 2), "utf8");
 };
 
-export const applyStudioSettingsPatch = (patch: StudioSettingsPatch): StudioSettings => {
-  const current = loadStudioSettings();
-  const next = mergeStudioSettings(current, patch);
-  saveStudioSettings(next);
+export const applyROCclawSettingsPatch = (patch: ROCclawSettingsPatch): ROCclawSettings => {
+  const current = loadROCclawSettings();
+  const next = mergeROCclawSettings(current, patch);
+  saveROCclawSettings(next);
   return next;
 };

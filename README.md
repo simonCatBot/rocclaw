@@ -2,7 +2,7 @@
 
 # 🎛️ rocCLAW
 
-**Your focused operator studio for OpenClaw**
+**Your focused operator rocclaw for OpenClaw**
 
 <p align="center">
   <a href="https://discord.gg/EFkFHbZw"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white" alt="Discord"></a>

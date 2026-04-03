@@ -41,7 +41,7 @@ async function main() {
   for (const host of hostnames) {
     assertPublicHostAllowed({
       host,
-      studioAccessToken: process.env.STUDIO_ACCESS_TOKEN,
+      rocclawAccessToken: process.env.ROCCLAW_ACCESS_TOKEN,
     });
   }
 
@@ -54,7 +54,7 @@ async function main() {
   const handle = app.getRequestHandler();
 
   const accessGate = createAccessGate({
-    token: process.env.STUDIO_ACCESS_TOKEN,
+    token: process.env.ROCCLAW_ACCESS_TOKEN,
   });
 
   await app.prepare();
@@ -109,13 +109,13 @@ async function main() {
     });
     if (startupGuidance.length > 0) {
       console.info("");
-      console.info("Studio access guidance:");
+      console.info("ROCclaw access guidance:");
       for (const line of startupGuidance) {
         console.info(`- ${line}`);
       }
     }
   } catch (error) {
-    console.error("Failed to print Studio access guidance.", error);
+    console.error("Failed to print ROCclaw access guidance.", error);
   }
 }
 

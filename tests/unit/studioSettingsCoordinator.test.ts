@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defaultStudioSettings } from "@/lib/rocclaw/settings";
-import { StudioSettingsCoordinator } from "@/lib/rocclaw/coordinator";
+import { defaultROCclawSettings } from "@/lib/rocclaw/settings";
+import { ROCclawSettingsCoordinator } from "@/lib/rocclaw/coordinator";
 
-describe("StudioSettingsCoordinator", () => {
+describe("ROCclawSettingsCoordinator", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -12,9 +12,9 @@ describe("StudioSettingsCoordinator", () => {
   });
 
   it("coalesces multiple scheduled patches into one update", async () => {
-    const fetchSettings = vi.fn(async () => ({ settings: defaultStudioSettings() }));
-    const updateSettings = vi.fn(async () => ({ settings: defaultStudioSettings() }));
-    const coordinator = new StudioSettingsCoordinator({ fetchSettings, updateSettings }, 300);
+    const fetchSettings = vi.fn(async () => ({ settings: defaultROCclawSettings() }));
+    const updateSettings = vi.fn(async () => ({ settings: defaultROCclawSettings() }));
+    const coordinator = new ROCclawSettingsCoordinator({ fetchSettings, updateSettings }, 300);
 
     coordinator.schedulePatch({
       gateway: { url: "ws://localhost:18789", token: "abc" },
@@ -47,9 +47,9 @@ describe("StudioSettingsCoordinator", () => {
   });
 
   it("flushPending persists queued patch immediately", async () => {
-    const fetchSettings = vi.fn(async () => ({ settings: defaultStudioSettings() }));
-    const updateSettings = vi.fn(async () => ({ settings: defaultStudioSettings() }));
-    const coordinator = new StudioSettingsCoordinator({ fetchSettings, updateSettings }, 1000);
+    const fetchSettings = vi.fn(async () => ({ settings: defaultROCclawSettings() }));
+    const updateSettings = vi.fn(async () => ({ settings: defaultROCclawSettings() }));
+    const coordinator = new ROCclawSettingsCoordinator({ fetchSettings, updateSettings }, 1000);
 
     coordinator.schedulePatch({
       gateway: { url: "ws://localhost:18789", token: "session-a" },
@@ -69,9 +69,9 @@ describe("StudioSettingsCoordinator", () => {
   });
 
   it("dispose clears pending timer without writing", async () => {
-    const fetchSettings = vi.fn(async () => ({ settings: defaultStudioSettings() }));
-    const updateSettings = vi.fn(async () => ({ settings: defaultStudioSettings() }));
-    const coordinator = new StudioSettingsCoordinator({ fetchSettings, updateSettings }, 200);
+    const fetchSettings = vi.fn(async () => ({ settings: defaultROCclawSettings() }));
+    const updateSettings = vi.fn(async () => ({ settings: defaultROCclawSettings() }));
+    const coordinator = new ROCclawSettingsCoordinator({ fetchSettings, updateSettings }, 200);
 
     coordinator.schedulePatch({
       focused: {
@@ -90,12 +90,12 @@ describe("StudioSettingsCoordinator", () => {
   });
 
   it("requeues pending patch when update fails", async () => {
-    const fetchSettings = vi.fn(async () => ({ settings: defaultStudioSettings() }));
+    const fetchSettings = vi.fn(async () => ({ settings: defaultROCclawSettings() }));
     const updateSettings = vi
       .fn()
       .mockRejectedValueOnce(new Error("write failed"))
-      .mockResolvedValue({ settings: defaultStudioSettings() });
-    const coordinator = new StudioSettingsCoordinator({ fetchSettings, updateSettings }, 1000);
+      .mockResolvedValue({ settings: defaultROCclawSettings() });
+    const coordinator = new ROCclawSettingsCoordinator({ fetchSettings, updateSettings }, 1000);
 
     coordinator.schedulePatch({
       gateway: { url: "ws://localhost:18789", token: "session-a" },

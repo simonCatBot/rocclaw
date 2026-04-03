@@ -12,7 +12,7 @@ describe("agent store transcript upsert", () => {
     const seed: AgentStoreSeed = {
       agentId: "agent-1",
       name: "Agent One",
-      sessionKey: "agent:agent-1:studio:test-session",
+      sessionKey: "agent:agent-1:rocclaw:test-session",
     };
 
     let state = agentStoreReducer(initialAgentStoreState, {
@@ -67,7 +67,7 @@ describe("agent store transcript upsert", () => {
     const seed: AgentStoreSeed = {
       agentId: "agent-1",
       name: "Agent One",
-      sessionKey: "agent:agent-1:studio:test-session",
+      sessionKey: "agent:agent-1:rocclaw:test-session",
     };
 
     let state = agentStoreReducer(initialAgentStoreState, {

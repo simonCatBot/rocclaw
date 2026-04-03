@@ -1,7 +1,7 @@
 import {
   type AgentPermissionsDraft,
   resolvePresetDefaultsForRole,
-  updateAgentPermissionsViaStudio,
+  updateAgentPermissionsViaROCclaw,
 } from "@/features/agents/operations/agentPermissionsOperation";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import {
@@ -38,7 +38,7 @@ export async function applyCreateAgentBootstrapPermissions(params: {
   draft: AgentPermissionsDraft;
   loadAgents: () => Promise<void>;
 }): Promise<void> {
-  await updateAgentPermissionsViaStudio({
+  await updateAgentPermissionsViaROCclaw({
     client: params.client,
     runtimeWriteTransport: params.runtimeWriteTransport,
     agentId: params.agentId,

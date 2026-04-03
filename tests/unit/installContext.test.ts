@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  defaultStudioInstallContext,
+  defaultROCclawInstallContext,
   resolveDefaultSetupScenario,
   resolveGatewayConnectionWarnings,
 } from "@/lib/rocclaw/install-context";
 
-describe("studio install context helpers", () => {
-  it("defaults to same-cloud-host when Studio looks remote and the upstream is localhost", () => {
-    const installContext = defaultStudioInstallContext();
-    installContext.studioHost.remoteShell = true;
+describe("rocclaw install context helpers", () => {
+  it("defaults to same-cloud-host when ROCclaw looks remote and the upstream is localhost", () => {
+    const installContext = defaultROCclawInstallContext();
+    installContext.rocclawHost.remoteShell = true;
 
     const scenario = resolveDefaultSetupScenario({
       installContext,
@@ -21,7 +21,7 @@ describe("studio install context helpers", () => {
 
   it("defaults to remote-gateway when the upstream is remote", () => {
     const scenario = resolveDefaultSetupScenario({
-      installContext: defaultStudioInstallContext(),
+      installContext: defaultROCclawInstallContext(),
       gatewayUrl: "wss://gateway.example.ts.net",
     });
 
@@ -31,7 +31,7 @@ describe("studio install context helpers", () => {
   it("warns when a tailscale hostname uses ws without TLS", () => {
     const warnings = resolveGatewayConnectionWarnings({
       gatewayUrl: "ws://gateway-host.ts.net",
-      installContext: defaultStudioInstallContext(),
+      installContext: defaultROCclawInstallContext(),
       scenario: "remote-gateway",
       hasStoredToken: false,
       hasLocalGatewayToken: false,
@@ -45,7 +45,7 @@ describe("studio install context helpers", () => {
   it("warns when a remote setup uses a raw private IP websocket", () => {
     const warnings = resolveGatewayConnectionWarnings({
       gatewayUrl: "ws://100.99.1.5:18789",
-      installContext: defaultStudioInstallContext(),
+      installContext: defaultROCclawInstallContext(),
       scenario: "remote-gateway",
       hasStoredToken: true,
       hasLocalGatewayToken: false,
@@ -54,9 +54,9 @@ describe("studio install context helpers", () => {
     expect(warnings.map((warning) => warning.id)).toContain("private-ip-advanced");
   });
 
-  it("explains localhost when Studio is running on a remote host", () => {
-    const installContext = defaultStudioInstallContext();
-    installContext.studioHost.remoteShell = true;
+  it("explains localhost when ROCclaw is running on a remote host", () => {
+    const installContext = defaultROCclawInstallContext();
+    installContext.rocclawHost.remoteShell = true;
 
     const warnings = resolveGatewayConnectionWarnings({
       gatewayUrl: "ws://localhost:18789",

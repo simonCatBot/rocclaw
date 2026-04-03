@@ -219,9 +219,9 @@ Response:
 
 | Setting | Location | Notes |
 |---------|----------|-------|
-| Gateway URL | `~/.openclaw/openclaw-studio/settings.json` | Server-side only |
-| Gateway Token | `~/.openclaw/openclaw-studio/settings.json` | **NEVER sent to browser** |
-| User Preferences | `~/.openclaw/openclaw-studio/settings.json` | Theme, filters, etc. |
+| Gateway URL | `~/.openclaw/openclaw-rocclaw/settings.json` | Server-side only |
+| Gateway Token | `~/.openclaw/openclaw-rocclaw/settings.json` | **NEVER sent to browser** |
+| User Preferences | `~/.openclaw/openclaw-rocclaw/settings.json` | Theme, filters, etc. |
 | Agent Config | `~/.openclaw/openclaw.json` | Gateway-managed |
 
 ### Token Security
@@ -272,7 +272,7 @@ runtime.reconnectForGatewaySettingsChange()
 
 ### Database Schema
 
-**Path:** `~/.openclaw/openclaw-studio/runtime.db`
+**Path:** `~/.openclaw/openclaw-rocclaw/runtime.db`
 
 **Tables:**
 
@@ -533,7 +533,7 @@ src/app/api/
 │   ├── chat-send/route.ts
 │   ├── agent-create/route.ts
 │   └── ...
-└── studio/route.ts         # Settings endpoint
+└── rocclaw/route.ts         # Settings endpoint
 ```
 
 ---

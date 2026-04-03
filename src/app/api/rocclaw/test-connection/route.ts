@@ -4,7 +4,7 @@ import {
   OpenClawGatewayAdapter,
   serializeControlPlaneGatewayConnectFailure,
 } from "@/lib/controlplane/openclaw-adapter";
-import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
+import { loadROCclawSettings } from "@/lib/rocclaw/settings-store";
 
 export const runtime = "nodejs";
 
@@ -19,7 +19,7 @@ type TestConnectionRequestBody = {
 const readString = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
 const resolveStoredToken = (): string => {
-  return readString(loadStudioSettings().gateway?.token);
+  return readString(loadROCclawSettings().gateway?.token);
 };
 
 export async function POST(request: Request) {

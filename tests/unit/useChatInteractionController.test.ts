@@ -4,25 +4,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useChatInteractionController } from "@/features/agents/operations/useChatInteractionController";
 import type { AgentState } from "@/features/agents/state/store";
-import { sendChatMessageViaStudio } from "@/features/agents/operations/chatSendOperation";
+import { sendChatMessageViaROCclaw } from "@/features/agents/operations/chatSendOperation";
 import {
   createRuntimeWriteTransport,
   type RuntimeWriteTransport,
 } from "@/features/agents/operations/runtimeWriteTransport";
-import { postStudioIntent } from "@/lib/controlplane/intents-client";
+import { postROCclawIntent } from "@/lib/controlplane/intents-client";
 
 vi.mock("@/features/agents/operations/chatSendOperation", () => ({
-  sendChatMessageViaStudio: vi.fn(async () => ({ ok: true })),
+  sendChatMessageViaROCclaw: vi.fn(async () => ({ ok: true })),
 }));
 vi.mock("@/lib/controlplane/intents-client", () => ({
-  postStudioIntent: vi.fn(async () => ({ ok: true })),
+  postROCclawIntent: vi.fn(async () => ({ ok: true })),
 }));
 
 const createAgent = (overrides?: Partial<AgentState>): AgentState => {
   const base: AgentState = {
     agentId: "agent-1",
     name: "Agent One",
-    sessionKey: "agent:agent-1:studio:test-session",
+    sessionKey: "agent:agent-1:rocclaw:test-session",
     status: "idle",
     sessionCreated: true,
     awaitingUserInput: false,
@@ -135,7 +135,7 @@ const renderController = (
     createRuntimeWriteTransport({
       client: { call } as never,
       useDomainIntents: false,
-      postIntent: postStudioIntent,
+      postIntent: postROCclawIntent,
     });
 
   const valueRef: { current: ControllerValue | null } = { current: null };
@@ -207,17 +207,17 @@ const renderController = (
 };
 
 describe("useChatInteractionController", () => {
-  const mockedSendChatMessageViaStudio = vi.mocked(sendChatMessageViaStudio);
-  const mockedPostStudioIntent = vi.mocked(postStudioIntent);
+  const mockedSendChatMessageViaROCclaw = vi.mocked(sendChatMessageViaROCclaw);
+  const mockedPostROCclawIntent = vi.mocked(postROCclawIntent);
   const originalRaf = globalThis.requestAnimationFrame;
   const originalCaf = globalThis.cancelAnimationFrame;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    mockedSendChatMessageViaStudio.mockReset();
-    mockedSendChatMessageViaStudio.mockResolvedValue({ ok: true });
-    mockedPostStudioIntent.mockReset();
-    mockedPostStudioIntent.mockResolvedValue({ ok: true });
+    mockedSendChatMessageViaROCclaw.mockReset();
+    mockedSendChatMessageViaROCclaw.mockResolvedValue({ ok: true });
+    mockedPostROCclawIntent.mockReset();
+    mockedPostROCclawIntent.mockResolvedValue({ ok: true });
   });
 
   afterEach(() => {
@@ -225,7 +225,7 @@ describe("useChatInteractionController", () => {
     globalThis.requestAnimationFrame = originalRaf;
     globalThis.cancelAnimationFrame = originalCaf;
     vi.restoreAllMocks();
-    delete process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE;
+    delete process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE;
   });
 
   it("flushes pending draft and cancels debounce timer", async () => {
@@ -278,7 +278,7 @@ describe("useChatInteractionController", () => {
       await ctx.getValue().handleSend("agent-1", "session-1", "  hello world  ");
     });
 
-    expect(mockedSendChatMessageViaStudio).toHaveBeenCalledWith(
+    expect(mockedSendChatMessageViaROCclaw).toHaveBeenCalledWith(
       expect.objectContaining({
         agentId: "agent-1",
         sessionKey: "session-1",
@@ -321,7 +321,7 @@ describe("useChatInteractionController", () => {
       await ctx.getValue().handleSend("agent-1", "session-1", "  follow up  ");
     });
 
-    expect(mockedSendChatMessageViaStudio).not.toHaveBeenCalled();
+    expect(mockedSendChatMessageViaROCclaw).not.toHaveBeenCalled();
     expect(ctx.dispatch).toHaveBeenCalledWith({
       type: "enqueueQueuedMessage",
       agentId: "agent-1",
@@ -338,7 +338,7 @@ describe("useChatInteractionController", () => {
       ctx.setAgents([
         createAgent({
           status: "idle",
-          sessionKey: "agent:agent-1:studio:drain",
+          sessionKey: "agent:agent-1:rocclaw:drain",
           queuedMessages: ["next message"],
         }),
       ]);
@@ -353,17 +353,17 @@ describe("useChatInteractionController", () => {
       agentId: "agent-1",
       expectedMessage: "next message",
     });
-    expect(mockedSendChatMessageViaStudio).toHaveBeenCalledWith(
+    expect(mockedSendChatMessageViaROCclaw).toHaveBeenCalledWith(
       expect.objectContaining({
         agentId: "agent-1",
-        sessionKey: "agent:agent-1:studio:drain",
+        sessionKey: "agent:agent-1:rocclaw:drain",
         message: "next message",
       })
     );
   });
 
   it("retains queued message when deferred send fails", async () => {
-    mockedSendChatMessageViaStudio.mockResolvedValueOnce({ ok: false });
+    mockedSendChatMessageViaROCclaw.mockResolvedValueOnce({ ok: false });
     const ctx = renderController({
       agents: [createAgent({ status: "running", queuedMessages: ["next message"] })],
     });
@@ -372,7 +372,7 @@ describe("useChatInteractionController", () => {
       ctx.setAgents([
         createAgent({
           status: "idle",
-          sessionKey: "agent:agent-1:studio:drain",
+          sessionKey: "agent:agent-1:rocclaw:drain",
           queuedMessages: ["next message"],
         }),
       ]);
@@ -382,10 +382,10 @@ describe("useChatInteractionController", () => {
       await Promise.resolve();
     });
 
-    expect(mockedSendChatMessageViaStudio).toHaveBeenCalledWith(
+    expect(mockedSendChatMessageViaROCclaw).toHaveBeenCalledWith(
       expect.objectContaining({
         agentId: "agent-1",
-        sessionKey: "agent:agent-1:studio:drain",
+        sessionKey: "agent:agent-1:rocclaw:drain",
         message: "next message",
       })
     );
@@ -406,7 +406,7 @@ describe("useChatInteractionController", () => {
       await Promise.resolve();
     });
 
-    expect(mockedSendChatMessageViaStudio).not.toHaveBeenCalled();
+    expect(mockedSendChatMessageViaROCclaw).not.toHaveBeenCalled();
     expect(
       ctx.dispatch.mock.calls.some(
         ([action]: [InteractionDispatchAction]) => action.type === "shiftQueuedMessage"
@@ -562,7 +562,7 @@ describe("useChatInteractionController", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: true,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       agents: [
         createAgent({
@@ -577,21 +577,21 @@ describe("useChatInteractionController", () => {
       await ctx.getValue().handleNewSession("agent-1");
     });
 
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/sessions-reset", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/sessions-reset", {
       key: "session-42",
     });
     expect(ctx.call).not.toHaveBeenCalledWith("sessions.reset", expect.anything());
   });
 
   it("does not switch to domain intents when explicit mode flag is false", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "true";
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "true";
     const call = vi.fn(async () => ({}));
     const ctx = renderController({
       call,
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       agents: [
         createAgent({
@@ -607,7 +607,7 @@ describe("useChatInteractionController", () => {
     });
 
     expect(ctx.call).toHaveBeenCalledWith("sessions.reset", { key: "session-42" });
-    expect(mockedPostStudioIntent).not.toHaveBeenCalledWith(
+    expect(mockedPostROCclawIntent).not.toHaveBeenCalledWith(
       "/api/intents/sessions-reset",
       expect.anything()
     );

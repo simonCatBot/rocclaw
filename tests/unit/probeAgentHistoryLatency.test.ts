@@ -359,7 +359,7 @@ describe("probe-agent-history-latency", () => {
   });
 
   it("persists run logs as jsonl history and latest snapshot", () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-studio-probe-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-rocclaw-probe-"));
     const persisted = persistProbeRunLog({
       logDir: tempRoot,
       rawArgs: ["--json"],

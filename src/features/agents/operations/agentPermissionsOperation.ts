@@ -249,7 +249,7 @@ const upsertExecApprovalsPolicyForRole = async (params: {
   });
 };
 
-export async function updateAgentPermissionsViaStudio(params: {
+export async function updateAgentPermissionsViaROCclaw(params: {
   client: GatewayClient;
   runtimeWriteTransport?: RuntimeWriteTransport;
   agentId: string;

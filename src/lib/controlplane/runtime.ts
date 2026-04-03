@@ -8,7 +8,7 @@ import {
   SQLiteControlPlaneProjectionStore,
   type BackfillAgentOutboxResult,
 } from "@/lib/controlplane/projection-store";
-import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
+import { loadROCclawSettings } from "@/lib/rocclaw/settings-store";
 
 type ControlPlaneRuntimeOptions = {
   adapterOptions?: OpenClawAdapterOptions;
@@ -36,7 +36,7 @@ export class ControlPlaneRuntime {
   async ensureStarted(options: EnsureStartedOptions = {}): Promise<void> {
     if (options.force) {
       this.autoStartEnabled = true;
-    } else if (loadStudioSettings().gatewayAutoStart === false) {
+    } else if (loadROCclawSettings().gatewayAutoStart === false) {
       this.autoStartEnabled = false;
       return;
     } else {
@@ -116,27 +116,27 @@ export class ControlPlaneRuntime {
 }
 
 type GlobalControlPlaneState = typeof globalThis & {
-  __openclawStudioControlPlaneRuntime?: ControlPlaneRuntime;
+  __openclawROCclawControlPlaneRuntime?: ControlPlaneRuntime;
 };
 
 export const getControlPlaneRuntime = (options?: ControlPlaneRuntimeOptions): ControlPlaneRuntime => {
   const globalState = globalThis as GlobalControlPlaneState;
-  if (!globalState.__openclawStudioControlPlaneRuntime) {
-    globalState.__openclawStudioControlPlaneRuntime = new ControlPlaneRuntime(options);
+  if (!globalState.__openclawROCclawControlPlaneRuntime) {
+    globalState.__openclawROCclawControlPlaneRuntime = new ControlPlaneRuntime(options);
   }
-  return globalState.__openclawStudioControlPlaneRuntime;
+  return globalState.__openclawROCclawControlPlaneRuntime;
 };
 
 export const peekControlPlaneRuntime = (): ControlPlaneRuntime | null => {
   const globalState = globalThis as GlobalControlPlaneState;
-  return globalState.__openclawStudioControlPlaneRuntime ?? null;
+  return globalState.__openclawROCclawControlPlaneRuntime ?? null;
 };
 
 export const resetControlPlaneRuntimeForTests = (): void => {
   const globalState = globalThis as GlobalControlPlaneState;
-  delete globalState.__openclawStudioControlPlaneRuntime;
+  delete globalState.__openclawROCclawControlPlaneRuntime;
 };
 
-export const isStudioDomainApiModeEnabled = (): boolean => {
+export const isROCclawDomainApiModeEnabled = (): boolean => {
   return true;
 };

@@ -381,8 +381,8 @@ openclaw gateway restart
 |------|----------|
 | Agent personalities | `~/.openclaw/agents/{agentId}/` |
 | Gateway config | `~/.openclaw/openclaw.json` |
-| rocCLAW settings | `~/.openclaw/openclaw-studio/settings.json` |
-| rocCLAW database | `~/.openclaw/openclaw-studio/runtime.db` |
+| rocCLAW settings | `~/.openclaw/openclaw-rocclaw/settings.json` |
+| rocCLAW database | `~/.openclaw/openclaw-rocclaw/runtime.db` |
 
 ---
 

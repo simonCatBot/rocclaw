@@ -63,7 +63,7 @@ export async function shouldAwaitDisconnectRestartForRemoteMutation(params: {
   }
 }
 
-export async function ensureGatewayReloadModeHotForLocalStudio(params: {
+export async function ensureGatewayReloadModeHotForLocalROCclaw(params: {
   client: GatewayClient;
   upstreamGatewayUrl: string;
 }): Promise<void> {

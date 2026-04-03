@@ -123,7 +123,7 @@ describe("runtime event bridge helpers", () => {
     const patch = getChatSummaryPatch(
       {
         runId: "run-1",
-        sessionKey: "agent:main:studio:agent-1",
+        sessionKey: "agent:main:rocclaw:agent-1",
         state: "final",
         message: { role: "assistant", content: "Hello" },
       },
@@ -183,16 +183,16 @@ describe("runtime event bridge helpers", () => {
   it("builds summary patches from status and preview snapshots", () => {
     const patches = buildSummarySnapshotPatches({
       agents: [
-        { agentId: "agent-1", sessionKey: "agent:agent-1:studio:session-a" },
-        { agentId: "agent-2", sessionKey: "agent:agent-2:studio:session-a" },
+        { agentId: "agent-1", sessionKey: "agent:agent-1:rocclaw:session-a" },
+        { agentId: "agent-2", sessionKey: "agent:agent-2:rocclaw:session-a" },
       ],
       statusSummary: {
         sessions: {
-          recent: [{ key: "agent:agent-1:studio:session-a", updatedAt: 111 }],
+          recent: [{ key: "agent:agent-1:rocclaw:session-a", updatedAt: 111 }],
           byAgent: [
             {
               agentId: "agent-2",
-              recent: [{ key: "agent:agent-2:studio:session-a", updatedAt: 222 }],
+              recent: [{ key: "agent:agent-2:rocclaw:session-a", updatedAt: 222 }],
             },
           ],
         },
@@ -201,7 +201,7 @@ describe("runtime event bridge helpers", () => {
         ts: 0,
         previews: [
           {
-            key: "agent:agent-1:studio:session-a",
+            key: "agent:agent-1:rocclaw:session-a",
             status: "ok",
             items: [
               { role: "user", text: "Project path: /tmp\n\nhello there" },
@@ -237,7 +237,7 @@ describe("runtime event bridge helpers", () => {
 
   it("returns no entries when snapshots produce no patch fields", () => {
     const patches = buildSummarySnapshotPatches({
-      agents: [{ agentId: "agent-1", sessionKey: "agent:agent-1:studio:session-a" }],
+      agents: [{ agentId: "agent-1", sessionKey: "agent:agent-1:rocclaw:session-a" }],
       statusSummary: { sessions: { recent: [] } },
       previewResult: { ts: 0, previews: [] },
     });
@@ -250,20 +250,20 @@ describe("runtime event bridge helpers", () => {
       agents: [
         {
           agentId: "agent-1",
-          sessionKey: "agent:agent-1:studio:session-a",
+          sessionKey: "agent:agent-1:rocclaw:session-a",
           status: "running",
         },
       ],
       statusSummary: {
         sessions: {
-          recent: [{ key: "agent:agent-1:studio:session-a", updatedAt: 111 }],
+          recent: [{ key: "agent:agent-1:rocclaw:session-a", updatedAt: 111 }],
         },
       },
       previewResult: {
         ts: 0,
         previews: [
           {
-            key: "agent:agent-1:studio:session-a",
+            key: "agent:agent-1:rocclaw:session-a",
             status: "ok",
             items: [{ role: "assistant", text: "assistant latest", timestamp: 999 }],
           },

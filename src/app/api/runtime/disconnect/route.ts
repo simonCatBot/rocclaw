@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 
 import { deriveRuntimeFreshness } from "@/lib/controlplane/degraded-read";
 import { peekControlPlaneRuntime } from "@/lib/controlplane/runtime";
-import { applyStudioSettingsPatch } from "@/lib/rocclaw/settings-store";
+import { applyROCclawSettingsPatch } from "@/lib/rocclaw/settings-store";
 
 export const runtime = "nodejs";
 
 export async function POST() {
   try {
-    applyStudioSettingsPatch({ gatewayAutoStart: false });
+    applyROCclawSettingsPatch({ gatewayAutoStart: false });
     const controlPlane = peekControlPlaneRuntime();
     if (!controlPlane) {
       const summary = {
@@ -32,7 +32,7 @@ export async function POST() {
       freshness: deriveRuntimeFreshness(summary, null),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to disconnect Studio runtime.";
+    const message = error instanceof Error ? error.message : "Failed to disconnect ROCclaw runtime.";
     return NextResponse.json({ enabled: true, error: message }, { status: 500 });
   }
 }

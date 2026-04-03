@@ -1,24 +1,24 @@
 import { NextResponse } from "next/server";
 
-import { type StudioSettingsPatch } from "@/lib/rocclaw/settings";
-import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
+import { type ROCclawSettingsPatch } from "@/lib/rocclaw/settings";
+import { defaultROCclawInstallContext } from "@/lib/rocclaw/install-context";
 import {
   getControlPlaneRuntime,
-  isStudioDomainApiModeEnabled,
+  isROCclawDomainApiModeEnabled,
   peekControlPlaneRuntime,
 } from "@/lib/controlplane/runtime";
 import {
-  applyStudioSettingsPatch,
+  applyROCclawSettingsPatch,
   loadLocalGatewayDefaults,
-  loadStudioSettings,
+  loadROCclawSettings,
   redactLocalGatewayDefaultsSecrets,
-  redactStudioSettingsSecrets,
+  redactROCclawSettingsSecrets,
 } from "@/lib/rocclaw/settings-store";
 import { detectInstallContext } from "../../../../server/rocclaw-install-context";
 
 export const runtime = "nodejs";
 
-const isPatch = (value: unknown): value is StudioSettingsPatch =>
+const isPatch = (value: unknown): value is ROCclawSettingsPatch =>
   Boolean(value && typeof value === "object");
 
 type RuntimeReconnectMetadata = {
@@ -29,7 +29,7 @@ type RuntimeReconnectMetadata = {
   error?: string;
 };
 
-const normalizeGatewaySettings = (settings: ReturnType<typeof loadStudioSettings>) => {
+const normalizeGatewaySettings = (settings: ReturnType<typeof loadROCclawSettings>) => {
   const gateway = settings.gateway ?? null;
   return {
     url: typeof gateway?.url === "string" ? gateway.url.trim() : "",
@@ -38,24 +38,24 @@ const normalizeGatewaySettings = (settings: ReturnType<typeof loadStudioSettings
 };
 
 const gatewaySettingsChanged = (
-  previous: ReturnType<typeof loadStudioSettings>,
-  next: ReturnType<typeof loadStudioSettings>
+  previous: ReturnType<typeof loadROCclawSettings>,
+  next: ReturnType<typeof loadROCclawSettings>
 ) => {
   const left = normalizeGatewaySettings(previous);
   const right = normalizeGatewaySettings(next);
   return left.url !== right.url || left.token !== right.token;
 };
 
-const hasGatewayConfiguration = (settings: ReturnType<typeof loadStudioSettings>) => {
+const hasGatewayConfiguration = (settings: ReturnType<typeof loadROCclawSettings>) => {
   const gateway = normalizeGatewaySettings(settings);
   return Boolean(gateway.url && gateway.token);
 };
 
 const reconnectRuntimeForGatewaySettingsChange = async (
-  previous: ReturnType<typeof loadStudioSettings>,
-  next: ReturnType<typeof loadStudioSettings>
+  previous: ReturnType<typeof loadROCclawSettings>,
+  next: ReturnType<typeof loadROCclawSettings>
 ): Promise<RuntimeReconnectMetadata | null> => {
-  if (!isStudioDomainApiModeEnabled()) {
+  if (!isROCclawDomainApiModeEnabled()) {
     return {
       attempted: false,
       restarted: false,
@@ -122,16 +122,16 @@ const reconnectRuntimeForGatewaySettingsChange = async (
 };
 
 const buildSettingsResponseBody = async (metadata?: RuntimeReconnectMetadata | null) => {
-  const settings = loadStudioSettings();
+  const settings = loadROCclawSettings();
   const localGatewayDefaults = loadLocalGatewayDefaults();
-  let installContext = defaultStudioInstallContext();
+  let installContext = defaultROCclawInstallContext();
   try {
     installContext = await detectInstallContext(process.env);
   } catch (error) {
-    console.error("Failed to detect Studio install context.", error);
+    console.error("Failed to detect ROCclaw install context.", error);
   }
   return {
-    settings: redactStudioSettingsSecrets(settings),
+    settings: redactROCclawSettingsSecrets(settings),
     localGatewayDefaults: redactLocalGatewayDefaultsSecrets(localGatewayDefaults),
     localGatewayDefaultsMeta: {
       hasToken: Boolean(localGatewayDefaults?.token?.trim()),
@@ -140,7 +140,7 @@ const buildSettingsResponseBody = async (metadata?: RuntimeReconnectMetadata | n
       hasStoredToken: Boolean(settings.gateway?.token?.trim()),
     },
     installContext,
-    domainApiModeEnabled: isStudioDomainApiModeEnabled(),
+    domainApiModeEnabled: isROCclawDomainApiModeEnabled(),
     ...(metadata ? { runtimeReconnect: metadata } : {}),
   };
 };
@@ -149,7 +149,7 @@ export async function GET() {
   try {
     return NextResponse.json(await buildSettingsResponseBody());
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to load studio settings.";
+    const message = err instanceof Error ? err.message : "Failed to load rocclaw settings.";
     console.error(message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
@@ -161,8 +161,8 @@ export async function PUT(request: Request) {
     if (!isPatch(body)) {
       return NextResponse.json({ error: "Invalid settings payload." }, { status: 400 });
     }
-    const previousSettings = loadStudioSettings();
-    const nextSettings = applyStudioSettingsPatch({
+    const previousSettings = loadROCclawSettings();
+    const nextSettings = applyROCclawSettingsPatch({
       ...body,
       gatewayAutoStart: true,
     });
@@ -172,7 +172,7 @@ export async function PUT(request: Request) {
     );
     return NextResponse.json(await buildSettingsResponseBody(runtimeReconnect));
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to save studio settings.";
+    const message = err instanceof Error ? err.message : "Failed to save rocclaw settings.";
     console.error(message);
     return NextResponse.json({ error: message }, { status: 500 });
   }

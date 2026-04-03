@@ -19,10 +19,10 @@ import {
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import {
   resolveGatewayConnectionWarnings,
-  type StudioConnectionWarning,
-  type StudioInstallContext,
+  type ROCclawConnectionWarning,
+  type ROCclawInstallContext,
 } from "@/lib/rocclaw/install-context";
-import type { StudioGatewaySettings } from "@/lib/rocclaw/settings";
+import type { ROCclawGatewaySettings } from "@/lib/rocclaw/settings";
 
 type ConnectionTab = "local" | "client" | "cloud" | "remote";
 
@@ -37,11 +37,11 @@ interface ConnectionPageProps {
   savedGatewayUrl: string;
   draftGatewayUrl: string;
   token: string;
-  localGatewayDefaults: StudioGatewaySettings | null;
+  localGatewayDefaults: ROCclawGatewaySettings | null;
   localGatewayDefaultsHasToken: boolean;
   hasStoredToken: boolean;
   hasUnsavedChanges: boolean;
-  installContext: StudioInstallContext;
+  installContext: ROCclawInstallContext;
   status: GatewayStatus;
   statusReason: string | null;
   saving: boolean;
@@ -98,17 +98,17 @@ export function ConnectionPage({
 
   const localGatewayCommand = `openclaw gateway --port ${localPort}`;
   const gatewayServeCommand = `tailscale serve --yes --bg --https 443 http://127.0.0.1:${localPort}`;
-  const studioServeCommand = "tailscale serve --yes --bg --https 443 http://127.0.0.1:3000";
+  const rocclawServeCommand = "tailscale serve --yes --bg --https 443 http://127.0.0.1:3000";
   
-  const studioOpenUrl = installContext.tailscale.loggedIn && installContext.tailscale.dnsName
+  const rocclawOpenUrl = installContext.tailscale.loggedIn && installContext.tailscale.dnsName
     ? `https://${installContext.tailscale.dnsName}`
-    : "https://<studio-host>.ts.net";
+    : "https://<rocclaw-host>.ts.net";
 
-  const studioSshTarget = installContext.tailscale.dnsName || "<studio-host>";
-  const studioTunnelCommand = `ssh -L 3000:127.0.0.1:3000 ${studioSshTarget}`;
+  const rocclawSshTarget = installContext.tailscale.dnsName || "<rocclaw-host>";
+  const rocclawTunnelCommand = `ssh -L 3000:127.0.0.1:3000 ${rocclawSshTarget}`;
   const gatewayTunnelCommand = `ssh -L ${localPort}:127.0.0.1:${localPort} user@<gateway-host>`;
 
-  const warnings = useMemo<StudioConnectionWarning[]>(() => {
+  const warnings = useMemo<ROCclawConnectionWarning[]>(() => {
     return resolveGatewayConnectionWarnings({
       gatewayUrl: draftGatewayUrl,
       installContext,
@@ -288,18 +288,18 @@ export function ConnectionPage({
             </div>
             <div className="ui-command-surface flex items-center gap-2 rounded-md px-3 py-2.5 mb-3">
               <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-sm">
-                {studioServeCommand}
+                {rocclawServeCommand}
               </code>
               <button
                 type="button"
                 className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
-                onClick={() => void copyCommand(studioServeCommand)}
+                onClick={() => void copyCommand(rocclawServeCommand)}
               >
                 {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Then open <code className="font-mono">{studioOpenUrl}</code>
+              Then open <code className="font-mono">{rocclawOpenUrl}</code>
             </p>
           </div>
 
@@ -367,12 +367,12 @@ export function ConnectionPage({
                 <p className="text-xs font-medium text-muted-foreground mb-1">rocCLAW tunnel</p>
                 <div className="ui-command-surface flex items-center gap-2 rounded-md px-3 py-2.5">
                   <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap font-mono text-sm">
-                    {studioTunnelCommand}
+                    {rocclawTunnelCommand}
                   </code>
                   <button
                     type="button"
                     className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
-                    onClick={() => void copyCommand(studioTunnelCommand)}
+                    onClick={() => void copyCommand(rocclawTunnelCommand)}
                   >
                     {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </button>

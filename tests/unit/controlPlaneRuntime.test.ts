@@ -9,7 +9,7 @@ import path from "node:path";
 import {
   ControlPlaneRuntime,
   getControlPlaneRuntime,
-  isStudioDomainApiModeEnabled,
+  isROCclawDomainApiModeEnabled,
   resetControlPlaneRuntimeForTests,
 } from "@/lib/controlplane/runtime";
 
@@ -22,9 +22,9 @@ describe("control-plane runtime", () => {
   const makeRuntimeDbPath = () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "controlplane-runtime-"));
     process.env.OPENCLAW_STATE_DIR = tempDir;
-    fs.mkdirSync(path.join(tempDir, "openclaw-studio"), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, "openclaw-rocclaw"), { recursive: true });
     fs.writeFileSync(
-      path.join(tempDir, "openclaw-studio", "settings.json"),
+      path.join(tempDir, "openclaw-rocclaw", "settings.json"),
       JSON.stringify(
         {
           version: 1,
@@ -47,8 +47,8 @@ describe("control-plane runtime", () => {
     runtime.close();
     resetControlPlaneRuntimeForTests();
     delete process.env.OPENCLAW_STATE_DIR;
-    delete process.env.STUDIO_DOMAIN_API_MODE;
-    delete process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE;
+    delete process.env.ROCCLAW_DOMAIN_API_MODE;
+    delete process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE;
     if (tempDir) {
       fs.rmSync(tempDir, { recursive: true, force: true });
       tempDir = null;
@@ -152,7 +152,7 @@ describe("control-plane runtime", () => {
     await runtime.disconnect();
     expect(runtime.snapshot().status).toBe("stopped");
     fs.writeFileSync(
-      path.join(tempDir!, "openclaw-studio", "settings.json"),
+      path.join(tempDir!, "openclaw-rocclaw", "settings.json"),
       JSON.stringify(
         {
           version: 1,
@@ -172,7 +172,7 @@ describe("control-plane runtime", () => {
     expect(connectionCount).toBe(1);
 
     fs.writeFileSync(
-      path.join(tempDir!, "openclaw-studio", "settings.json"),
+      path.join(tempDir!, "openclaw-rocclaw", "settings.json"),
       JSON.stringify(
         {
           version: 1,
@@ -242,16 +242,16 @@ describe("control-plane runtime", () => {
   });
 
   it("always enables domain mode", () => {
-    delete process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE;
-    process.env.STUDIO_DOMAIN_API_MODE = "true";
-    expect(isStudioDomainApiModeEnabled()).toBe(true);
-    process.env.STUDIO_DOMAIN_API_MODE = "1";
-    expect(isStudioDomainApiModeEnabled()).toBe(true);
-    process.env.STUDIO_DOMAIN_API_MODE = "false";
-    expect(isStudioDomainApiModeEnabled()).toBe(true);
-    delete process.env.STUDIO_DOMAIN_API_MODE;
-    expect(isStudioDomainApiModeEnabled()).toBe(true);
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    expect(isStudioDomainApiModeEnabled()).toBe(true);
+    delete process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE;
+    process.env.ROCCLAW_DOMAIN_API_MODE = "true";
+    expect(isROCclawDomainApiModeEnabled()).toBe(true);
+    process.env.ROCCLAW_DOMAIN_API_MODE = "1";
+    expect(isROCclawDomainApiModeEnabled()).toBe(true);
+    process.env.ROCCLAW_DOMAIN_API_MODE = "false";
+    expect(isROCclawDomainApiModeEnabled()).toBe(true);
+    delete process.env.ROCCLAW_DOMAIN_API_MODE;
+    expect(isROCclawDomainApiModeEnabled()).toBe(true);
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    expect(isROCclawDomainApiModeEnabled()).toBe(true);
   });
 });

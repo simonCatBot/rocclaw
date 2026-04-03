@@ -7,7 +7,7 @@ import {
   planFocusedSelectionPatch,
   planStartupFleetBootstrapIntent,
 } from "@/features/agents/operations/bootstrapWorkflow";
-import type { StudioSettings } from "@/lib/rocclaw/settings";
+import type { ROCclawSettings } from "@/lib/rocclaw/settings";
 
 describe("bootstrapWorkflow", () => {
   it("keeps existing selection when one is already active", () => {
@@ -158,7 +158,7 @@ describe("bootstrapWorkflow", () => {
   });
 
   it("resolves focused preference restore values from settings", () => {
-    const settings: StudioSettings = {
+    const settings: ROCclawSettings = {
       version: 1,
       gateway: null,
       gatewayAutoStart: true,
@@ -196,7 +196,7 @@ describe("bootstrapWorkflow", () => {
   });
 
   it("restores running filter as all", () => {
-    const settings: StudioSettings = {
+    const settings: ROCclawSettings = {
       version: 1,
       gateway: null,
       gatewayAutoStart: true,

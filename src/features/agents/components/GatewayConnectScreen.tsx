@@ -2,25 +2,25 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, Eye, EyeOff, Loader2 } from "lucide-react";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import {
-  isStudioLikelyRemote,
+  isROCclawLikelyRemote,
   resolveDefaultSetupScenario,
   resolveGatewayConnectionWarnings,
-  type StudioConnectionWarning,
-  type StudioInstallContext,
-  type StudioSetupScenario,
+  type ROCclawConnectionWarning,
+  type ROCclawInstallContext,
+  type ROCclawSetupScenario,
 } from "@/lib/rocclaw/install-context";
-import type { StudioGatewaySettings } from "@/lib/rocclaw/settings";
+import type { ROCclawGatewaySettings } from "@/lib/rocclaw/settings";
 import { resolveGatewayStatusBadgeClass, resolveGatewayStatusLabel } from "./colorSemantics";
 
 type GatewayConnectScreenProps = {
   savedGatewayUrl: string;
   draftGatewayUrl: string;
   token: string;
-  localGatewayDefaults: StudioGatewaySettings | null;
+  localGatewayDefaults: ROCclawGatewaySettings | null;
   localGatewayDefaultsHasToken: boolean;
   hasStoredToken: boolean;
   hasUnsavedChanges: boolean;
-  installContext: StudioInstallContext;
+  installContext: ROCclawInstallContext;
   status: GatewayStatus;
   statusReason: string | null;
   error: string | null;
@@ -83,7 +83,7 @@ export const GatewayConnectScreen = ({
       }),
     [draftGatewayUrl, installContext, savedGatewayUrl]
   );
-  const [selectedScenario, setSelectedScenario] = useState<StudioSetupScenario>(inferredScenario);
+  const [selectedScenario, setSelectedScenario] = useState<ROCclawSetupScenario>(inferredScenario);
   const [scenarioTouched, setScenarioTouched] = useState(false);
   // Sync scenario when inferred changes (but user hasn't touched it)
   // Store previous inferred value to detect changes and avoid setState-in-effect warning
@@ -108,17 +108,17 @@ export const GatewayConnectScreen = ({
     () => `tailscale serve --yes --bg --https 443 http://127.0.0.1:${localPort}`,
     [localPort]
   );
-  const studioServeCommand = "tailscale serve --yes --bg --https 443 http://127.0.0.1:3000";
-  const studioOpenUrl = installContext.tailscale.loggedIn && installContext.tailscale.dnsName
+  const rocclawServeCommand = "tailscale serve --yes --bg --https 443 http://127.0.0.1:3000";
+  const rocclawOpenUrl = installContext.tailscale.loggedIn && installContext.tailscale.dnsName
     ? `https://${installContext.tailscale.dnsName}`
-    : "https://<studio-host>.ts.net";
-  const studioSshTarget =
+    : "https://<rocclaw-host>.ts.net";
+  const rocclawSshTarget =
     installContext.tailscale.dnsName ||
-    installContext.studioHost.publicHosts[0] ||
-    "<studio-host>";
-  const studioTunnelCommand = `ssh -L 3000:127.0.0.1:3000 ${studioSshTarget}`;
+    installContext.rocclawHost.publicHosts[0] ||
+    "<rocclaw-host>";
+  const rocclawTunnelCommand = `ssh -L 3000:127.0.0.1:3000 ${rocclawSshTarget}`;
   const gatewayTunnelCommand = `ssh -L ${localPort}:127.0.0.1:${localPort} user@<gateway-host>`;
-  const warnings = useMemo<StudioConnectionWarning[]>(
+  const warnings = useMemo<ROCclawConnectionWarning[]>(
     () =>
       resolveGatewayConnectionWarnings({
         gatewayUrl: draftGatewayUrl,
@@ -135,12 +135,12 @@ export const GatewayConnectScreen = ({
       selectedScenario,
     ]
   );
-  const studioCliUpdateWarning = useMemo(() => {
-    const studioCli = installContext.studioCli;
-    if (!studioCli.installed || !studioCli.updateAvailable) return null;
-    const current = studioCli.currentVersion?.trim() || "current";
-    const latest = studioCli.latestVersion?.trim() || "latest";
-    return `openclaw-studio CLI ${current} is installed on this host, but ${latest} is available. Run npx -y openclaw-studio@latest to update.`;
+  const rocclawCliUpdateWarning = useMemo(() => {
+    const rocclawCli = installContext.rocclawCli;
+    if (!rocclawCli.installed || !rocclawCli.updateAvailable) return null;
+    const current = rocclawCli.currentVersion?.trim() || "current";
+    const latest = rocclawCli.latestVersion?.trim() || "latest";
+    return `openclaw-rocclaw CLI ${current} is installed on this host, but ${latest} is available. Run npx -y openclaw-rocclaw@latest to update.`;
   }, [installContext]);
   const statusCopy = useMemo(() => {
     if (status === "connected") {
@@ -186,9 +186,9 @@ export const GatewayConnectScreen = ({
     : localGatewayDefaultsHasToken
       ? "A local OpenClaw token is available on this host. Leave this blank to use it."
       : "Enter the gateway token rocCLAW should use.";
-  const remoteStudio = isStudioLikelyRemote(installContext);
+  const remoteROCclaw = isROCclawLikelyRemote(installContext);
 
-  const setScenario = (value: StudioSetupScenario) => {
+  const setScenario = (value: ROCclawSetupScenario) => {
     setScenarioTouched(true);
     setSelectedScenario(value);
   };
@@ -246,7 +246,7 @@ export const GatewayConnectScreen = ({
     </div>
   );
 
-  const scenarioButtonClass = (scenario: StudioSetupScenario): string => {
+  const scenarioButtonClass = (scenario: ROCclawSetupScenario): string => {
     return `ui-card rounded-xl px-4 py-3 text-left transition ${
       selectedScenario === scenario
         ? "ui-card-selected border-primary/60"
@@ -414,23 +414,23 @@ export const GatewayConnectScreen = ({
                 rocCLAW is on a remote host. <span className="font-mono">http://localhost:3000</span> only opens on that machine.
               </p>
               {commandField({
-                value: studioServeCommand,
+                value: rocclawServeCommand,
                 label: "Recommended: Tailscale Serve",
-                helper: `Then open ${studioOpenUrl} from your laptop or phone.`,
+                helper: `Then open ${rocclawOpenUrl} from your laptop or phone.`,
               })}
               {commandField({
-                value: studioTunnelCommand,
+                value: rocclawTunnelCommand,
                 label: "Fallback: SSH tunnel",
                 helper: "Use this if Tailscale is not available yet.",
               })}
-              {remoteStudio && installContext.tailscale.loggedIn === false ? (
+              {remoteROCclaw && installContext.tailscale.loggedIn === false ? (
                 <div className="ui-card rounded-md px-3 py-3 text-sm text-muted-foreground">
                   Tailscale was not detected on this rocCLAW host. Beginners will usually have a much easier time with Tailscale Serve than with public binds.
                 </div>
               ) : null}
-              {installContext.studioHost.publicHosts.length > 0 ? (
+              {installContext.rocclawHost.publicHosts.length > 0 ? (
                 <div className="ui-card rounded-md px-3 py-3 text-sm text-muted-foreground">
-                  This rocCLAW is already bound beyond loopback. If you keep it public, <span className="font-mono">STUDIO_ACCESS_TOKEN</span> is required and each browser must open <span className="font-mono">/?access_token=...</span> once.
+                  This rocCLAW is already bound beyond loopback. If you keep it public, <span className="font-mono">ROCCLAW_ACCESS_TOKEN</span> is required and each browser must open <span className="font-mono">/?access_token=...</span> once.
                 </div>
               ) : null}
             </div>
@@ -505,9 +505,9 @@ export const GatewayConnectScreen = ({
         </div>
       </div>
 
-      {studioCliUpdateWarning ? (
+      {rocclawCliUpdateWarning ? (
         <div className="ui-alert-danger rounded-md px-4 py-2 text-sm">
-          {studioCliUpdateWarning}
+          {rocclawCliUpdateWarning}
         </div>
       ) : null}
 

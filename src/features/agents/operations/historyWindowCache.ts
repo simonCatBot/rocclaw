@@ -1,6 +1,6 @@
 import type { TranscriptEntry } from "@/features/agents/state/transcript";
 
-const HISTORY_WINDOW_CACHE_DB = "openclaw-studio-history";
+const HISTORY_WINDOW_CACHE_DB = "openclaw-rocclaw-history";
 const HISTORY_WINDOW_CACHE_STORE = "windows";
 const HISTORY_WINDOW_CACHE_DB_VERSION = 1;
 const HISTORY_WINDOW_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;

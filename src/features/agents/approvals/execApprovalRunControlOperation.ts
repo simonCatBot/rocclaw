@@ -6,13 +6,13 @@ import type {
   ExecApprovalIngressCommand,
   ExecApprovalPendingSnapshot,
 } from "@/features/agents/approvals/execApprovalControlLoopWorkflow";
-import { resolveExecApprovalViaStudio } from "@/features/agents/approvals/execApprovalResolveOperation";
+import { resolveExecApprovalViaROCclaw } from "@/features/agents/approvals/execApprovalResolveOperation";
 import {
   planApprovalIngressRunControl,
   planAutoResumeRunControl,
   planPauseRunControl,
 } from "@/features/agents/approvals/execApprovalRunControlWorkflow";
-import { sendChatMessageViaStudio } from "@/features/agents/operations/chatSendOperation";
+import { sendChatMessageViaROCclaw } from "@/features/agents/operations/chatSendOperation";
 import type { RuntimeWriteTransport } from "@/features/agents/operations/runtimeWriteTransport";
 import type { AgentState } from "@/features/agents/state/store";
 import type { EventFrame } from "@/lib/gateway/gateway-frames";
@@ -89,10 +89,10 @@ export async function runExecApprovalAutoResumeOperation(params: {
   isDisconnectLikeError: (error: unknown) => boolean;
   logWarn?: (message: string, error: unknown) => void;
   clearRunTracking?: (runId: string) => void;
-  sendChatMessage?: typeof sendChatMessageViaStudio;
+  sendChatMessage?: typeof sendChatMessageViaROCclaw;
   now?: () => number;
 }): Promise<void> {
-  const sendChatMessage = params.sendChatMessage ?? sendChatMessageViaStudio;
+  const sendChatMessage = params.sendChatMessage ?? sendChatMessageViaROCclaw;
   const preWaitPendingState = params.getPendingState();
   const prePlan = planAutoResumeRunControl({
     approval: params.approval,
@@ -172,10 +172,10 @@ export async function runResolveExecApprovalOperation(params: {
   isDisconnectLikeError: (error: unknown) => boolean;
   logWarn?: (message: string, error: unknown) => void;
   clearRunTracking?: (runId: string) => void;
-  resolveExecApproval?: typeof resolveExecApprovalViaStudio;
+  resolveExecApproval?: typeof resolveExecApprovalViaROCclaw;
   runAutoResume?: typeof runExecApprovalAutoResumeOperation;
 }): Promise<void> {
-  const resolveExecApproval = params.resolveExecApproval ?? resolveExecApprovalViaStudio;
+  const resolveExecApproval = params.resolveExecApproval ?? resolveExecApprovalViaROCclaw;
   const runAutoResume = params.runAutoResume ?? runExecApprovalAutoResumeOperation;
 
   await resolveExecApproval({

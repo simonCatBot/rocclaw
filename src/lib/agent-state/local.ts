@@ -39,7 +39,7 @@ export const trashAgentStateLocally = (params: { agentId: string }): TrashAgentS
   }
 
   const base = resolveStateDir();
-  const trashRoot = path.join(base, "trash", "studio-delete-agent");
+  const trashRoot = path.join(base, "trash", "rocclaw-delete-agent");
   const stamp = utcStamp();
   const trashDir = path.join(trashRoot, `${stamp}-${agentId}-${randomUUID()}`);
   fs.mkdirSync(path.join(trashDir, "agents"), { recursive: true });

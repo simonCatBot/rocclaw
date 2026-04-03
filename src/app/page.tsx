@@ -22,7 +22,7 @@ import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
 } from "@/lib/text/message-extract";
-import { useStudioGatewaySettings } from "@/lib/rocclaw/useStudioGatewaySettings";
+import { useROCclawGatewaySettings } from "@/lib/rocclaw/useROCclawGatewaySettings";
 import { isGatewayConnected, type GatewayStatus } from "@/lib/gateway/gateway-status";
 import type { ControlPlaneOutboxEntry } from "@/lib/controlplane/contracts";
 import {
@@ -49,7 +49,7 @@ import {
   slugifyAgentName,
 } from "@/lib/gateway/agentConfig";
 import { randomUUID } from "@/lib/uuid";
-import { createStudioSettingsCoordinator } from "@/lib/rocclaw/coordinator";
+import { createROCclawSettingsCoordinator } from "@/lib/rocclaw/coordinator";
 import { applySessionSettingMutation } from "@/features/agents/state/sessionSettingsMutations";
 import type { AgentCreateModalSubmitPayload } from "@/features/agents/creation/types";
 import {
@@ -82,13 +82,13 @@ import {
   resolveAgentPermissionsDraft,
 } from "@/features/agents/operations/agentPermissionsOperation";
 import {
-  executeStudioBootstrapLoadCommands,
-  executeStudioFocusedPatchCommands,
-  executeStudioFocusedPreferenceLoadCommands,
-  runStudioBootstrapLoadOperation,
-  runStudioFocusFilterPersistenceOperation,
-  runStudioFocusedPreferenceLoadOperation,
-  runStudioFocusedSelectionPersistenceOperation,
+  executeROCclawBootstrapLoadCommands,
+  executeROCclawFocusedPatchCommands,
+  executeROCclawFocusedPreferenceLoadCommands,
+  runROCclawBootstrapLoadOperation,
+  runROCclawFocusFilterPersistenceOperation,
+  runROCclawFocusedPreferenceLoadOperation,
+  runROCclawFocusedSelectionPersistenceOperation,
 } from "@/features/agents/operations/bootstrapOperation";
 import { planStartupFleetBootstrapIntent } from "@/features/agents/operations/bootstrapWorkflow";
 import {
@@ -204,7 +204,7 @@ const resolveNextNewAgentName = (agents: AgentState[]) => {
   throw new Error("Unable to allocate a unique agent name.");
 };
 
-const AgentStudioPage = () => {
+const AgentROCclawPage = () => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -216,7 +216,7 @@ const AgentStudioPage = () => {
     [pathname, searchParams]
   );
   const settingsRouteActive = settingsRouteAgentId !== null;
-  const [settingsCoordinator] = useState(() => createStudioSettingsCoordinator());
+  const [settingsCoordinator] = useState(() => createROCclawSettingsCoordinator());
   const {
     client,
     status,
@@ -241,7 +241,7 @@ const AgentStudioPage = () => {
     setGatewayUrl,
     setToken,
     applyRuntimeStatusEvent,
-  } = useStudioGatewaySettings(settingsCoordinator);
+  } = useROCclawGatewaySettings(settingsCoordinator);
   const gatewayStatus: GatewayStatus = status;
   const gatewayConnected = isGatewayConnected(gatewayStatus);
   const gatewayConnectionStatus: "disconnected" | "connecting" | "connected" = gatewayConnected
@@ -394,12 +394,12 @@ const AgentStudioPage = () => {
     }
   }, [state.agents]);
   const errorMessage = state.error ?? gatewayError ?? gatewayModelsError;
-  const studioCliUpdateWarning = useMemo(() => {
-    const studioCli = installContext.studioCli;
-    if (!studioCli.installed || !studioCli.updateAvailable) return null;
-    const current = studioCli.currentVersion?.trim() || "current";
-    const latest = studioCli.latestVersion?.trim() || "latest";
-    return `openclaw-studio CLI ${current} is installed on this host, but ${latest} is available. Run npx -y openclaw-studio@latest to update.`;
+  const rocclawCliUpdateWarning = useMemo(() => {
+    const rocclawCli = installContext.rocclawCli;
+    if (!rocclawCli.installed || !rocclawCli.updateAvailable) return null;
+    const current = rocclawCli.currentVersion?.trim() || "current";
+    const latest = rocclawCli.latestVersion?.trim() || "latest";
+    return `openclaw-rocclaw CLI ${current} is installed on this host, but ${latest} is available. Run npx -y openclaw-rocclaw@latest to update.`;
   }, [installContext]);
   const runningAgentCount = useMemo(
     () => agents.filter((agent) => agent.status === "running").length,
@@ -444,12 +444,12 @@ const AgentStudioPage = () => {
       if (!coreConnected) return;
       setLoading(true);
       try {
-        const commands = await runStudioBootstrapLoadOperation({
+        const commands = await runROCclawBootstrapLoadOperation({
           cachedConfigSnapshot: gatewayConfigSnapshot,
           preferredSelectedAgentId: preferredSelectedAgentIdRef.current,
           hasCurrentSelection: Boolean(stateRef.current.selectedAgentId),
         });
-        executeStudioBootstrapLoadCommands({
+        executeROCclawBootstrapLoadCommands({
           commands,
           setGatewayConfigSnapshot,
           hydrateAgents,
@@ -582,12 +582,12 @@ const AgentStudioPage = () => {
     preferredSelectedAgentIdRef.current = null;
     lastPersistedFocusedSelectionRef.current = null;
     // Use promise chain instead of async/await to avoid cancellation issues
-    runStudioFocusedPreferenceLoadOperation({
+    runROCclawFocusedPreferenceLoadOperation({
       gatewayUrl,
-      loadStudioSettings: settingsCoordinator.loadSettings.bind(settingsCoordinator),
+      loadROCclawSettings: settingsCoordinator.loadSettings.bind(settingsCoordinator),
       isFocusFilterTouched: () => focusFilterTouchedRef.current,
     }).then((commands) => {
-      executeStudioFocusedPreferenceLoadCommands({
+      executeROCclawFocusedPreferenceLoadCommands({
         commands,
         setFocusedPreferencesLoaded,
         setPreferredSelectedAgentId: (agentId) => {
@@ -623,12 +623,12 @@ const AgentStudioPage = () => {
   }, [settingsCoordinator]);
 
   useEffect(() => {
-    const commands = runStudioFocusFilterPersistenceOperation({
+    const commands = runROCclawFocusFilterPersistenceOperation({
       gatewayUrl,
       focusFilterTouched: focusFilterTouchedRef.current,
       focusFilter,
     });
-    executeStudioFocusedPatchCommands({
+    executeROCclawFocusedPatchCommands({
       commands,
       schedulePatch: settingsCoordinator.schedulePatch.bind(settingsCoordinator),
       applyPatchNow: settingsCoordinator.applyPatchNow.bind(settingsCoordinator),
@@ -644,7 +644,7 @@ const AgentStudioPage = () => {
       lastPersistedSelection && lastPersistedSelection.gatewayKey === normalizedGatewayKey
         ? lastPersistedSelection.selectedAgentId
         : null;
-    const commands = runStudioFocusedSelectionPersistenceOperation({
+    const commands = runROCclawFocusedSelectionPersistenceOperation({
       gatewayUrl,
       status: coreStatus,
       focusedPreferencesLoaded,
@@ -652,7 +652,7 @@ const AgentStudioPage = () => {
       selectedAgentId: state.selectedAgentId,
       lastPersistedSelectedAgentId,
     });
-    executeStudioFocusedPatchCommands({
+    executeROCclawFocusedPatchCommands({
       commands,
       schedulePatch: settingsCoordinator.schedulePatch.bind(settingsCoordinator),
       applyPatchNow: async (patch) => {
@@ -1512,10 +1512,10 @@ const AgentStudioPage = () => {
             </div>
           ) : null}
 
-          {studioCliUpdateWarning ? (
+          {rocclawCliUpdateWarning ? (
             <div className="w-full">
               <div className="ui-alert-danger rounded-md px-4 py-2 text-sm">
-                {studioCliUpdateWarning}
+                {rocclawCliUpdateWarning}
               </div>
             </div>
           ) : null}
@@ -1859,7 +1859,7 @@ const AgentStudioPage = () => {
               {createAgentBlock.agentName}
             </div>
             <div className="mt-3 text-sm text-muted-foreground">
-              Studio is temporarily locked until creation finishes.
+              ROCclaw is temporarily locked until creation finishes.
             </div>
             {createBlockStatusLine ? (
               <div className="ui-card mt-4 px-3 py-2 font-mono text-[11px] tracking-[0.06em] text-foreground">
@@ -1885,7 +1885,7 @@ const AgentStudioPage = () => {
               {restartingMutationBlock.agentName}
             </div>
             <div className="mt-3 text-sm text-muted-foreground">
-              Studio is temporarily locked until the gateway restarts.
+              ROCclaw is temporarily locked until the gateway restarts.
             </div>
             {restartingMutationStatusLine ? (
               <div className="ui-card mt-4 px-3 py-2 font-mono text-[11px] tracking-[0.06em] text-foreground">
@@ -1902,7 +1902,7 @@ export default function Home() {
   return (
     <Suspense>
       <AgentStoreProvider>
-        <AgentStudioPage />
+        <AgentROCclawPage />
       </AgentStoreProvider>
     </Suspense>
   );

@@ -1,6 +1,6 @@
 import { buildAgentMainSessionKey } from "@/lib/gateway/session-keys";
 import { resolveConfiguredModelKey, type GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import { resolveAgentAvatarSeed, type StudioSettings } from "@/lib/rocclaw/settings";
+import { resolveAgentAvatarSeed, type ROCclawSettings } from "@/lib/rocclaw/settings";
 import {
   buildSummarySnapshotPatches,
   type SummaryPreviewSnapshot,
@@ -164,7 +164,7 @@ const resolveDefaultModelForAgent = (
 type DeriveFleetHydrationInput = {
   gatewayUrl: string;
   configSnapshot: GatewayModelPolicySnapshot | null;
-  settings: StudioSettings | null;
+  settings: ROCclawSettings | null;
   execApprovalsSnapshot: ExecApprovalsSnapshot | null;
   agentsResult: AgentsListResult;
   mainSessionByAgentId: Map<string, SessionsListEntry | null>;

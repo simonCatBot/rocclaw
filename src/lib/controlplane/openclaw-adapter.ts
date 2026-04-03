@@ -16,7 +16,7 @@ import {
   type GatewaySocketOptions,
   shouldFallbackToLegacyControlUi,
 } from "@/lib/controlplane/gateway-connect-profile";
-import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
+import { loadROCclawSettings } from "@/lib/rocclaw/settings-store";
 
 const CONNECT_TIMEOUT_MS = 8_000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
@@ -172,15 +172,15 @@ const isConnectRejectionError = (error: unknown): boolean => {
 };
 
 const loadGatewaySettings = (): ControlPlaneGatewaySettings => {
-  const settings = loadStudioSettings();
+  const settings = loadROCclawSettings();
   const gateway = settings.gateway;
   const url = typeof gateway?.url === "string" ? gateway.url.trim() : "";
   const token = typeof gateway?.token === "string" ? gateway.token.trim() : "";
   if (!url) {
-    throw new Error("Control-plane start failed: Studio gateway URL is not configured.");
+    throw new Error("Control-plane start failed: ROCclaw gateway URL is not configured.");
   }
   if (!token) {
-    throw new Error("Control-plane start failed: Studio gateway token is not configured.");
+    throw new Error("Control-plane start failed: ROCclaw gateway token is not configured.");
   }
   return { url, token };
 };

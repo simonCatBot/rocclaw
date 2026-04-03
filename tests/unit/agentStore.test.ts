@@ -83,7 +83,7 @@ describe("agent store", () => {
     const seed: AgentStoreSeed = {
       agentId: "agent-1",
       name: "Agent One",
-      sessionKey: "agent:agent-1:studio:old-session",
+      sessionKey: "agent:agent-1:rocclaw:old-session",
     };
     let state = agentStoreReducer(initialAgentStoreState, {
       type: "hydrateAgents",
@@ -116,7 +116,7 @@ describe("agent store", () => {
     const agent = state.agents.find((entry) => entry.agentId === "agent-1")!;
     const patch = buildNewSessionAgentPatch(agent);
 
-    expect(patch.sessionKey).toBe("agent:agent-1:studio:old-session");
+    expect(patch.sessionKey).toBe("agent:agent-1:rocclaw:old-session");
     expect(patch.status).toBe("idle");
     expect(patch.sessionCreated).toBe(true);
     expect(patch.sessionSettingsSynced).toBe(true);
@@ -164,7 +164,7 @@ describe("agent store", () => {
     const initialSeed: AgentStoreSeed = {
       agentId: "agent-1",
       name: "Agent One",
-      sessionKey: "agent:agent-1:studio:legacy",
+      sessionKey: "agent:agent-1:rocclaw:legacy",
     };
     let state = agentStoreReducer(initialAgentStoreState, {
       type: "hydrateAgents",

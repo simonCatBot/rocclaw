@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { deriveHydrateAgentFleetResult } from "@/features/agents/operations/agentFleetHydrationDerivation";
-import type { StudioSettings } from "@/lib/rocclaw/settings";
+import type { ROCclawSettings } from "@/lib/rocclaw/settings";
 
 describe("deriveHydrateAgentFleetResult", () => {
   it("derives_seeds_and_sync_sets_from_snapshots", () => {
     const gatewayUrl = "ws://127.0.0.1:18789";
 
-    const settings: StudioSettings = {
+    const settings: ROCclawSettings = {
       version: 1,
       gateway: null,
       gatewayAutoStart: true,

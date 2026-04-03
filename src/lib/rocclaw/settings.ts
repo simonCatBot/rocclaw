@@ -1,34 +1,34 @@
-export type StudioGatewaySettings = {
+export type ROCclawGatewaySettings = {
   url: string;
   token: string;
 };
 
-type StudioGatewaySettingsPatch = {
+type ROCclawGatewaySettingsPatch = {
   url?: string | null;
   token?: string | null;
 };
 
 type FocusFilter = "all" | "running" | "approvals";
-type StudioViewMode = "focused";
+type ROCclawViewMode = "focused";
 
-export type StudioFocusedPreference = {
-  mode: StudioViewMode;
+export type ROCclawFocusedPreference = {
+  mode: ROCclawViewMode;
   selectedAgentId: string | null;
   filter: FocusFilter;
 };
 
-export type StudioSettings = {
+export type ROCclawSettings = {
   version: 1;
-  gateway: StudioGatewaySettings | null;
+  gateway: ROCclawGatewaySettings | null;
   gatewayAutoStart: boolean;
-  focused: Record<string, StudioFocusedPreference>;
+  focused: Record<string, ROCclawFocusedPreference>;
   avatars: Record<string, Record<string, string>>;
 };
 
-export type StudioSettingsPatch = {
-  gateway?: StudioGatewaySettingsPatch | null;
+export type ROCclawSettingsPatch = {
+  gateway?: ROCclawGatewaySettingsPatch | null;
   gatewayAutoStart?: boolean | null;
-  focused?: Record<string, Partial<StudioFocusedPreference> | null>;
+  focused?: Record<string, Partial<ROCclawFocusedPreference> | null>;
   avatars?: Record<string, Record<string, string | null> | null>;
 };
 
@@ -86,8 +86,8 @@ const normalizeFocusFilter = (
 
 const normalizeViewMode = (
   value: unknown,
-  fallback: StudioViewMode = "focused"
-): StudioViewMode => {
+  fallback: ROCclawViewMode = "focused"
+): ROCclawViewMode => {
   const mode = coerceString(value);
   if (mode === "focused") {
     return mode;
@@ -102,7 +102,7 @@ const normalizeSelectedAgentId = (value: unknown, fallback: string | null = null
   return trimmed ? trimmed : null;
 };
 
-const defaultFocusedPreference = (): StudioFocusedPreference => ({
+const defaultFocusedPreference = (): ROCclawFocusedPreference => ({
   mode: "focused",
   selectedAgentId: null,
   filter: "all",
@@ -110,8 +110,8 @@ const defaultFocusedPreference = (): StudioFocusedPreference => ({
 
 const normalizeFocusedPreference = (
   value: unknown,
-  fallback: StudioFocusedPreference = defaultFocusedPreference()
-): StudioFocusedPreference => {
+  fallback: ROCclawFocusedPreference = defaultFocusedPreference()
+): ROCclawFocusedPreference => {
   if (!isRecord(value)) return fallback;
   return {
     mode: normalizeViewMode(value.mode, fallback.mode),
@@ -123,7 +123,7 @@ const normalizeFocusedPreference = (
   };
 };
 
-const normalizeGatewaySettings = (value: unknown): StudioGatewaySettings | null => {
+const normalizeGatewaySettings = (value: unknown): ROCclawGatewaySettings | null => {
   if (!isRecord(value)) return null;
   const url = normalizeGatewayUrl(value.url);
   if (!url) return null;
@@ -135,9 +135,9 @@ const hasOwn = (value: Record<string, unknown>, key: string) =>
   Object.prototype.hasOwnProperty.call(value, key);
 
 const mergeGatewaySettings = (
-  current: StudioGatewaySettings | null,
-  patch: StudioGatewaySettingsPatch | null | undefined
-): StudioGatewaySettings | null => {
+  current: ROCclawGatewaySettings | null,
+  patch: ROCclawGatewaySettingsPatch | null | undefined
+): ROCclawGatewaySettings | null => {
   if (patch === undefined) return current;
   if (patch === null) return null;
   if (!isRecord(patch)) return current;
@@ -148,9 +148,9 @@ const mergeGatewaySettings = (
   return { url: nextUrl, token: nextToken };
 };
 
-const normalizeFocused = (value: unknown): Record<string, StudioFocusedPreference> => {
+const normalizeFocused = (value: unknown): Record<string, ROCclawFocusedPreference> => {
   if (!isRecord(value)) return {};
-  const focused: Record<string, StudioFocusedPreference> = {};
+  const focused: Record<string, ROCclawFocusedPreference> = {};
   for (const [gatewayKeyRaw, focusedRaw] of Object.entries(value)) {
     const gatewayKey = normalizeGatewayKey(gatewayKeyRaw);
     if (!gatewayKey) continue;
@@ -179,7 +179,7 @@ const normalizeAvatars = (value: unknown): Record<string, Record<string, string>
   return avatars;
 };
 
-export const defaultStudioSettings = (): StudioSettings => ({
+export const defaultROCclawSettings = (): ROCclawSettings => ({
   version: SETTINGS_VERSION,
   gateway: null,
   gatewayAutoStart: true,
@@ -187,8 +187,8 @@ export const defaultStudioSettings = (): StudioSettings => ({
   avatars: {},
 });
 
-export const normalizeStudioSettings = (raw: unknown): StudioSettings => {
-  if (!isRecord(raw)) return defaultStudioSettings();
+export const normalizeROCclawSettings = (raw: unknown): ROCclawSettings => {
+  if (!isRecord(raw)) return defaultROCclawSettings();
   const gateway = normalizeGatewaySettings(raw.gateway);
   const gatewayAutoStart = typeof raw.gatewayAutoStart === "boolean" ? raw.gatewayAutoStart : true;
   const focused = normalizeFocused(raw.focused);
@@ -202,10 +202,10 @@ export const normalizeStudioSettings = (raw: unknown): StudioSettings => {
   };
 };
 
-export const mergeStudioSettings = (
-  current: StudioSettings,
-  patch: StudioSettingsPatch
-): StudioSettings => {
+export const mergeROCclawSettings = (
+  current: ROCclawSettings,
+  patch: ROCclawSettingsPatch
+): ROCclawSettings => {
   const nextGateway = mergeGatewaySettings(current.gateway, patch.gateway);
   const nextGatewayAutoStart =
     typeof patch.gatewayAutoStart === "boolean" ? patch.gatewayAutoStart : current.gatewayAutoStart;
@@ -260,16 +260,16 @@ export const mergeStudioSettings = (
 };
 
 export const resolveFocusedPreference = (
-  settings: StudioSettings,
+  settings: ROCclawSettings,
   gatewayUrl: string
-): StudioFocusedPreference | null => {
+): ROCclawFocusedPreference | null => {
   const key = normalizeGatewayKey(gatewayUrl);
   if (!key) return null;
   return settings.focused[key] ?? null;
 };
 
 export const resolveAgentAvatarSeed = (
-  settings: StudioSettings,
+  settings: ROCclawSettings,
   gatewayUrl: string,
   agentId: string
 ): string | null => {

@@ -3,7 +3,7 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const readline = require("node:readline/promises");
 
-const { resolveStudioSettingsPath } = require("../server/rocclaw-settings");
+const { resolveROCclawSettingsPath } = require("../server/rocclaw-settings");
 
 const DEFAULT_GATEWAY_URL = "ws://127.0.0.1:18789";
 
@@ -29,12 +29,12 @@ const tryReadGatewayTokenFromOpenclawCli = () => {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
-  const settingsPath = resolveStudioSettingsPath(process.env);
+  const settingsPath = resolveROCclawSettingsPath(process.env);
   const settingsDir = path.dirname(settingsPath);
 
   if (fs.existsSync(settingsPath) && !args.force) {
     console.error(
-      `Studio settings already exist at ${settingsPath}. Re-run with --force to overwrite.`
+      `ROCclaw settings already exist at ${settingsPath}. Re-run with --force to overwrite.`
     );
     process.exitCode = 1;
     return;
@@ -76,7 +76,7 @@ async function main() {
     };
     fs.writeFileSync(settingsPath, JSON.stringify(next, null, 2), "utf8");
 
-    console.info(`Wrote Studio settings to ${settingsPath}.`);
+    console.info(`Wrote ROCclaw settings to ${settingsPath}.`);
   } finally {
     rl.close();
   }

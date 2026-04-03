@@ -8,11 +8,11 @@ const { readOpenclawGatewayDefaults } = require("./rocclaw-settings");
 const execFileAsync = promisify(execFile);
 const OPENCLAW_PROBE_TIMEOUT_MS = 1_500;
 const TAILSCALE_PROBE_TIMEOUT_MS = 1_200;
-const STUDIO_CLI_PROBE_TIMEOUT_MS = 1_200;
-const STUDIO_CLI_LATEST_TIMEOUT_MS = 2_500;
-const STUDIO_CLI_LATEST_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
-const STUDIO_CLI_LATEST_ERROR_CACHE_TTL_MS = 1000 * 60 * 10;
-const STUDIO_CLI_PACKAGE_NAME = "openclaw-studio";
+const ROCCLAW_CLI_PROBE_TIMEOUT_MS = 1_200;
+const ROCCLAW_CLI_LATEST_TIMEOUT_MS = 2_500;
+const ROCCLAW_CLI_LATEST_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
+const ROCCLAW_CLI_LATEST_ERROR_CACHE_TTL_MS = 1000 * 60 * 10;
+const ROCCLAW_CLI_PACKAGE_NAME = "openclaw-rocclaw";
 
 const normalizeErrorCode = (error) => {
   if (!error || typeof error !== "object") return "";
@@ -172,63 +172,63 @@ const runTextCommand = async (command, args, timeoutMs, runner = execFileAsync) 
   }
 };
 
-let studioCliLatestCache = {
+let rocclawCliLatestCache = {
   latestVersion: null,
   checkedAt: null,
   checkedAtMs: 0,
   error: null,
 };
 
-const readStudioCliLatestCache = (nowMs = Date.now()) => {
-  if (!studioCliLatestCache.checkedAtMs) return null;
-  const ttlMs = studioCliLatestCache.error
-    ? STUDIO_CLI_LATEST_ERROR_CACHE_TTL_MS
-    : STUDIO_CLI_LATEST_CACHE_TTL_MS;
-  if (nowMs - studioCliLatestCache.checkedAtMs > ttlMs) return null;
+const readROCclawCliLatestCache = (nowMs = Date.now()) => {
+  if (!rocclawCliLatestCache.checkedAtMs) return null;
+  const ttlMs = rocclawCliLatestCache.error
+    ? ROCCLAW_CLI_LATEST_ERROR_CACHE_TTL_MS
+    : ROCCLAW_CLI_LATEST_CACHE_TTL_MS;
+  if (nowMs - rocclawCliLatestCache.checkedAtMs > ttlMs) return null;
   return {
-    latestVersion: studioCliLatestCache.latestVersion,
-    checkedAt: studioCliLatestCache.checkedAt,
-    error: studioCliLatestCache.error,
+    latestVersion: rocclawCliLatestCache.latestVersion,
+    checkedAt: rocclawCliLatestCache.checkedAt,
+    error: rocclawCliLatestCache.error,
   };
 };
 
-const writeStudioCliLatestCache = (input) => {
+const writeROCclawCliLatestCache = (input) => {
   const checkedAt = input.checkedAt || new Date().toISOString();
   const checkedAtMs = Date.parse(checkedAt);
-  studioCliLatestCache = {
+  rocclawCliLatestCache = {
     latestVersion: input.latestVersion || null,
     checkedAt,
     checkedAtMs: Number.isFinite(checkedAtMs) ? checkedAtMs : Date.now(),
     error: input.error || null,
   };
   return {
-    latestVersion: studioCliLatestCache.latestVersion,
-    checkedAt: studioCliLatestCache.checkedAt,
-    error: studioCliLatestCache.error,
+    latestVersion: rocclawCliLatestCache.latestVersion,
+    checkedAt: rocclawCliLatestCache.checkedAt,
+    error: rocclawCliLatestCache.error,
   };
 };
 
-const fetchLatestStudioCliVersion = async (fetchImpl = fetch) => {
-  const cached = readStudioCliLatestCache();
+const fetchLatestROCclawCliVersion = async (fetchImpl = fetch) => {
+  const cached = readROCclawCliLatestCache();
   if (cached) return cached;
   if (typeof fetchImpl !== "function") {
-    return writeStudioCliLatestCache({
+    return writeROCclawCliLatestCache({
       latestVersion: null,
       error: "version_check_unavailable",
     });
   }
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), STUDIO_CLI_LATEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), ROCCLAW_CLI_LATEST_TIMEOUT_MS);
   try {
     const response = await fetchImpl(
-      `https://registry.npmjs.org/${encodeURIComponent(STUDIO_CLI_PACKAGE_NAME)}/latest`,
+      `https://registry.npmjs.org/${encodeURIComponent(ROCCLAW_CLI_PACKAGE_NAME)}/latest`,
       {
         signal: controller.signal,
         headers: { accept: "application/json" },
       }
     );
     if (!response.ok) {
-      return writeStudioCliLatestCache({
+      return writeROCclawCliLatestCache({
         latestVersion: null,
         error: `registry_http_${response.status}`,
       });
@@ -236,12 +236,12 @@ const fetchLatestStudioCliVersion = async (fetchImpl = fetch) => {
     const payload = await response.json();
     const latestVersion = coerceString(payload && payload.version);
     if (!latestVersion) {
-      return writeStudioCliLatestCache({
+      return writeROCclawCliLatestCache({
         latestVersion: null,
         error: "invalid_registry_payload",
       });
     }
-    return writeStudioCliLatestCache({
+    return writeROCclawCliLatestCache({
       latestVersion,
       checkedAt: new Date().toISOString(),
       error: null,
@@ -252,7 +252,7 @@ const fetchLatestStudioCliVersion = async (fetchImpl = fetch) => {
       message.includes("timed out") ||
       message.includes("aborted") ||
       message.includes("aborterror");
-    return writeStudioCliLatestCache({
+    return writeROCclawCliLatestCache({
       latestVersion: null,
       error: timeoutLike ? "version_check_timeout" : "version_check_failed",
     });
@@ -267,11 +267,11 @@ const resolveVersionFromOutput = (stdout) => {
   return match ? coerceString(match[0]) : "";
 };
 
-const probeStudioCliVersion = async (runner = execFileAsync) => {
+const probeROCclawCliVersion = async (runner = execFileAsync) => {
   const probe = await runTextCommand(
-    "openclaw-studio",
+    "openclaw-rocclaw",
     ["--version"],
-    STUDIO_CLI_PROBE_TIMEOUT_MS,
+    ROCCLAW_CLI_PROBE_TIMEOUT_MS,
     runner
   );
   if (!probe.available) {
@@ -303,8 +303,8 @@ const probeStudioCliVersion = async (runner = execFileAsync) => {
   };
 };
 
-const probeStudioCli = async (env = process.env, runner = execFileAsync, fetchImpl = fetch) => {
-  const current = await probeStudioCliVersion(runner);
+const probeROCclawCli = async (env = process.env, runner = execFileAsync, fetchImpl = fetch) => {
+  const current = await probeROCclawCliVersion(runner);
   if (!current.installed) {
     return {
       installed: false,
@@ -338,7 +338,7 @@ const probeStudioCli = async (env = process.env, runner = execFileAsync, fetchIm
     };
   }
 
-  const latest = await fetchLatestStudioCliVersion(fetchImpl);
+  const latest = await fetchLatestROCclawCliVersion(fetchImpl);
   const versionComparison = latest.latestVersion
     ? compareSemverVersions(current.currentVersion, latest.latestVersion)
     : null;
@@ -454,20 +454,20 @@ async function detectInstallContext(env = process.env, options = {}) {
   );
   const publicHosts = configuredHosts.filter((host) => isPublicHostImpl(host));
   const localDefaults = readOpenclawGatewayDefaultsImpl(env);
-  const [localGatewayProbe, tailscale, studioCli] = await Promise.all([
+  const [localGatewayProbe, tailscale, rocclawCli] = await Promise.all([
     probeLocalGateway(runCommand),
     probeTailscale(runCommand),
-    probeStudioCli(env, runCommand, fetchImpl),
+    probeROCclawCli(env, runCommand, fetchImpl),
   ]);
 
   return {
-    studioHost: {
+    rocclawHost: {
       hostname: resolveHostname(),
       configuredHosts,
       publicHosts,
       loopbackOnly: publicHosts.length === 0,
       remoteShell: resolveRemoteShell(env),
-      studioAccessTokenConfigured: Boolean(String(env.STUDIO_ACCESS_TOKEN ?? "").trim()),
+      rocclawAccessTokenConfigured: Boolean(String(env.ROCCLAW_ACCESS_TOKEN ?? "").trim()),
     },
     localGateway: {
       defaultsDetected: Boolean(localDefaults?.url),
@@ -480,7 +480,7 @@ async function detectInstallContext(env = process.env, options = {}) {
       issues: localGatewayProbe.issues,
       runtimeVersion: localGatewayProbe.runtimeVersion,
     },
-    studioCli,
+    rocclawCli,
     tailscale,
   };
 }
@@ -490,17 +490,17 @@ function buildStartupGuidance(params) {
   const port = Number.isFinite(params.port) && params.port > 0 ? params.port : 3000;
   const hostLabel =
     installContext.tailscale.dnsName ||
-    installContext.studioHost.publicHosts[0] ||
-    "<studio-host>";
+    installContext.rocclawHost.publicHosts[0] ||
+    "<rocclaw-host>";
   const sshTarget = installContext.tailscale.dnsName || hostLabel;
   const lines = [];
 
-  if (installContext.studioHost.remoteShell && installContext.studioHost.loopbackOnly) {
+  if (installContext.rocclawHost.remoteShell && installContext.rocclawHost.loopbackOnly) {
     lines.push(
-      `Studio is running on a remote host. http://localhost:${port} only opens on that machine.`
+      `ROCclaw is running on a remote host. http://localhost:${port} only opens on that machine.`
     );
     if (installContext.localGateway.defaultsDetected || installContext.localGateway.probeHealthy) {
-      lines.push("If OpenClaw is on this same host, keep Studio's upstream at ws://localhost:18789.");
+      lines.push("If OpenClaw is on this same host, keep ROCclaw's upstream at ws://localhost:18789.");
     }
     if (installContext.tailscale.loggedIn && installContext.tailscale.dnsName) {
       lines.push(
@@ -508,19 +508,19 @@ function buildStartupGuidance(params) {
       );
       lines.push(`Then open: https://${installContext.tailscale.dnsName}`);
     } else {
-      lines.push("Recommended: install/login to Tailscale, or keep Studio on loopback and use SSH tunneling.");
+      lines.push("Recommended: install/login to Tailscale, or keep ROCclaw on loopback and use SSH tunneling.");
     }
     lines.push(`SSH tunnel fallback: ssh -L ${port}:127.0.0.1:${port} ${sshTarget}`);
     return lines;
   }
 
-  if (installContext.studioHost.publicHosts.length > 0) {
-    lines.push(`Studio is exposed on ${installContext.studioHost.publicHosts.join(", ")}.`);
-    if (installContext.studioHost.studioAccessTokenConfigured) {
-      lines.push("Open /?access_token=... once from each new browser to set the Studio access cookie.");
+  if (installContext.rocclawHost.publicHosts.length > 0) {
+    lines.push(`ROCclaw is exposed on ${installContext.rocclawHost.publicHosts.join(", ")}.`);
+    if (installContext.rocclawHost.rocclawAccessTokenConfigured) {
+      lines.push("Open /?access_token=... once from each new browser to set the ROCclaw access cookie.");
     }
     if (installContext.localGateway.defaultsDetected || installContext.localGateway.probeHealthy) {
-      lines.push("If OpenClaw is on this same host, keep Studio's upstream at ws://localhost:18789.");
+      lines.push("If OpenClaw is on this same host, keep ROCclaw's upstream at ws://localhost:18789.");
     }
     return lines;
   }

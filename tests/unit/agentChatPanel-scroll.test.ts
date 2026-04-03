@@ -8,7 +8,7 @@ import type { GatewayModelChoice } from "@/lib/gateway/models";
 const createAgent = (overrides: Partial<AgentState> = {}): AgentState => ({
   agentId: "agent-1",
   name: "Agent One",
-  sessionKey: "agent:agent-1:studio:test-session",
+  sessionKey: "agent:agent-1:rocclaw:test-session",
   status: "idle",
   sessionCreated: true,
   awaitingUserInput: false,
@@ -141,7 +141,7 @@ describe("AgentChatPanel scrolling", () => {
         agent: createAgent({
           agentId: "agent-2",
           name: "Agent Two",
-          sessionKey: "agent:agent-2:studio:test-session",
+          sessionKey: "agent:agent-2:rocclaw:test-session",
           outputLines: ["> another", "reply"],
         }),
         isSelected: true,

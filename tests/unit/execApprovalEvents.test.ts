@@ -103,14 +103,14 @@ describe("execApprovalEvents", () => {
       payload: {
         id: "approval-1",
         decision: "allow-once",
-        resolvedBy: "studio",
+        resolvedBy: "rocclaw",
         ts: 987,
       },
     };
     expect(parseExecApprovalResolved(event)).toEqual({
       id: "approval-1",
       decision: "allow-once",
-      resolvedBy: "studio",
+      resolvedBy: "rocclaw",
       ts: 987,
     });
   });

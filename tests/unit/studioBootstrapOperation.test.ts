@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AgentStoreSeed } from "@/features/agents/state/store";
 import type { GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import type { StudioSettingsPatch } from "@/lib/rocclaw/settings";
+import type { ROCclawSettingsPatch } from "@/lib/rocclaw/settings";
 import { fetchJson } from "@/lib/http";
 
 vi.mock("@/lib/http", () => ({
@@ -10,14 +10,14 @@ vi.mock("@/lib/http", () => ({
 }));
 
 import {
-  executeStudioBootstrapLoadCommands,
-  executeStudioFocusedPatchCommands,
-  executeStudioFocusedPreferenceLoadCommands,
-  runStudioBootstrapLoadOperation,
-  runStudioFocusFilterPersistenceOperation,
-  runStudioFocusedPreferenceLoadOperation,
-  runStudioFocusedSelectionPersistenceOperation,
-  type StudioBootstrapLoadCommand,
+  executeROCclawBootstrapLoadCommands,
+  executeROCclawFocusedPatchCommands,
+  executeROCclawFocusedPreferenceLoadCommands,
+  runROCclawBootstrapLoadOperation,
+  runROCclawFocusFilterPersistenceOperation,
+  runROCclawFocusedPreferenceLoadOperation,
+  runROCclawFocusedSelectionPersistenceOperation,
+  type ROCclawBootstrapLoadCommand,
 } from "@/features/agents/operations/bootstrapOperation";
 
 const fetchJsonMock = vi.mocked(fetchJson);
@@ -53,7 +53,7 @@ describe("bootstrapOperation", () => {
       },
     });
 
-    const commands = await runStudioBootstrapLoadOperation({
+    const commands = await runROCclawBootstrapLoadOperation({
       cachedConfigSnapshot: null,
       preferredSelectedAgentId: "agent-1",
       hasCurrentSelection: false,
@@ -86,7 +86,7 @@ describe("bootstrapOperation", () => {
   it("returns set-error command when runtime fleet fetch fails", async () => {
     fetchJsonMock.mockRejectedValue(new Error("load failed"));
 
-    const commands = await runStudioBootstrapLoadOperation({
+    const commands = await runROCclawBootstrapLoadOperation({
       cachedConfigSnapshot: null,
       preferredSelectedAgentId: null,
       hasCurrentSelection: false,
@@ -117,7 +117,7 @@ describe("bootstrapOperation", () => {
       },
     });
 
-    const commands = await runStudioBootstrapLoadOperation({
+    const commands = await runROCclawBootstrapLoadOperation({
       cachedConfigSnapshot: null,
       preferredSelectedAgentId: null,
       hasCurrentSelection: false,
@@ -138,7 +138,7 @@ describe("bootstrapOperation", () => {
   });
 
   it("executes bootstrap commands with injected callbacks", () => {
-    const commands: StudioBootstrapLoadCommand[] = [
+    const commands: ROCclawBootstrapLoadCommand[] = [
       {
         kind: "set-gateway-config-snapshot",
         snapshot: { config: {} } as GatewayModelPolicySnapshot,
@@ -169,7 +169,7 @@ describe("bootstrapOperation", () => {
     const dispatchUpdateAgent = vi.fn();
     const setError = vi.fn();
 
-    executeStudioBootstrapLoadCommands({
+    executeROCclawBootstrapLoadCommands({
       commands,
       setGatewayConfigSnapshot,
       hydrateAgents,
@@ -191,9 +191,9 @@ describe("bootstrapOperation", () => {
   });
 
   it("loads focused preference and emits restore commands", async () => {
-    const commands = await runStudioFocusedPreferenceLoadOperation({
+    const commands = await runROCclawFocusedPreferenceLoadOperation({
       gatewayUrl: "https://gateway.test",
-      loadStudioSettings: async () => ({
+      loadROCclawSettings: async () => ({
         version: 1,
         gateway: null,
         gatewayAutoStart: true,
@@ -226,9 +226,9 @@ describe("bootstrapOperation", () => {
   });
 
   it("skips focused preference restore when user touched filter during load", async () => {
-    const commands = await runStudioFocusedPreferenceLoadOperation({
+    const commands = await runROCclawFocusedPreferenceLoadOperation({
       gatewayUrl: "https://gateway.test",
-      loadStudioSettings: async () => ({
+      loadROCclawSettings: async () => ({
         version: 1,
         gateway: null,
         gatewayAutoStart: true,
@@ -253,9 +253,9 @@ describe("bootstrapOperation", () => {
   });
 
   it("returns focused preference load error command on failure", async () => {
-    const commands = await runStudioFocusedPreferenceLoadOperation({
+    const commands = await runROCclawFocusedPreferenceLoadOperation({
       gatewayUrl: "https://gateway.test",
-      loadStudioSettings: async () => {
+      loadROCclawSettings: async () => {
         throw new Error("settings failed");
       },
       isFocusFilterTouched: () => false,
@@ -277,7 +277,7 @@ describe("bootstrapOperation", () => {
     const setFocusFilter = vi.fn();
     const logError = vi.fn();
 
-    executeStudioFocusedPreferenceLoadCommands({
+    executeROCclawFocusedPreferenceLoadCommands({
       commands: [
         { kind: "set-focused-preferences-loaded", value: false },
         { kind: "set-preferred-selected-agent-id", agentId: "agent-1" },
@@ -297,12 +297,12 @@ describe("bootstrapOperation", () => {
   });
 
   it("plans focused persistence patch commands and executes scheduler/immediate persistence", async () => {
-    const filterCommands = runStudioFocusFilterPersistenceOperation({
+    const filterCommands = runROCclawFocusFilterPersistenceOperation({
       gatewayUrl: "https://gateway.test",
       focusFilterTouched: true,
       focusFilter: "running",
     });
-    const selectionCommands = runStudioFocusedSelectionPersistenceOperation({
+    const selectionCommands = runROCclawFocusedSelectionPersistenceOperation({
       gatewayUrl: "https://gateway.test",
       status: "connected",
       focusedPreferencesLoaded: true,
@@ -312,7 +312,7 @@ describe("bootstrapOperation", () => {
 
     const schedulePatch = vi.fn();
     const applyPatchNow = vi.fn(async () => {});
-    executeStudioFocusedPatchCommands({
+    executeROCclawFocusedPatchCommands({
       commands: [...filterCommands, ...selectionCommands],
       schedulePatch,
       applyPatchNow,
@@ -321,7 +321,7 @@ describe("bootstrapOperation", () => {
     await Promise.resolve();
 
     expect(schedulePatch).toHaveBeenCalledTimes(1);
-    const firstCall = schedulePatch.mock.calls[0] as [StudioSettingsPatch, number];
+    const firstCall = schedulePatch.mock.calls[0] as [ROCclawSettingsPatch, number];
     expect(firstCall[1]).toBe(300);
     expect(applyPatchNow).toHaveBeenCalledTimes(1);
     expect(applyPatchNow).toHaveBeenCalledWith({
@@ -335,7 +335,7 @@ describe("bootstrapOperation", () => {
   });
 
   it("skips focused selected-agent persistence command when unchanged", () => {
-    const selectionCommands = runStudioFocusedSelectionPersistenceOperation({
+    const selectionCommands = runROCclawFocusedSelectionPersistenceOperation({
       gatewayUrl: "https://gateway.test",
       status: "connected",
       focusedPreferencesLoaded: true,

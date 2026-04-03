@@ -20,11 +20,11 @@ describe("sessionKey helpers", () => {
   });
 
   it("isSameSessionKey requires exact session key match", () => {
-    expect(isSameSessionKey("agent:main:studio:one", "agent:main:studio:one")).toBe(true);
-    expect(isSameSessionKey("agent:main:studio:one", "agent:main:discord:one")).toBe(false);
+    expect(isSameSessionKey("agent:main:rocclaw:one", "agent:main:rocclaw:one")).toBe(true);
+    expect(isSameSessionKey("agent:main:rocclaw:one", "agent:main:discord:one")).toBe(false);
   });
 
   it("isSameSessionKey trims whitespace", () => {
-    expect(isSameSessionKey(" agent:main:studio:one ", "agent:main:studio:one")).toBe(true);
+    expect(isSameSessionKey(" agent:main:rocclaw:one ", "agent:main:rocclaw:one")).toBe(true);
   });
 });

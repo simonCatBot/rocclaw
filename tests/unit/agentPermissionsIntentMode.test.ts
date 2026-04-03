@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { updateAgentPermissionsViaStudio } from "@/features/agents/operations/agentPermissionsOperation";
+import { updateAgentPermissionsViaROCclaw } from "@/features/agents/operations/agentPermissionsOperation";
 import { createRuntimeWriteTransport } from "@/features/agents/operations/runtimeWriteTransport";
 
 describe("agentPermissionsOperation intent mode", () => {
@@ -19,7 +19,7 @@ describe("agentPermissionsOperation intent mode", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    await updateAgentPermissionsViaStudio({
+    await updateAgentPermissionsViaROCclaw({
       client: { call } as never,
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
@@ -77,7 +77,7 @@ describe("agentPermissionsOperation intent mode", () => {
     const execApprovalsSet = vi.fn(async () => undefined);
 
     await expect(
-      updateAgentPermissionsViaStudio({
+      updateAgentPermissionsViaROCclaw({
         client: { call } as never,
         runtimeWriteTransport: {
           useDomainIntents: false,

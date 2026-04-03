@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const makeTempDir = (name: string) => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
-describe("studio settings route reconnect behavior", () => {
+describe("rocclaw settings route reconnect behavior", () => {
   const priorStateDir = process.env.OPENCLAW_STATE_DIR;
   let tempDir: string | null = null;
 
@@ -23,11 +23,11 @@ describe("studio settings route reconnect behavior", () => {
   });
 
   it("restarts a manually disconnected runtime when settings are saved without changing the gateway", async () => {
-    tempDir = makeTempDir("studio-settings-reconnect-stopped-runtime");
+    tempDir = makeTempDir("rocclaw-settings-reconnect-stopped-runtime");
     process.env.OPENCLAW_STATE_DIR = tempDir;
-    fs.mkdirSync(path.join(tempDir, "openclaw-studio"), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, "openclaw-rocclaw"), { recursive: true });
     fs.writeFileSync(
-      path.join(tempDir, "openclaw-studio", "settings.json"),
+      path.join(tempDir, "openclaw-rocclaw", "settings.json"),
       JSON.stringify(
         {
           version: 1,
@@ -44,7 +44,7 @@ describe("studio settings route reconnect behavior", () => {
     const ensureStarted = vi.fn(async () => {});
     const reconnectForGatewaySettingsChange = vi.fn(async () => {});
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       peekControlPlaneRuntime: () => ({
         connectionStatus: () => "stopped",
         ensureStarted,
@@ -83,11 +83,11 @@ describe("studio settings route reconnect behavior", () => {
   });
 
   it("persists manual disconnect across requests", async () => {
-    tempDir = makeTempDir("studio-settings-disconnect-pause");
+    tempDir = makeTempDir("rocclaw-settings-disconnect-pause");
     process.env.OPENCLAW_STATE_DIR = tempDir;
-    fs.mkdirSync(path.join(tempDir, "openclaw-studio"), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, "openclaw-rocclaw"), { recursive: true });
     fs.writeFileSync(
-      path.join(tempDir, "openclaw-studio", "settings.json"),
+      path.join(tempDir, "openclaw-rocclaw", "settings.json"),
       JSON.stringify(
         {
           version: 1,
@@ -111,17 +111,17 @@ describe("studio settings route reconnect behavior", () => {
     expect(response.status).toBe(200);
 
     const persisted = JSON.parse(
-      fs.readFileSync(path.join(tempDir, "openclaw-studio", "settings.json"), "utf8")
+      fs.readFileSync(path.join(tempDir, "openclaw-rocclaw", "settings.json"), "utf8")
     ) as { gatewayAutoStart?: boolean };
     expect(persisted.gatewayAutoStart).toBe(false);
   });
 
   it("creates and starts a runtime when save settings is the first reconnect request", async () => {
-    tempDir = makeTempDir("studio-settings-start-missing-runtime");
+    tempDir = makeTempDir("rocclaw-settings-start-missing-runtime");
     process.env.OPENCLAW_STATE_DIR = tempDir;
-    fs.mkdirSync(path.join(tempDir, "openclaw-studio"), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, "openclaw-rocclaw"), { recursive: true });
     fs.writeFileSync(
-      path.join(tempDir, "openclaw-studio", "settings.json"),
+      path.join(tempDir, "openclaw-rocclaw", "settings.json"),
       JSON.stringify(
         {
           version: 1,
@@ -138,7 +138,7 @@ describe("studio settings route reconnect behavior", () => {
 
     const ensureStarted = vi.fn(async () => {});
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       peekControlPlaneRuntime: () => null,
       getControlPlaneRuntime: () => ({
         connectionStatus: () => "stopped",
@@ -158,7 +158,7 @@ describe("studio settings route reconnect behavior", () => {
     expect(ensureStarted).toHaveBeenCalledWith({ force: true });
 
     const persisted = JSON.parse(
-      fs.readFileSync(path.join(tempDir, "openclaw-studio", "settings.json"), "utf8")
+      fs.readFileSync(path.join(tempDir, "openclaw-rocclaw", "settings.json"), "utf8")
     ) as { gatewayAutoStart?: boolean };
     expect(persisted.gatewayAutoStart).toBe(true);
   });
