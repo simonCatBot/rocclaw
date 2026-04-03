@@ -12,7 +12,6 @@ import { FleetSidebar } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { FooterBar } from "@/components/FooterBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
-import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnectScreen";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
 import { TasksDashboard } from "@/components/TasksDashboard";
@@ -1408,8 +1407,6 @@ const AgentStudioPage = () => {
               installContext={installContext}
               status={gatewayStatus}
               statusReason={statusReason}
-              error={gatewayError}
-              testResult={testResult}
               saving={gatewaySaving}
               testing={gatewayTesting}
               disconnecting={gatewayDisconnecting}

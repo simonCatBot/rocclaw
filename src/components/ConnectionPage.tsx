@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { 
   Check, 
   Copy, 
@@ -18,12 +18,9 @@ import {
 } from "lucide-react";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import {
-  isStudioLikelyRemote,
-  resolveDefaultSetupScenario,
   resolveGatewayConnectionWarnings,
   type StudioConnectionWarning,
   type StudioInstallContext,
-  type StudioSetupScenario,
 } from "@/lib/rocclaw/install-context";
 import type { StudioGatewaySettings } from "@/lib/rocclaw/settings";
 
@@ -47,8 +44,6 @@ interface ConnectionPageProps {
   installContext: StudioInstallContext;
   status: GatewayStatus;
   statusReason: string | null;
-  error: string | null;
-  testResult: { kind: "success" | "error"; message: string } | null;
   saving: boolean;
   testing: boolean;
   disconnecting: boolean;
@@ -81,8 +76,6 @@ export function ConnectionPage({
   installContext,
   status,
   statusReason,
-  error,
-  testResult,
   saving,
   testing,
   disconnecting,
@@ -628,7 +621,7 @@ export function ConnectionPage({
                   if (isConnected) {
                     onDisconnect?.();
                   } else {
-                    onConnect?.() || onSaveSettings?.();
+                    onConnect?.();
                   }
                 }}
                 disabled={actionBusy || (!draftGatewayUrl.trim() && !isConnected)}
