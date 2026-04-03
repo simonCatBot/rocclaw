@@ -7,6 +7,7 @@ import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSem
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import { ExternalLink, Cpu, Users, Plug } from "lucide-react";
+import { useEffect, useState } from "react";
 
 function StatusDot({ status }: { status: GatewayStatus }) {
   const colorMap: Record<GatewayStatus, string> = {
@@ -29,9 +30,34 @@ interface FooterBarProps {
   onConnectionSettings: () => void;
 }
 
+interface GatewayVersion {
+  version?: string;
+  host?: string;
+}
+
 export function FooterBar({ status, gatewayUrl, onConnectionSettings }: FooterBarProps) {
   const { state } = useAgentStore();
   const agents = state.agents;
+  const [gatewayVersion, setGatewayVersion] = useState<GatewayVersion | null>(null);
+
+  // Fetch gateway version from /api/gateway-info
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/gateway-info", { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.connected && data.presence) {
+          setGatewayVersion({
+            version: data.presence.version,
+            host: data.presence.host,
+          });
+        }
+      })
+      .catch(() => {
+        // Silently ignore - version fetch is best-effort
+      });
+    return () => controller.abort();
+  }, []);
 
   const agentCount = agents.length;
   const runningCount = agents.filter((a) => a.status === "running").length;
@@ -56,16 +82,20 @@ export function FooterBar({ status, gatewayUrl, onConnectionSettings }: FooterBa
         <div className="h-4 w-px bg-border/60" />
         <div className="flex min-w-0 items-center gap-2">
           <Cpu className="h-3.5 w-3.5 shrink-0" />
-          <span className="min-w-0 truncate font-mono">{gatewayUrl}</span>
-          <a
-            href={gatewayUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
-            title="Open gateway"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
+          <span className="min-w-0 truncate font-mono">
+            {gatewayVersion?.version || gatewayUrl}
+          </span>
+          {gatewayVersion?.version && (
+            <a
+              href={gatewayUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
+              title="Open gateway"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
         </div>
       </div>
 
