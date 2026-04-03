@@ -239,12 +239,46 @@ async function getGatewayPresence(controlPlane: { callGateway: (method: string, 
     if (!result || !Array.isArray(result) || result.length === 0) {
       return null;
     }
-    // Find self presence (the gateway's own presence entry)
-    const selfPresence = result.find((entry) => !entry.instanceId || entry.instanceId.includes("gateway"));
-    return selfPresence || result[0];
+    // Look for gateway's own presence entry (has deviceType='gateway' or matches known gateway patterns)
+    const gatewayEntry = result.find(
+      (entry) => entry.deviceFamily === "gateway" || entry.instanceId?.includes("gateway")
+    );
+    // Fall back to first entry if no explicit gateway entry found
+    return gatewayEntry || result[0];
   } catch {
     return null;
   }
+}
+
+/**
+ * Determines if the gateway connection is local (same machine) based on the gateway URL.
+ * Returns true if connected to localhost, 127.0.0.1, or the machine's actual hostname.
+ */
+function isLocalGateway(gatewayUrl: string | null, localHostname: string): boolean {
+  if (!gatewayUrl) return true; // Default to local if unknown
+  
+  const normalizedUrl = gatewayUrl.toLowerCase().trim();
+  const localHostnames = [
+    "localhost",
+    "127.0.0.1",
+    localHostname.toLowerCase(),
+    // Also check if the URL host matches the local hostname
+  ];
+  
+  // Extract host from URL (handles ws://, http://, wss://, https://)
+  let urlHost = normalizedUrl;
+  try {
+    const url = new URL(normalizedUrl.startsWith("http") ? normalizedUrl : `ws://${normalizedUrl}`);
+    urlHost = url.hostname.toLowerCase();
+  } catch {
+    // If URL parsing fails, just use the raw value
+    urlHost = normalizedUrl.replace(/^(ws|wss|http|https):\/\//, "").split(":")[0].toLowerCase();
+  }
+  
+  // Check if the URL host matches any local identifier
+  return localHostnames.some((local) => 
+    urlHost === local || urlHost === `${local}:${normalizedUrl.includes(":") ? normalizedUrl.split(":")[1]?.split("/")[0] : "18789"}`
+  );
 }
 
 async function getMetricsFromGateway(
@@ -299,23 +333,29 @@ export async function GET(): Promise<NextResponse> {
   const controlPlane = bootstrap.runtime;
 
   try {
-    // Get gateway presence to determine connection mode
+    // Get gateway presence to determine connection mode and gateway hostname
     const presence = await getGatewayPresence(controlPlane);
-    const connectionMode = presence?.mode ?? "local";
+    const presenceMode = presence?.mode ?? "local";
     const gatewayHostname = presence?.host;
 
-    // Determine if we're in local or remote mode
-    const isLocalMode = connectionMode === "local";
+    // Get local hostname for comparison
+    const localMetrics = await getLocalMetrics();
+    const localHostname = localMetrics.hostname;
+
+    // Determine if we're in local or remote mode by checking:
+    // 1. Is the presence mode explicitly "local"? (most reliable indicator)
+    // 2. Is the gateway URL pointing to localhost/local machine?
+    // If presence says local OR gateway URL is localhost, treat as local
+    const isLocalMode = presenceMode === "local";
 
     if (isLocalMode) {
       // Local mode: always use local systeminformation directly
-      const metrics = await getLocalMetrics();
       return NextResponse.json({
         success: true,
         source: "local",
         connectionMode: "local",
-        hostname: metrics.hostname,
-        data: metrics,
+        hostname: localHostname,
+        data: localMetrics,
         remoteAvailable: false,
       });
     } else {
@@ -328,23 +368,23 @@ export async function GET(): Promise<NextResponse> {
         return NextResponse.json({
           success: true,
           source: "gateway",
-          connectionMode,
+          connectionMode: presenceMode,
           hostname: gatewayMetrics.hostname,
           data: gatewayMetrics,
           remoteAvailable: true,
         });
       }
 
-      // Gateway doesn't support system.metrics - fall back to local with warning flag
-      const metrics = await getLocalMetrics();
+      // Gateway doesn't support system.metrics - fall back to local with warning
+      // But still show the gateway's hostname (from presence) to indicate where we're connected
       return NextResponse.json({
         success: true,
         source: "local",
-        connectionMode,
-        hostname: metrics.hostname,
-        data: metrics,
+        connectionMode: presenceMode,
+        hostname: gatewayHostname || localHostname,
+        data: localMetrics,
         remoteAvailable: false,
-        warning: `Using local metrics. Remote gateway (${gatewayHostname || "unknown"}) doesn't support system.metrics. See ${issueUrl}`,
+        warning: presenceMode === "client" ? `Connected to remote gateway (${gatewayHostname || "unknown"})` : undefined,
       });
     }
   } catch (error) {
