@@ -11,7 +11,7 @@ type AgentAvatarProps = {
   avatarUrl?: string | null;
   avatarSource?: AvatarSource;
   defaultAvatarIndex?: number;
-  size?: number;
+  size?: number | "fill";
   isSelected?: boolean;
 };
 
@@ -81,17 +81,20 @@ export const AgentAvatar = ({
     }
   }, [footerMode, avatarSource, avatarUrl, seed, derivedIndex]);
 
+  const isFill = size === "fill";
+
   return (
     <div
-      className={`flex items-center justify-center overflow-hidden rounded-lg border border-border/80 bg-card transition-transform duration-300 ${isSelected ? "agent-avatar-selected scale-[1.02]" : ""}`}
-      style={{ width: size, height: size }}
+      className={`flex items-center justify-center overflow-hidden rounded-lg border border-border/80 bg-card transition-transform duration-300 ${isSelected ? "agent-avatar-selected scale-[1.02]" : ""} ${isFill ? "h-full w-full" : ""}`}
+      style={isFill ? undefined : { width: size, height: size }}
     >
       <Image
-        className="pointer-events-none h-full w-full select-none"
+        className="pointer-events-none h-full w-full select-none object-cover"
         src={src}
         alt={`Avatar for ${name}`}
-        width={size}
-        height={size}
+        width={isFill ? undefined : size}
+        height={isFill ? undefined : size}
+        fill={isFill}
         unoptimized
         draggable={false}
       />

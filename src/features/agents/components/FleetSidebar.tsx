@@ -136,15 +136,14 @@ export const FleetSidebar = ({
                     }`}
                   />
                   
-                  {/* Avatar - Square */}
-                  <div className="relative mb-3">
+                  {/* Avatar - fills available space */}
+                  <div className="relative mb-2 min-h-0 w-full flex-1">
                     <AgentAvatar
                       seed={avatarSeed}
                       name={agent.name}
                       avatarUrl={agent.avatarUrl ?? null}
                       avatarSource={agent.avatarSource}
                       defaultAvatarIndex={agent.defaultAvatarIndex ?? 0}
-                      size={96}
                       isSelected={selected}
                     />
                   </div>
