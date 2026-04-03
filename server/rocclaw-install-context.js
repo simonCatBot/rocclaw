@@ -392,6 +392,19 @@ const probeTailscale = async (runner = execFileAsync) => {
   };
 };
 
+/**
+ * @typedef {Object} LocalGatewayProbe
+ * @property {boolean} cliAvailable
+ * @property {boolean} statusProbeOk
+ * @property {boolean} sessionsProbeOk
+ * @property {boolean} probeHealthy
+ * @property {string[]} issues
+ * @property {string|null} runtimeVersion
+ */
+
+/**
+ * @returns {Promise<LocalGatewayProbe>}
+ */
 const probeLocalGateway = async (runner = execFileAsync) => {
   const [statusProbe, sessionsProbe] = await Promise.all([
     runJsonCommand("openclaw", ["status", "--json"], OPENCLAW_PROBE_TIMEOUT_MS, runner),
@@ -402,12 +415,17 @@ const probeLocalGateway = async (runner = execFileAsync) => {
     new Set([statusProbe.error, sessionsProbe.error]
       .filter((value) => typeof value === "string" && value.length > 0))
   );
+  const runtimeVersion = statusProbe.ok && statusProbe.data?.runtimeVersion
+    ? String(statusProbe.data.runtimeVersion)
+    : null;
+
   return {
     cliAvailable: statusProbe.available || sessionsProbe.available,
     statusProbeOk: statusProbe.ok,
     sessionsProbeOk: sessionsProbe.ok,
     probeHealthy: statusProbe.ok || sessionsProbe.ok,
     issues,
+    runtimeVersion,
   };
 };
 
@@ -460,6 +478,7 @@ async function detectInstallContext(env = process.env, options = {}) {
       sessionsProbeOk: localGatewayProbe.sessionsProbeOk,
       probeHealthy: localGatewayProbe.probeHealthy,
       issues: localGatewayProbe.issues,
+      runtimeVersion: localGatewayProbe.runtimeVersion,
     },
     studioCli,
     tailscale,

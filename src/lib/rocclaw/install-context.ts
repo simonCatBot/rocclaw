@@ -18,6 +18,7 @@ export type StudioInstallContext = {
     sessionsProbeOk: boolean;
     probeHealthy: boolean;
     issues: string[];
+    runtimeVersion: string | null;
   };
   studioCli: {
     installed: boolean;
@@ -65,6 +66,7 @@ export const defaultStudioInstallContext = (): StudioInstallContext => ({
     sessionsProbeOk: false,
     probeHealthy: false,
     issues: [],
+    runtimeVersion: null,
   },
   studioCli: {
     installed: false,

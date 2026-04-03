@@ -6,7 +6,7 @@ import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
-import { ExternalLink, Cpu, Users, Plug } from "lucide-react";
+import { Users, Plug } from "lucide-react";
 
 function StatusDot({ status }: { status: GatewayStatus }) {
   const colorMap: Record<GatewayStatus, string> = {
@@ -25,11 +25,11 @@ function StatusDot({ status }: { status: GatewayStatus }) {
 
 interface FooterBarProps {
   status: GatewayStatus;
-  gatewayUrl: string;
+  gatewayVersion?: string | null;
   onConnectionSettings: () => void;
 }
 
-export function FooterBar({ status, gatewayUrl, onConnectionSettings }: FooterBarProps) {
+export function FooterBar({ status, gatewayVersion, onConnectionSettings }: FooterBarProps) {
   const { state } = useAgentStore();
   const agents = state.agents;
 
@@ -53,25 +53,15 @@ export function FooterBar({ status, gatewayUrl, onConnectionSettings }: FooterBa
             {runningCount > 0 ? ` · ${runningCount} running` : ""}
           </span>
         </div>
-        <div className="h-4 w-px bg-border/60" />
-        <div className="flex min-w-0 items-center gap-2">
-          <Cpu className="h-3.5 w-3.5 shrink-0" />
-          <span className="min-w-0 truncate font-mono">{gatewayUrl}</span>
-          <a
-            href={gatewayUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
-            title="Open gateway"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </div>
       </div>
 
       {/* Center — version */}
       <div className="flex items-center justify-center px-6">
-        <span className="whitespace-nowrap font-mono text-muted-foreground/40">rocCLAW</span>
+        {gatewayVersion ? (
+          <span className="whitespace-nowrap font-mono text-muted-foreground/60">{gatewayVersion}</span>
+        ) : (
+          <span className="whitespace-nowrap font-mono text-muted-foreground/40">rocCLAW</span>
+        )}
       </div>
 
       {/* Right — avatars + connection + theme */}

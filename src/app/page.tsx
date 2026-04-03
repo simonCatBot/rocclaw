@@ -1784,7 +1784,7 @@ const AgentStudioPage = () => {
             </>
           )}
         </div>
-        <FooterBar status={gatewayStatus} gatewayUrl={gatewayUrl} onConnectionSettings={() => setShowConnectionPanel(true)} />
+        <FooterBar status={gatewayStatus} gatewayVersion={installContext?.localGateway?.runtimeVersion} onConnectionSettings={() => setShowConnectionPanel(true)} />
       </div>
       {createAgentModalOpen ? (
         <AgentCreateModal
