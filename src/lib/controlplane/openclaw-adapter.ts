@@ -27,6 +27,7 @@ const CONNECT_CAPABILITIES = ["tool-events"];
 
 const DEFAULT_METHOD_ALLOWLIST = new Set<string>([
   "status",
+  "system-presence",
   "chat.send",
   "chat.abort",
   "chat.history",
