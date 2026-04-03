@@ -21,17 +21,18 @@ const DEFAULT_AVATAR_COUNT = 6;
 const UNSET_INDEX = -1;
 
 /** Derive a per-agent avatar index from the seed string so different agents always get different images.
- *  If explicitIndex >= 0 it is used directly (user explicitly picked it). */
+ *  Blends explicitIndex (if set) with seed hash so:
+ *    - same explicitIndex still yields different images for different agents
+ *    - explicitIndex is used as a base offset within the 6-image set */
 const deriveDefaultIndex = (seed: string, explicitIndex: number): number => {
-  if (explicitIndex !== UNSET_INDEX && explicitIndex >= 0 && explicitIndex < DEFAULT_AVATAR_COUNT) {
-    return explicitIndex;
-  }
-  // Derive from seed hash so different agents get different images
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) & 0xffffffff;
   }
-  return Math.abs(hash) % DEFAULT_AVATAR_COUNT;
+  // Blend the seed hash with the explicit index so every agent gets a unique image
+  // even if they share the same explicitIndex (or both have 0)
+  const base = explicitIndex !== UNSET_INDEX ? explicitIndex : 0;
+  return ((Math.abs(hash) + base) % DEFAULT_AVATAR_COUNT + DEFAULT_AVATAR_COUNT) % DEFAULT_AVATAR_COUNT;
 };
 
 export const buildDefaultAvatarUrl = (index: number): string => {
