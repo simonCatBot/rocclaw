@@ -178,16 +178,17 @@ export function SystemMetricsDashboard() {
         setConnectionMode(result.connectionMode || "local");
         setGatewayHostname(result.hostname || null);
         setError(null);
-      } else {
-        // Remote metrics unavailable - show error state with context
-        setMetricsSource(result.source || "unavailable");
+      } else if (result.source === "unavailable") {
+        // Gateway doesn't support system.metrics yet - graceful degradation
+        setMetrics(null);
+        setMetricsSource("unavailable");
         setConnectionMode(result.connectionMode || null);
         setGatewayHostname(result.gatewayHostname || null);
-        if (result.error) {
-          setError(result.source === "unavailable" ? null : (result.error || "Failed to fetch metrics"));
-        } else {
-          setError("Failed to fetch metrics");
-        }
+        setError(null);
+      } else {
+        // Actual error
+        setMetricsSource(null);
+        setError(result.error || "Failed to fetch metrics");
       }
     } catch {
       setError("Network error fetching metrics");
