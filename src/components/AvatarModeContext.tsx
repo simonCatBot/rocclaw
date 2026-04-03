@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
 const AVATAR_MODE_KEY = "rocclaw-footer-avatar-mode";
 
@@ -26,12 +26,7 @@ function applyMode(mode: AvatarDisplayMode) {
 
 /** Provider — wrap once at app root level */
 export function AvatarModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<AvatarDisplayMode>("auto");
-
-  // Initialize from localStorage after mount
-  useEffect(() => {
-    setModeState(getStoredMode());
-  }, []);
+  const [mode, setModeState] = useState<AvatarDisplayMode>(getStoredMode);
 
   const setMode = useCallback((newMode: AvatarDisplayMode) => {
     setModeState(newMode);
