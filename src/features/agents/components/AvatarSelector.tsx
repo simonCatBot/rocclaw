@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useImperativeHandle, useState } from "react";
-import { Shuffle, Check } from "lucide-react";
+import { Shuffle, Check, ChevronRight } from "lucide-react";
 import { AgentAvatar, buildDefaultAvatarUrl } from "./AgentAvatar";
 import { randomUUID } from "@/lib/uuid";
 import type { AvatarSource } from "@/features/agents/state/store";
@@ -48,7 +48,9 @@ export const AvatarSelector = forwardRef<AvatarSelectorHandle, AvatarSelectorPro
         if (tab === "auto") {
           updates.avatarSeed = value.avatarSeed || randomUUID();
         } else if (tab === "default") {
-          updates.defaultAvatarIndex = value.defaultAvatarIndex ?? 0;
+          // Use explicit index if set, otherwise derive from seed so something shows immediately
+          updates.defaultAvatarIndex =
+            value.defaultAvatarIndex !== UNSET_AVATAR_INDEX ? value.defaultAvatarIndex : 0;
         } else if (tab === "custom") {
           // Keep existing custom URL if any
         }
@@ -59,6 +61,13 @@ export const AvatarSelector = forwardRef<AvatarSelectorHandle, AvatarSelectorPro
 
     const handleShuffle = useCallback(() => {
       onChange({ ...value, avatarSeed: randomUUID() });
+    }, [value, onChange]);
+
+    const handleCycle = useCallback(() => {
+      onChange({
+        ...value,
+        defaultAvatarIndex: (value.defaultAvatarIndex + 1) % DEFAULT_AVATAR_COUNT,
+      });
     }, [value, onChange]);
 
     const handleDefaultSelect = useCallback(
@@ -126,11 +135,18 @@ export const AvatarSelector = forwardRef<AvatarSelectorHandle, AvatarSelectorPro
             </button>
           )}
 
-          {/* Default index badge */}
+          {/* Default controls */}
           {activeTab === "default" && (
-            <span className="font-mono text-[10px] text-muted-foreground">
-              #{value.defaultAvatarIndex + 1} of {DEFAULT_AVATAR_COUNT}
-            </span>
+            <button
+              type="button"
+              aria-label="Cycle to next avatar"
+              className="ui-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground disabled:cursor-not-allowed"
+              onClick={handleCycle}
+              disabled={disabled}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+              Cycle
+            </button>
           )}
 
           {/* Custom URL input */}
@@ -187,9 +203,11 @@ export const AvatarSelector = forwardRef<AvatarSelectorHandle, AvatarSelectorPro
 
 AvatarSelector.displayName = "AvatarSelector";
 
+export const UNSET_AVATAR_INDEX = -1;
+
 export const buildDefaultAvatarSelectorValue = (seed?: string): AvatarSelectorValue => ({
   avatarSource: "auto",
   avatarSeed: seed || randomUUID(),
-  defaultAvatarIndex: 0,
+  defaultAvatarIndex: UNSET_AVATAR_INDEX,
   avatarUrl: "",
 });
