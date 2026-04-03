@@ -58,13 +58,19 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
 
   return (
     <footer className="grid h-auto grid-cols-[1fr_auto_1fr] items-center border-t border-border/60 bg-surface-1/70 px-5 py-3 text-xs text-muted-foreground">
-      {/* Left — connection + agents */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <StatusDot status={status} />
-          <span className="font-medium">{resolveGatewayStatusLabel(status)}</span>
-        </div>
-        <div className="h-4 w-px bg-border/60" />
+      {/* Left — connection status */}
+      <div className="flex items-center gap-2">
+        <StatusDot status={status} />
+        <span className="font-medium">{resolveGatewayStatusLabel(status)}</span>
+      </div>
+
+      {/* Center — rocCLAW */}
+      <div className="flex items-center justify-center px-6">
+        <span className="whitespace-nowrap font-mono text-muted-foreground/40">rocCLAW</span>
+      </div>
+
+      {/* Right — agents + version + connection + theme */}
+      <div className="flex items-center justify-end gap-4">
         <div className="flex items-center gap-2">
           <Users className="h-3.5 w-3.5 shrink-0" />
           <span>
@@ -75,32 +81,31 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
         {gatewayVersion && (
           <>
             <div className="h-4 w-px bg-border/60" />
-            <span className="whitespace-nowrap text-muted-foreground/60">Connected to OpenClaw Version: {gatewayVersion}</span>
+            <span className="whitespace-nowrap font-mono text-muted-foreground/60">OpenClaw Version:{gatewayVersion}</span>
           </>
         )}
-      </div>
-
-      {/* Right — avatars + connection + theme */}
-      <div className="flex items-center justify-end gap-4">
         {runningAgents.length > 0 && (
-          <div className="flex items-center -space-x-1.5">
-            {runningAgents.map((agent) => (
-              <div
-                key={agent.agentId}
-                className="relative overflow-hidden rounded-full ring-1 ring-black/20 dark:ring-white/10"
-                title={agent.name}
-              >
-                <Image
-                  src={buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId)}
-                  alt={agent.name}
-                  width={24}
-                  height={24}
-                  className="h-6 w-6"
-                  unoptimized
-                />
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="h-4 w-px bg-border/60" />
+            <div className="flex items-center -space-x-1.5">
+              {runningAgents.map((agent) => (
+                <div
+                  key={agent.agentId}
+                  className="relative overflow-hidden rounded-full ring-1 ring-black/20 dark:ring-white/10"
+                  title={agent.name}
+                >
+                  <Image
+                    src={buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId)}
+                    alt={agent.name}
+                    width={24}
+                    height={24}
+                    className="h-6 w-6"
+                    unoptimized
+                  />
+                </div>
+              ))}
+            </div>
+          </>
         )}
         <div className="h-4 w-px bg-border/60" />
 
