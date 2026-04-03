@@ -72,14 +72,11 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
             {runningCount > 0 ? ` · ${runningCount} running` : ""}
           </span>
         </div>
-      </div>
-
-      {/* Center — version */}
-      <div className="flex items-center justify-center px-6">
-        {gatewayVersion ? (
-          <span className="whitespace-nowrap font-mono text-muted-foreground/60">{gatewayVersion}</span>
-        ) : (
-          <span className="whitespace-nowrap font-mono text-muted-foreground/40">rocCLAW</span>
+        {gatewayVersion && (
+          <>
+            <div className="h-4 w-px bg-border/60" />
+            <span className="whitespace-nowrap font-mono text-muted-foreground/60">{gatewayVersion}</span>
+          </>
         )}
       </div>
 
