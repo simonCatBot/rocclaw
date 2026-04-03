@@ -15,7 +15,7 @@ type AgentAvatarProps = {
   isSelected?: boolean;
 };
 
-const DEFAULT_AVATAR_COUNT = 6;
+const DEFAULT_AVATAR_COUNT = 12;
 
 /** Sentinel for "not explicitly set" — derive from seed hash. */
 const UNSET_INDEX = -1;
@@ -37,7 +37,7 @@ const deriveDefaultIndex = (seed: string, explicitIndex: number): number => {
 
 export const buildDefaultAvatarUrl = (index: number): string => {
   const safeIndex = ((index % DEFAULT_AVATAR_COUNT) + DEFAULT_AVATAR_COUNT) % DEFAULT_AVATAR_COUNT;
-  return `/avatars/profile-${safeIndex + 1}.jpg`;
+  return `/avatars/profile-${safeIndex + 1}.png`;
 };
 
 export const AgentAvatar = ({
