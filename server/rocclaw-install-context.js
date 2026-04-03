@@ -415,8 +415,8 @@ const probeLocalGateway = async (runner = execFileAsync) => {
     new Set([statusProbe.error, sessionsProbe.error]
       .filter((value) => typeof value === "string" && value.length > 0))
   );
-  const runtimeVersion = statusProbe.ok && statusProbe.data?.runtimeVersion
-    ? String(statusProbe.data.runtimeVersion)
+  const runtimeVersion = statusProbe.ok && statusProbe.value?.runtimeVersion
+    ? String(statusProbe.value.runtimeVersion)
     : null;
 
   return {
