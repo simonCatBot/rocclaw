@@ -17,6 +17,7 @@ describe("hydrateAgentFleetFromGateway", () => {
           "agent-1": "persisted-seed",
         },
       },
+      avatarSources: {},
     };
 
     const call = vi.fn(async (method: string, params: unknown) => {
@@ -253,6 +254,7 @@ describe("hydrateAgentFleetFromGateway", () => {
         gatewayAutoStart: true,
         focused: {},
         avatars: {},
+        avatarSources: {},
       }),
       isDisconnectLikeError: () => false,
     });
@@ -301,6 +303,7 @@ describe("hydrateAgentFleetFromGateway", () => {
         gatewayAutoStart: true,
         focused: {},
         avatars: {},
+        avatarSources: {},
       }),
       isDisconnectLikeError: () => false,
       logError,
@@ -349,6 +352,7 @@ describe("hydrateAgentFleetFromGateway", () => {
         gatewayAutoStart: true,
         focused: {},
         avatars: {},
+        avatarSources: {},
       }),
       isDisconnectLikeError: () => false,
     });

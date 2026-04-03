@@ -39,6 +39,7 @@ const buildEnvelope = (): ROCclawSettingsResponse => ({
     gatewayAutoStart: true,
     focused: {},
     avatars: {},
+    avatarSources: {},
   },
   localGatewayDefaults: null,
   localGatewayDefaultsMeta: {

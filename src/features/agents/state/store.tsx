@@ -22,6 +22,8 @@ import {
 export type AgentStatus = "idle" | "running" | "error";
 export type FocusFilter = "all" | "running" | "approvals";
 
+export type AvatarSource = "auto" | "default" | "custom";
+
 export type AgentStoreSeed = {
   agentId: string;
   name: string;
@@ -30,6 +32,8 @@ export type AgentStoreSeed = {
   sessionKey: string;
   avatarSeed?: string | null;
   avatarUrl?: string | null;
+  avatarSource?: AvatarSource;
+  defaultAvatarIndex?: number;
   model?: string | null;
   thinkingLevel?: string | null;
   sessionExecHost?: "sandbox" | "gateway" | "node";
@@ -199,6 +203,8 @@ const createRuntimeAgentState = (
     ...seed,
     avatarSeed: seed.avatarSeed ?? existing?.avatarSeed ?? seed.agentId,
     avatarUrl: seed.avatarUrl ?? existing?.avatarUrl ?? null,
+    avatarSource: seed.avatarSource ?? existing?.avatarSource ?? "auto",
+    defaultAvatarIndex: seed.defaultAvatarIndex ?? existing?.defaultAvatarIndex ?? 0,
     model: seed.model ?? existing?.model ?? null,
     thinkingLevel: seed.thinkingLevel ?? existing?.thinkingLevel ?? "high",
     sessionExecHost: seed.sessionExecHost ?? existing?.sessionExecHost,

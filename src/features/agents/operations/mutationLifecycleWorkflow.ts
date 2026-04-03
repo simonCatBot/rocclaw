@@ -201,7 +201,13 @@ export type CreateAgentMutationLifecycleDeps = {
     run: () => Promise<void>;
     requiresIdleAgents?: boolean;
   }) => Promise<void>;
-  createAgent: (name: string, avatarSeed: string | null) => Promise<{ id: string }>;
+  createAgent: (
+    name: string,
+    avatarSeed: string | null,
+    avatarSource: string | null,
+    defaultAvatarIndex: number,
+    avatarUrl: string | null
+  ) => Promise<{ id: string }>;
   setQueuedBlock: (params: { agentName: string; startedAt: number }) => void;
   setCreatingBlock: (agentName: string) => void;
   onCompletion: (completion: CreateAgentLifecycleCompletion) => Promise<void> | void;
@@ -335,13 +341,16 @@ export const runCreateAgentMutationLifecycle = async (
   const startedAt = (deps.now ?? Date.now)();
   deps.setQueuedBlock({ agentName: name, startedAt });
   const avatarSeed = params.payload.avatarSeed?.trim() ?? null;
+  const avatarSource = params.payload.avatarSource ?? "auto";
+  const defaultAvatarIndex = params.payload.defaultAvatarIndex ?? 0;
+  const avatarUrl = params.payload.avatarUrl?.trim() ?? null;
   try {
     const queuedMutation = deps.enqueueConfigMutation({
       kind: "create-agent",
       label: `Create ${name}`,
       run: async () => {
         deps.setCreatingBlock(name);
-        const created = await deps.createAgent(name, avatarSeed);
+        const created = await deps.createAgent(name, avatarSeed, avatarSource, defaultAvatarIndex, avatarUrl);
         await deps.onCompletion({
           agentId: created.id,
           agentName: name,

@@ -1,6 +1,6 @@
 import { buildAgentMainSessionKey } from "@/lib/gateway/session-keys";
 import { resolveConfiguredModelKey, type GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import { resolveAgentAvatarSeed, type ROCclawSettings } from "@/lib/rocclaw/settings";
+import { resolveAgentAvatarSeed, resolveAgentAvatarConfig, type ROCclawSettings } from "@/lib/rocclaw/settings";
 import {
   buildSummarySnapshotPatches,
   type SummaryPreviewSnapshot,
@@ -203,8 +203,12 @@ export const deriveHydrateAgentFleetResult = (
   const seeds: AgentStoreSeed[] = input.agentsResult.agents.map((agent) => {
     const persistedSeed =
       input.settings && gatewayKey ? resolveAgentAvatarSeed(input.settings, gatewayKey, agent.id) : null;
+    const avatarConfig =
+      input.settings && gatewayKey ? resolveAgentAvatarConfig(input.settings, gatewayKey, agent.id) : null;
     const avatarSeed = persistedSeed ?? agent.id;
     const avatarUrl = resolveAgentAvatarUrl(agent);
+    const avatarSource = (avatarConfig?.source as AgentStoreSeed["avatarSource"]) ?? "auto";
+    const defaultAvatarIndex = avatarConfig?.defaultIndex ?? 0;
     const name = resolveAgentName(agent);
     const mainSession = input.mainSessionByAgentId.get(agent.id) ?? null;
     const modelProvider =
@@ -248,6 +252,8 @@ export const deriveHydrateAgentFleetResult = (
       sessionKey: buildAgentMainSessionKey(agent.id, mainKey),
       avatarSeed,
       avatarUrl,
+      avatarSource,
+      defaultAvatarIndex,
       model,
       thinkingLevel,
       sessionExecHost: resolvedExecHost,

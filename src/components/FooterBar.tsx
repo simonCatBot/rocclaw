@@ -4,10 +4,11 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useAgentStore } from "@/features/agents/state/store";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
+import { buildDefaultAvatarUrl } from "@/features/agents/components/AgentAvatar";
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
-import { Users, Plug } from "lucide-react";
+import { Users, Plug, ImageIcon } from "lucide-react";
 
 function StatusDot({ status }: { status: GatewayStatus }) {
   const colorMap: Record<GatewayStatus, string> = {
@@ -30,10 +31,15 @@ interface FooterBarProps {
   onConnectionSettings: () => void;
 }
 
+type FooterAvatarMode = "auto" | "default";
+
+const FOOTER_AVATAR_MODE_KEY = "rocclaw-footer-avatar-mode";
+
 export function FooterBar({ status, gatewayVersion: initialVersion, onConnectionSettings }: FooterBarProps) {
   const { state } = useAgentStore();
   const agents = state.agents;
   const [gatewayVersion, setGatewayVersion] = useState<string | null>(initialVersion ?? null);
+  const [avatarMode, setAvatarMode] = useState<FooterAvatarMode>("auto");
 
   // Fetch gateway version from /api/gateway-info when connected
   useEffect(() => {
@@ -52,9 +58,43 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
     return () => controller.abort();
   }, [status]);
 
+  // Load avatar mode from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(FOOTER_AVATAR_MODE_KEY);
+      if (stored === "auto" || stored === "default") {
+        setAvatarMode(stored);
+      }
+    } catch {
+      // localStorage unavailable
+    }
+  }, []);
+
+  const toggleAvatarMode = () => {
+    const next: FooterAvatarMode = avatarMode === "auto" ? "default" : "auto";
+    setAvatarMode(next);
+    try {
+      localStorage.setItem(FOOTER_AVATAR_MODE_KEY, next);
+    } catch {
+      // localStorage unavailable
+    }
+  };
+
   const agentCount = agents.length;
   const runningCount = agents.filter((a) => a.status === "running").length;
   const runningAgents = agents.filter((a) => a.status === "running").slice(0, 5);
+
+  const getFooterAvatarSrc = (agent: ReturnType<typeof useAgentStore>["state"]["agents"][number]) => {
+    const source = agent.avatarSource;
+    if (source === "custom" && agent.avatarUrl?.trim()) {
+      return agent.avatarUrl.trim();
+    }
+    if (avatarMode === "default") {
+      return buildDefaultAvatarUrl(agent.defaultAvatarIndex ?? 0);
+    }
+    // auto
+    return buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId);
+  };
 
   return (
     <footer className="grid h-auto grid-cols-[1fr_auto_1fr] items-center border-t border-border/60 bg-surface-1/70 px-5 py-3 text-xs text-muted-foreground">
@@ -87,23 +127,33 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
         {runningAgents.length > 0 && (
           <>
             <div className="h-4 w-px bg-border/60" />
-            <div className="flex items-center -space-x-1.5">
-              {runningAgents.map((agent) => (
-                <div
-                  key={agent.agentId}
-                  className="relative overflow-hidden rounded-full ring-1 ring-black/20 dark:ring-white/10"
-                  title={agent.name}
-                >
-                  <Image
-                    src={buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId)}
-                    alt={agent.name}
-                    width={24}
-                    height={24}
-                    className="h-6 w-6"
-                    unoptimized
-                  />
-                </div>
-              ))}
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center -space-x-1.5">
+                {runningAgents.map((agent) => (
+                  <div
+                    key={agent.agentId}
+                    className="relative overflow-hidden rounded-full ring-1 ring-black/20 dark:ring-white/10"
+                    title={`${agent.name} (${avatarMode})`}
+                  >
+                    <Image
+                      src={getFooterAvatarSrc(agent)}
+                      alt={agent.name}
+                      width={24}
+                      height={24}
+                      className="h-6 w-6"
+                      unoptimized
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={toggleAvatarMode}
+                className="flex h-5 w-5 items-center justify-center rounded border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+                title={avatarMode === "auto" ? "Showing auto avatars — click for default avatars" : "Showing default avatars — click for auto avatars"}
+              >
+                <ImageIcon className="h-3 w-3" />
+              </button>
             </div>
           </>
         )}

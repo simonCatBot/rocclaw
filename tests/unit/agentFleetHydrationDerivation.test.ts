@@ -17,6 +17,7 @@ describe("deriveHydrateAgentFleetResult", () => {
           "agent-1": "persisted-seed",
         },
       },
+      avatarSources: {},
     };
 
     const result = deriveHydrateAgentFleetResult({

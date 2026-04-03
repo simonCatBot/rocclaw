@@ -170,6 +170,7 @@ describe("bootstrapWorkflow", () => {
         },
       },
       avatars: {},
+      avatarSources: {},
     };
 
     expect(
@@ -208,6 +209,7 @@ describe("bootstrapWorkflow", () => {
         },
       },
       avatars: {},
+      avatarSources: {},
     };
 
     expect(

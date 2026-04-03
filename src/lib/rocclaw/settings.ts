@@ -23,6 +23,7 @@ export type ROCclawSettings = {
   gatewayAutoStart: boolean;
   focused: Record<string, ROCclawFocusedPreference>;
   avatars: Record<string, Record<string, string>>;
+  avatarSources: Record<string, Record<string, AvatarConfig>>;
 };
 
 export type ROCclawSettingsPatch = {
@@ -30,6 +31,13 @@ export type ROCclawSettingsPatch = {
   gatewayAutoStart?: boolean | null;
   focused?: Record<string, Partial<ROCclawFocusedPreference> | null>;
   avatars?: Record<string, Record<string, string | null> | null>;
+  avatarSources?: Record<string, Record<string, AvatarConfig | null> | null>;
+};
+
+export type AvatarConfig = {
+  source?: string;
+  defaultIndex?: number;
+  url?: string | null;
 };
 
 const SETTINGS_VERSION = 1 as const;
@@ -179,12 +187,39 @@ const normalizeAvatars = (value: unknown): Record<string, Record<string, string>
   return avatars;
 };
 
+const normalizeAvatarSources = (value: unknown): Record<string, Record<string, AvatarConfig>> => {
+  if (!isRecord(value)) return {};
+  const sources: Record<string, Record<string, AvatarConfig>> = {};
+  for (const [gatewayKeyRaw, gatewayRaw] of Object.entries(value)) {
+    const gatewayKey = normalizeGatewayKey(gatewayKeyRaw);
+    if (!gatewayKey) continue;
+    if (!isRecord(gatewayRaw)) continue;
+    const entries: Record<string, AvatarConfig> = {};
+    for (const [agentIdRaw, configRaw] of Object.entries(gatewayRaw)) {
+      const agentId = coerceString(agentIdRaw);
+      if (!agentId) continue;
+      if (!isRecord(configRaw)) continue;
+      entries[agentId] = {
+        source: coerceString(configRaw.source) || undefined,
+        defaultIndex:
+          typeof configRaw.defaultIndex === "number" && Number.isFinite(configRaw.defaultIndex)
+            ? configRaw.defaultIndex
+            : undefined,
+        url: configRaw.url == null ? undefined : coerceString(configRaw.url) || undefined,
+      };
+    }
+    sources[gatewayKey] = entries;
+  }
+  return sources;
+};
+
 export const defaultROCclawSettings = (): ROCclawSettings => ({
   version: SETTINGS_VERSION,
   gateway: null,
   gatewayAutoStart: true,
   focused: {},
   avatars: {},
+  avatarSources: {},
 });
 
 export const normalizeROCclawSettings = (raw: unknown): ROCclawSettings => {
@@ -193,12 +228,14 @@ export const normalizeROCclawSettings = (raw: unknown): ROCclawSettings => {
   const gatewayAutoStart = typeof raw.gatewayAutoStart === "boolean" ? raw.gatewayAutoStart : true;
   const focused = normalizeFocused(raw.focused);
   const avatars = normalizeAvatars(raw.avatars);
+  const avatarSources = normalizeAvatarSources(raw.avatarSources);
   return {
     version: SETTINGS_VERSION,
     gateway,
     gatewayAutoStart,
     focused,
     avatars,
+    avatarSources,
   };
 };
 
@@ -211,6 +248,7 @@ export const mergeROCclawSettings = (
     typeof patch.gatewayAutoStart === "boolean" ? patch.gatewayAutoStart : current.gatewayAutoStart;
   const nextFocused = { ...current.focused };
   const nextAvatars = { ...current.avatars };
+  const nextAvatarSources = { ...current.avatarSources };
   if (patch.focused) {
     for (const [keyRaw, value] of Object.entries(patch.focused)) {
       const key = normalizeGatewayKey(keyRaw);
@@ -250,12 +288,48 @@ export const mergeROCclawSettings = (
       nextAvatars[gatewayKey] = existing;
     }
   }
+  if (patch.avatarSources) {
+    for (const [gatewayKeyRaw, gatewayPatch] of Object.entries(patch.avatarSources)) {
+      const gatewayKey = normalizeGatewayKey(gatewayKeyRaw);
+      if (!gatewayKey) continue;
+      if (gatewayPatch === null) {
+        delete nextAvatarSources[gatewayKey];
+        continue;
+      }
+      if (!isRecord(gatewayPatch)) continue;
+      const existing = nextAvatarSources[gatewayKey] ? { ...nextAvatarSources[gatewayKey] } : {};
+      for (const [agentIdRaw, configPatch] of Object.entries(gatewayPatch)) {
+        const agentId = coerceString(agentIdRaw);
+        if (!agentId) continue;
+        if (configPatch === null) {
+          delete existing[agentId];
+          continue;
+        }
+        if (!isRecord(configPatch)) continue;
+        const prev = existing[agentId] ?? {};
+        existing[agentId] = {
+          source:
+            "source" in configPatch && typeof configPatch.source === "string"
+              ? configPatch.source
+              : prev.source,
+          defaultIndex:
+            "defaultIndex" in configPatch && typeof configPatch.defaultIndex === "number"
+              ? configPatch.defaultIndex
+              : prev.defaultIndex,
+          url:
+            "url" in configPatch && (typeof configPatch.url === "string" || configPatch.url === null) ? configPatch.url : prev.url,
+        };
+      }
+      nextAvatarSources[gatewayKey] = existing;
+    }
+  }
   return {
     version: SETTINGS_VERSION,
     gateway: nextGateway ?? null,
     gatewayAutoStart: nextGatewayAutoStart,
     focused: nextFocused,
     avatars: nextAvatars,
+    avatarSources: nextAvatarSources,
   };
 };
 
@@ -278,4 +352,16 @@ export const resolveAgentAvatarSeed = (
   const agentKey = coerceString(agentId);
   if (!agentKey) return null;
   return settings.avatars[gatewayKey]?.[agentKey] ?? null;
+};
+
+export const resolveAgentAvatarConfig = (
+  settings: ROCclawSettings,
+  gatewayUrl: string,
+  agentId: string
+): AvatarConfig | null => {
+  const gatewayKey = normalizeGatewayKey(gatewayUrl);
+  if (!gatewayKey) return null;
+  const agentKey = coerceString(agentId);
+  if (!agentKey) return null;
+  return settings.avatarSources[gatewayKey]?.[agentKey] ?? null;
 };

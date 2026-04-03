@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Shuffle } from "lucide-react";
+import { useState, useRef } from "react";
 import type { AgentCreateModalSubmitPayload } from "@/features/agents/creation/types";
-import { AgentAvatar } from "@/features/agents/components/AgentAvatar";
-import { randomUUID } from "@/lib/uuid";
+import { AvatarSelector, buildDefaultAvatarSelectorValue, type AvatarSelectorHandle } from "@/features/agents/components/AvatarSelector";
 
 type AgentCreateModalProps = {
   open: boolean;
@@ -34,7 +32,8 @@ const AgentCreateModalContent = ({
   onSubmit,
 }: Omit<AgentCreateModalProps, "open">) => {
   const [name, setName] = useState(() => resolveInitialName(suggestedName));
-  const [avatarSeed, setAvatarSeed] = useState(() => randomUUID());
+  const [avatarValue, setAvatarValue] = useState(() => buildDefaultAvatarSelectorValue());
+  const avatarRef = useRef<AvatarSelectorHandle | null>(null);
 
   const canSubmit = name.trim().length > 0;
 
@@ -42,7 +41,14 @@ const AgentCreateModalContent = ({
     if (!canSubmit || busy) return;
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    void onSubmit({ name: trimmedName, avatarSeed });
+    const avatar = avatarRef.current?.getValue() ?? avatarValue;
+    void onSubmit({
+      name: trimmedName,
+      avatarSeed: avatar.avatarSeed,
+      avatarSource: avatar.avatarSource,
+      defaultAvatarIndex: avatar.defaultAvatarIndex,
+      avatarUrl: avatar.avatarUrl || undefined,
+    });
   };
 
   return (
@@ -96,22 +102,13 @@ const AgentCreateModalContent = ({
           </div>
           <div className="grid justify-items-center gap-2 border-t border-border/40 pt-3">
             <div className={labelClassName}>Choose avatar</div>
-            <AgentAvatar
-              seed={avatarSeed}
+            <AvatarSelector
+              ref={avatarRef}
               name={name.trim() || "New Agent"}
-              size={64}
-              isSelected
-            />
-            <button
-              type="button"
-              aria-label="Shuffle avatar selection"
-              className="ui-btn-secondary inline-flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"
-              onClick={() => setAvatarSeed(randomUUID())}
+              value={avatarValue}
+              onChange={setAvatarValue}
               disabled={busy}
-            >
-              <Shuffle className="h-3.5 w-3.5" />
-              Shuffle
-            </button>
+            />
           </div>
 
           {submitError ? (

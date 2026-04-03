@@ -896,17 +896,28 @@ const AgentROCclawPage = () => {
     setCreateAgentModalOpen(true);
   }, [createAgentBlock, createAgentBusy, restartingMutationBlock]);
 
-  const persistAvatarSeed = useCallback(
-    (agentId: string, avatarSeed: string) => {
+  const persistAvatarConfig = useCallback(
+    (agentId: string, avatarSeed: string, avatarSource: string, defaultAvatarIndex: number, avatarUrl: string) => {
       const resolvedAgentId = agentId.trim();
       const resolvedAvatarSeed = avatarSeed.trim();
+      const resolvedSource = avatarSource.trim();
+      const resolvedUrl = avatarUrl.trim();
       const key = gatewayUrl.trim();
-      if (!resolvedAgentId || !resolvedAvatarSeed || !key) return;
+      if (!resolvedAgentId || !key) return;
       settingsCoordinator.schedulePatch(
         {
           avatars: {
             [key]: {
-              [resolvedAgentId]: resolvedAvatarSeed,
+              [resolvedAgentId]: resolvedAvatarSeed || null,
+            },
+          },
+          avatarSources: {
+            [key]: {
+              [resolvedAgentId]: {
+                source: resolvedSource || "auto",
+                defaultIndex: defaultAvatarIndex,
+                url: resolvedUrl || null,
+              },
             },
           },
         },
@@ -929,11 +940,15 @@ const AgentROCclawPage = () => {
         },
         {
           enqueueConfigMutation,
-          createAgent: async (name, avatarSeed) => {
+          createAgent: async (name, avatarSeed, avatarSource, defaultAvatarIndex, avatarUrl) => {
             const created = await runtimeWriteTransport.agentCreate({ name });
-            if (avatarSeed) {
-              persistAvatarSeed(created.id, avatarSeed);
-            }
+            persistAvatarConfig(
+              created.id,
+              avatarSeed ?? "",
+              avatarSource ?? "auto",
+              defaultAvatarIndex ?? 0,
+              avatarUrl ?? ""
+            );
             flushPendingDraft(focusedAgent?.agentId ?? null);
             focusFilterTouchedRef.current = true;
             setFocusFilter("all");
@@ -1016,7 +1031,7 @@ const AgentROCclawPage = () => {
       hasDeleteMutationBlock,
       hasRenameMutationBlock,
       loadAgents,
-      persistAvatarSeed,
+      persistAvatarConfig,
       refreshGatewayConfigSnapshot,
       runtimeWriteTransport,
       setError,
@@ -1273,11 +1288,11 @@ const AgentROCclawPage = () => {
       dispatch({
         type: "updateAgent",
         agentId,
-        patch: { avatarSeed },
+        patch: { avatarSeed, avatarSource: "auto" as const },
       });
-      persistAvatarSeed(agentId, avatarSeed);
+      persistAvatarConfig(agentId, avatarSeed, "auto", 0, "");
     },
-    [dispatch, persistAvatarSeed]
+    [dispatch, persistAvatarConfig]
   );
 
   const connectionPanelVisible = showConnectionPanel;

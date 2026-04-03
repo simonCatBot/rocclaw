@@ -205,6 +205,7 @@ describe("bootstrapOperation", () => {
           },
         },
         avatars: {},
+        avatarSources: {},
       }),
       isFocusFilterTouched: () => false,
     });
@@ -240,6 +241,7 @@ describe("bootstrapOperation", () => {
           },
         },
         avatars: {},
+        avatarSources: {},
       }),
       isFocusFilterTouched: () => true,
     });
