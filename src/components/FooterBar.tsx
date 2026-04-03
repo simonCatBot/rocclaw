@@ -75,7 +75,7 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
         {gatewayVersion && (
           <>
             <div className="h-4 w-px bg-border/60" />
-            <span className="whitespace-nowrap font-mono text-muted-foreground/60">{gatewayVersion}</span>
+            <span className="whitespace-nowrap text-muted-foreground/60">Connected to OpenClaw Version: {gatewayVersion}</span>
           </>
         )}
       </div>
