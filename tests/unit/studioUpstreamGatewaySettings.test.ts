@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const makeTempDir = (name: string) => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
-describe("server studio upstream gateway settings", () => {
+describe("server rocclaw upstream gateway settings", () => {
   const priorStateDir = process.env.OPENCLAW_STATE_DIR;
   let tempDir: string | null = null;
 
@@ -18,8 +18,8 @@ describe("server studio upstream gateway settings", () => {
     }
   });
 
-  it("falls back to openclaw.json token/port when studio settings are missing", async () => {
-    tempDir = makeTempDir("studio-upstream-openclaw-defaults");
+  it("falls back to openclaw.json token/port when rocclaw settings are missing", async () => {
+    tempDir = makeTempDir("rocclaw-upstream-openclaw-defaults");
     process.env.OPENCLAW_STATE_DIR = tempDir;
 
     fs.writeFileSync(
@@ -35,12 +35,12 @@ describe("server studio upstream gateway settings", () => {
   });
 
   it("keeps a configured url and fills token from openclaw.json when missing", async () => {
-    tempDir = makeTempDir("studio-upstream-url-keep");
+    tempDir = makeTempDir("rocclaw-upstream-url-keep");
     process.env.OPENCLAW_STATE_DIR = tempDir;
 
-    fs.mkdirSync(path.join(tempDir, "openclaw-studio"), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, "openclaw-rocclaw"), { recursive: true });
     fs.writeFileSync(
-      path.join(tempDir, "openclaw-studio", "settings.json"),
+      path.join(tempDir, "openclaw-rocclaw", "settings.json"),
       JSON.stringify({ gateway: { url: "ws://gateway.example:18789", token: "" } }, null, 2),
       "utf8"
     );

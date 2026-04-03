@@ -8,7 +8,7 @@ import type { EventFrame } from "@/lib/gateway/GatewayClient";
 const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   agentId: "agent-1",
   name: "Agent One",
-  sessionKey: "agent:agent-1:studio:test-session",
+  sessionKey: "agent:agent-1:rocclaw:test-session",
   status: "idle",
   sessionCreated: true,
   awaitingUserInput: false,
@@ -105,7 +105,7 @@ describe("gatewayEventIngressWorkflow", () => {
     const seen = new Set<string>();
     const decision = resolveGatewayEventIngressDecision({
       event,
-      agents: [createAgent({ sessionKey: "agent:agent-1:studio:test-session" })],
+      agents: [createAgent({ sessionKey: "agent:agent-1:rocclaw:test-session" })],
       seenCronDedupeKeys: seen,
       nowMs: 999,
     });
@@ -114,7 +114,7 @@ describe("gatewayEventIngressWorkflow", () => {
     expect(decision.cronDedupeKeyToRecord).toBe("cron:job-1:session-1");
     expect(decision.cronTranscriptIntent).toEqual({
       agentId: "agent-1",
-      sessionKey: "agent:agent-1:studio:test-session",
+      sessionKey: "agent:agent-1:rocclaw:test-session",
       dedupeKey: "cron:job-1:session-1",
       line: "Cron finished (ok): job-1\n\ncron summary",
       timestampMs: 123,
@@ -189,7 +189,7 @@ describe("gatewayEventIngressWorkflow", () => {
     expect(decision.cronDedupeKeyToRecord).toBe("cron:job-4:none");
     expect(decision.cronTranscriptIntent).toEqual({
       agentId: "agent-1",
-      sessionKey: "agent:agent-1:studio:test-session",
+      sessionKey: "agent:agent-1:rocclaw:test-session",
       dedupeKey: "cron:job-4:none",
       line: "Cron finished (unknown): job-4\n\n(no output)",
       timestampMs: 4321,
@@ -239,7 +239,7 @@ describe("gatewayEventIngressWorkflow", () => {
       payload: {
         id: "approval-1",
         decision: "allow-once",
-        resolvedBy: "studio",
+        resolvedBy: "rocclaw",
         ts: 999,
       },
     };

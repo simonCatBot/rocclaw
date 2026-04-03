@@ -1,4 +1,4 @@
-import { postStudioIntent } from "@/lib/controlplane/intents-client";
+import { postROCclawIntent } from "@/lib/controlplane/intents-client";
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { syncGatewaySessionSettings } from "@/lib/gateway/session-settings-sync";
 import { createGatewayAgent, deleteGatewayAgent, renameGatewayAgent } from "@/lib/gateway/agentConfig";
@@ -96,7 +96,7 @@ export function createRuntimeWriteTransport(params: {
   useDomainIntents: boolean;
   postIntent?: (path: string, body: Record<string, unknown>) => Promise<unknown>;
 }): RuntimeWriteTransport {
-  const postIntent = params.postIntent ?? postStudioIntent;
+  const postIntent = params.postIntent ?? postROCclawIntent;
 
   return {
     useDomainIntents: params.useDomainIntents,

@@ -22,7 +22,7 @@ const createEntry = (params: {
 }): TranscriptEntry => {
   const entry = createTranscriptEntryFromLine({
     line: params.line,
-    sessionKey: params.sessionKey ?? "agent:agent-1:studio:test-session",
+    sessionKey: params.sessionKey ?? "agent:agent-1:rocclaw:test-session",
     source: params.source,
     sequenceKey: params.sequence,
     timestampMs: params.timestampMs,

@@ -6,7 +6,7 @@ import {
   type CronJobRestoreInput,
 } from "@/lib/cron/types";
 import { deleteGatewayAgent } from "@/lib/gateway/agentConfig";
-import { deleteAgentViaStudio } from "@/features/agents/operations/deleteAgentOperation";
+import { deleteAgentViaROCclaw } from "@/features/agents/operations/deleteAgentOperation";
 import { createRuntimeWriteTransport } from "@/features/agents/operations/runtimeWriteTransport";
 
 vi.mock("@/lib/cron/types", async () => {
@@ -46,7 +46,7 @@ const createCronRestoreInput = (name = "Job 1", agentId = "agent-1"): CronJobRes
   payload: { kind: "agentTurn", message: "Run checks." },
 });
 
-describe("delete agent via studio operation", () => {
+describe("delete agent via rocclaw operation", () => {
   const mockedRemoveCronJobsForAgentWithBackup = vi.mocked(removeCronJobsForAgentWithBackup);
   const mockedRestoreCronJobs = vi.mocked(restoreCronJobs);
   const mockedDeleteGatewayAgent = vi.mocked(deleteGatewayAgent);
@@ -80,7 +80,7 @@ describe("delete agent via studio operation", () => {
     });
 
     await expect(
-      deleteAgentViaStudio({ client: {} as never, agentId: "agent-1", fetchJson })
+      deleteAgentViaROCclaw({ client: {} as never, agentId: "agent-1", fetchJson })
     ).resolves.toEqual({
       trashed: createTrashResult(),
       restored: null,
@@ -122,7 +122,7 @@ describe("delete agent via studio operation", () => {
     });
 
     await expect(
-      deleteAgentViaStudio({ client: {} as never, agentId: "agent-1", fetchJson })
+      deleteAgentViaROCclaw({ client: {} as never, agentId: "agent-1", fetchJson })
     ).rejects.toBe(originalErr);
 
     expect(calls).toEqual(["trash", "removeCron", "restore:agent-1:/tmp/trash-2"]);
@@ -165,7 +165,7 @@ describe("delete agent via studio operation", () => {
     });
 
     await expect(
-      deleteAgentViaStudio({ client: {} as never, agentId: "agent-1", fetchJson })
+      deleteAgentViaROCclaw({ client: {} as never, agentId: "agent-1", fetchJson })
     ).rejects.toBe(originalErr);
 
     expect(calls).toEqual([
@@ -203,7 +203,7 @@ describe("delete agent via studio operation", () => {
     });
 
     await expect(
-      deleteAgentViaStudio({ client: {} as never, agentId: "agent-1", fetchJson })
+      deleteAgentViaROCclaw({ client: {} as never, agentId: "agent-1", fetchJson })
     ).rejects.toBe(originalErr);
 
     expect(methods).toEqual(["POST"]);
@@ -244,7 +244,7 @@ describe("delete agent via studio operation", () => {
     });
 
     await expect(
-      deleteAgentViaStudio({
+      deleteAgentViaROCclaw({
         client: {} as never,
         agentId: "agent-1",
         fetchJson,
@@ -267,7 +267,7 @@ describe("delete agent via studio operation", () => {
     });
 
     await expect(
-      deleteAgentViaStudio({ client: {} as never, agentId: "   ", fetchJson })
+      deleteAgentViaROCclaw({ client: {} as never, agentId: "   ", fetchJson })
     ).rejects.toThrow("Agent id is required.");
 
     expect(fetchJson).not.toHaveBeenCalled();
@@ -313,7 +313,7 @@ describe("delete agent via studio operation", () => {
     });
 
     await expect(
-      deleteAgentViaStudio({
+      deleteAgentViaROCclaw({
         client: { call } as never,
         runtimeWriteTransport,
         agentId: "agent-1",
@@ -386,7 +386,7 @@ describe("delete agent via studio operation", () => {
     });
 
     await expect(
-      deleteAgentViaStudio({
+      deleteAgentViaROCclaw({
         client: { call } as never,
         runtimeWriteTransport,
         agentId: "agent-1",

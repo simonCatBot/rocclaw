@@ -6,7 +6,7 @@ import {
   resolveGatewaySshTargetFromGatewayUrl,
   runSshJson,
 } from "@/lib/ssh/gateway-host";
-import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
+import { loadROCclawSettings } from "@/lib/rocclaw/settings-store";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -69,7 +69,7 @@ const validateRemoteMediaPath = (raw: string): { remotePath: string; mime: strin
     throw new Error("path must be absolute or start with ~/");
   }
 
-  // Remote side enforces ~/.openclaw; this guard lets Studio on macOS request
+  // Remote side enforces ~/.openclaw; this guard lets ROCclaw on macOS request
   // /home/ubuntu/.openclaw/... without tripping local homedir checks.
   const normalized = trimmed.replaceAll("\\\\", "/");
   const inOpenclaw =
@@ -149,7 +149,7 @@ PY
 `;
 
 const resolveSshTarget = (): string | null => {
-  const settings = loadStudioSettings();
+  const settings = loadROCclawSettings();
   const gatewayUrl = settings.gateway?.url ?? "";
   if (isLocalGatewayUrl(gatewayUrl)) return null;
   const configured = resolveConfiguredSshTarget(process.env);

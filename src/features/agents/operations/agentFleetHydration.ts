@@ -1,6 +1,6 @@
 import { buildAgentMainSessionKey } from "@/lib/gateway/session-keys";
 import { type GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import { type StudioSettings } from "@/lib/rocclaw/settings";
+import { type ROCclawSettings } from "@/lib/rocclaw/settings";
 import {
   type SummaryPreviewSnapshot,
   type SummarySnapshotPatch,
@@ -83,7 +83,7 @@ export async function hydrateAgentFleetFromGateway(params: {
   client: GatewayClientLike;
   gatewayUrl: string;
   cachedConfigSnapshot: GatewayModelPolicySnapshot | null;
-  loadStudioSettings: () => Promise<StudioSettings | null>;
+  loadROCclawSettings: () => Promise<ROCclawSettings | null>;
   isDisconnectLikeError: (err: unknown) => boolean;
   logError?: (message: string, error: unknown) => void;
 }): Promise<HydrateAgentFleetResult> {
@@ -105,12 +105,12 @@ export async function hydrateAgentFleetFromGateway(params: {
   }
 
   const gatewayKey = params.gatewayUrl.trim();
-  let settings: StudioSettings | null = null;
+  let settings: ROCclawSettings | null = null;
   if (gatewayKey) {
     try {
-      settings = await params.loadStudioSettings();
+      settings = await params.loadROCclawSettings();
     } catch (err) {
-      logError("Failed to load studio settings while loading agents.", err);
+      logError("Failed to load rocclaw settings while loading agents.", err);
     }
   }
 

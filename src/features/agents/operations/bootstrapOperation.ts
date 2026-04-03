@@ -8,21 +8,21 @@ import {
 import type { AgentState, AgentStoreSeed, FocusFilter } from "@/features/agents/state/store";
 import { fetchJson } from "@/lib/http";
 import type { GatewayModelPolicySnapshot } from "@/lib/gateway/models";
-import type { StudioSettings, StudioSettingsPatch } from "@/lib/rocclaw/settings";
+import type { ROCclawSettings, ROCclawSettingsPatch } from "@/lib/rocclaw/settings";
 import { normalizeGatewayKey } from "@/lib/rocclaw/settings";
 
-export type StudioBootstrapLoadCommand =
+export type ROCclawBootstrapLoadCommand =
   | { kind: "set-gateway-config-snapshot"; snapshot: GatewayModelPolicySnapshot }
   | { kind: "hydrate-agents"; seeds: AgentStoreSeed[]; initialSelectedAgentId: string | undefined }
   | { kind: "mark-session-created"; agentId: string; sessionSettingsSynced: boolean }
   | { kind: "apply-summary-patch"; agentId: string; patch: Partial<AgentState> }
   | { kind: "set-error"; message: string };
 
-export async function runStudioBootstrapLoadOperation(params: {
+export async function runROCclawBootstrapLoadOperation(params: {
   cachedConfigSnapshot: GatewayModelPolicySnapshot | null;
   preferredSelectedAgentId: string | null;
   hasCurrentSelection: boolean;
-}): Promise<StudioBootstrapLoadCommand[]> {
+}): Promise<ROCclawBootstrapLoadCommand[]> {
   try {
     const result = (
       await fetchJson<{ result: Awaited<ReturnType<typeof hydrateAgentFleetFromGateway>> }>(
@@ -43,7 +43,7 @@ export async function runStudioBootstrapLoadOperation(params: {
       suggestedSelectedAgentId: result.suggestedSelectedAgentId,
     });
 
-    const commands: StudioBootstrapLoadCommand[] = [];
+    const commands: ROCclawBootstrapLoadCommand[] = [];
     if (!params.cachedConfigSnapshot && result.configSnapshot) {
       commands.push({
         kind: "set-gateway-config-snapshot",
@@ -81,8 +81,8 @@ export async function runStudioBootstrapLoadOperation(params: {
   }
 }
 
-export function executeStudioBootstrapLoadCommands(params: {
-  commands: StudioBootstrapLoadCommand[];
+export function executeROCclawBootstrapLoadCommands(params: {
+  commands: ROCclawBootstrapLoadCommand[];
   setGatewayConfigSnapshot: (snapshot: GatewayModelPolicySnapshot) => void;
   hydrateAgents: (agents: AgentStoreSeed[], selectedAgentId?: string) => void;
   dispatchUpdateAgent: (agentId: string, patch: Partial<AgentState>) => void;
@@ -112,17 +112,17 @@ export function executeStudioBootstrapLoadCommands(params: {
   }
 }
 
-type StudioFocusedPreferenceLoadCommand =
+type ROCclawFocusedPreferenceLoadCommand =
   | { kind: "set-focused-preferences-loaded"; value: boolean }
   | { kind: "set-preferred-selected-agent-id"; agentId: string | null }
   | { kind: "set-focus-filter"; filter: FocusFilter }
   | { kind: "log-error"; message: string; error: unknown };
 
-export async function runStudioFocusedPreferenceLoadOperation(params: {
+export async function runROCclawFocusedPreferenceLoadOperation(params: {
   gatewayUrl: string;
-  loadStudioSettings: () => Promise<StudioSettings | null>;
+  loadROCclawSettings: () => Promise<ROCclawSettings | null>;
   isFocusFilterTouched: () => boolean;
-}): Promise<StudioFocusedPreferenceLoadCommand[]> {
+}): Promise<ROCclawFocusedPreferenceLoadCommand[]> {
   const key = params.gatewayUrl.trim();
   if (!key) {
     return [
@@ -132,7 +132,7 @@ export async function runStudioFocusedPreferenceLoadOperation(params: {
   }
 
   try {
-    const settings = await params.loadStudioSettings();
+    const settings = await params.loadROCclawSettings();
     if (!settings || params.isFocusFilterTouched()) {
       return [{ kind: "set-focused-preferences-loaded", value: true }];
     }
@@ -167,8 +167,8 @@ export async function runStudioFocusedPreferenceLoadOperation(params: {
   }
 }
 
-export function executeStudioFocusedPreferenceLoadCommands(params: {
-  commands: StudioFocusedPreferenceLoadCommand[];
+export function executeROCclawFocusedPreferenceLoadCommands(params: {
+  commands: ROCclawFocusedPreferenceLoadCommand[];
   setFocusedPreferencesLoaded: (value: boolean) => void;
   setPreferredSelectedAgentId: (agentId: string | null) => void;
   setFocusFilter: (filter: FocusFilter) => void;
@@ -191,20 +191,20 @@ export function executeStudioFocusedPreferenceLoadCommands(params: {
   }
 }
 
-type StudioFocusedPatchCommand = {
+type ROCclawFocusedPatchCommand = {
   kind: "schedule-settings-patch";
-  patch: StudioSettingsPatch;
+  patch: ROCclawSettingsPatch;
   debounceMs: number;
 } | {
   kind: "apply-settings-patch-now";
-  patch: StudioSettingsPatch;
+  patch: ROCclawSettingsPatch;
 };
 
-export function runStudioFocusFilterPersistenceOperation(params: {
+export function runROCclawFocusFilterPersistenceOperation(params: {
   gatewayUrl: string;
   focusFilterTouched: boolean;
   focusFilter: FocusFilter;
-}): StudioFocusedPatchCommand[] {
+}): ROCclawFocusedPatchCommand[] {
   const patchIntent = planFocusedFilterPatch({
     gatewayKey: params.gatewayUrl,
     focusFilterTouched: params.focusFilterTouched,
@@ -222,14 +222,14 @@ export function runStudioFocusFilterPersistenceOperation(params: {
   ];
 }
 
-export function runStudioFocusedSelectionPersistenceOperation(params: {
+export function runROCclawFocusedSelectionPersistenceOperation(params: {
   gatewayUrl: string;
   status: "connected" | "connecting" | "disconnected";
   focusedPreferencesLoaded: boolean;
   agentsLoadedOnce: boolean;
   selectedAgentId: string | null;
   lastPersistedSelectedAgentId?: string | null;
-}): StudioFocusedPatchCommand[] {
+}): ROCclawFocusedPatchCommand[] {
   const patchIntent = planFocusedSelectionPatch({
     gatewayKey: params.gatewayUrl,
     status: params.status,
@@ -255,10 +255,10 @@ export function runStudioFocusedSelectionPersistenceOperation(params: {
   return [];
 }
 
-export function executeStudioFocusedPatchCommands(params: {
-  commands: StudioFocusedPatchCommand[];
-  schedulePatch: (patch: StudioSettingsPatch, debounceMs?: number) => void;
-  applyPatchNow: (patch: StudioSettingsPatch) => Promise<void>;
+export function executeROCclawFocusedPatchCommands(params: {
+  commands: ROCclawFocusedPatchCommand[];
+  schedulePatch: (patch: ROCclawSettingsPatch, debounceMs?: number) => void;
+  applyPatchNow: (patch: ROCclawSettingsPatch) => Promise<void>;
   logError?: (message: string, error: unknown) => void;
 }): void {
   for (const command of params.commands) {
@@ -268,7 +268,7 @@ export function executeStudioFocusedPatchCommands(params: {
     }
     void params.applyPatchNow(command.patch).catch((error) => {
       if (params.logError) {
-        params.logError("Failed to persist focused studio preference immediately.", error);
+        params.logError("Failed to persist focused rocclaw preference immediately.", error);
       }
     });
   }

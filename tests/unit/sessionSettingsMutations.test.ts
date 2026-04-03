@@ -23,7 +23,7 @@ describe("session settings mutations helper", () => {
       dispatch,
       client,
       agentId: "agent-1",
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       field: "model",
       value: "openai/gpt-5",
     });
@@ -46,13 +46,13 @@ describe("session settings mutations helper", () => {
       dispatch,
       client,
       agentId: "agent-1",
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       field: "model",
       value: "openai/gpt-5",
     });
 
     expect(client.call).toHaveBeenCalledWith("sessions.patch", {
-      key: "agent:1:studio:abc",
+      key: "agent:1:rocclaw:abc",
       model: "openai/gpt-5",
     });
   });
@@ -68,13 +68,13 @@ describe("session settings mutations helper", () => {
       dispatch,
       client,
       agentId: "agent-1",
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       field: "thinkingLevel",
       value: "medium",
     });
 
     expect(client.call).toHaveBeenCalledWith("sessions.patch", {
-      key: "agent:1:studio:abc",
+      key: "agent:1:rocclaw:abc",
       thinkingLevel: "medium",
     });
     expect(dispatch).toHaveBeenCalledWith({
@@ -89,7 +89,7 @@ describe("session settings mutations helper", () => {
     const client = {
       call: vi.fn(async () => ({
         ok: true,
-        key: "agent:1:studio:abc",
+        key: "agent:1:rocclaw:abc",
         resolved: { modelProvider: "openai", model: "gpt-5-mini" },
       })),
     } as unknown as GatewayClient;
@@ -99,7 +99,7 @@ describe("session settings mutations helper", () => {
       dispatch,
       client,
       agentId: "agent-1",
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       field: "model",
       value: null,
     });
@@ -124,7 +124,7 @@ describe("session settings mutations helper", () => {
       dispatch,
       client,
       agentId: "agent-1",
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       field: "model",
       value: "openai/gpt-5",
     });
@@ -149,7 +149,7 @@ describe("session settings mutations helper", () => {
       dispatch,
       client,
       agentId: "agent-1",
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       field: "model",
       value: "openai/gpt-5",
     });
@@ -212,7 +212,7 @@ describe("session settings mutations helper", () => {
         useDomainIntents: true,
       }),
       agentId: "agent-1",
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       field: "model",
       value: "openai/gpt-5",
     });

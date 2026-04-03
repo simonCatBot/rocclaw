@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "rocCLAW control",
-  description: "Focused operator studio for the OpenClaw gateway.",
+  description: "Focused operator rocclaw for the OpenClaw gateway.",
   icons: {
     icon: "/logo.png",
     shortcut: "/logo.png",

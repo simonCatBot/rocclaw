@@ -4,7 +4,7 @@ import type { AgentState } from "@/features/agents/state/store";
 import type { PendingExecApproval } from "@/features/agents/approvals/types";
 import { createRuntimeWriteTransport } from "@/features/agents/operations/runtimeWriteTransport";
 import { GatewayResponseError } from "@/lib/gateway/errors";
-import { resolveExecApprovalViaStudio } from "@/features/agents/approvals/execApprovalResolveOperation";
+import { resolveExecApprovalViaROCclaw } from "@/features/agents/approvals/execApprovalResolveOperation";
 
 type SetState<T> = (next: T | ((current: T) => T)) => void;
 
@@ -62,7 +62,7 @@ describe("execApprovalResolveOperation", () => {
     const onAllowResolved = vi.fn();
     const onAllowed = vi.fn();
 
-    await resolveExecApprovalViaStudio({
+    await resolveExecApprovalViaROCclaw({
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
@@ -137,7 +137,7 @@ describe("execApprovalResolveOperation", () => {
     const unscopedApprovals = createState<PendingExecApproval[]>([]);
     const onAllowed = vi.fn();
 
-    await resolveExecApprovalViaStudio({
+    await resolveExecApprovalViaROCclaw({
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
@@ -200,7 +200,7 @@ describe("execApprovalResolveOperation", () => {
     const unscopedApprovals = createState<PendingExecApproval[]>([]);
     const onAllowed = vi.fn();
 
-    await resolveExecApprovalViaStudio({
+    await resolveExecApprovalViaROCclaw({
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
@@ -257,7 +257,7 @@ describe("execApprovalResolveOperation", () => {
     const approvalsByAgentId = createState<Record<string, PendingExecApproval[]>>({ a1: [approval] });
     const unscopedApprovals = createState<PendingExecApproval[]>([]);
 
-    await resolveExecApprovalViaStudio({
+    await resolveExecApprovalViaROCclaw({
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: true,

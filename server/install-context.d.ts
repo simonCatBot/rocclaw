@@ -1,4 +1,4 @@
-import type { StudioInstallContext } from "../src/lib/rocclaw/install-context";
+import type { ROCclawInstallContext } from "../src/lib/rocclaw/install-context";
 
 export type InstallContextCommandRunner = (
   file: string,
@@ -22,9 +22,9 @@ export function detectInstallContext(
     runCommand?: InstallContextCommandRunner;
     fetch?: typeof fetch;
   }
-): Promise<StudioInstallContext>;
+): Promise<ROCclawInstallContext>;
 
 export function buildStartupGuidance(params: {
-  installContext: StudioInstallContext;
+  installContext: ROCclawInstallContext;
   port: number;
 }): string[];

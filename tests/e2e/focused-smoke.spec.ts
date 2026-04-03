@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { stubRocclawRoute } from "./helpers/rocclawRoute";
 import { stubRuntimeRoutes } from "./helpers/runtimeRoute";
 
-test("loads focused studio empty state", async ({ page }) => {
+test("loads focused rocclaw empty state", async ({ page }) => {
   await stubRocclawRoute(page);
   await stubRuntimeRoutes(page);
 

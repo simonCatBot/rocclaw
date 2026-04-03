@@ -33,7 +33,7 @@ type RuntimeMock = {
 const loadRouteModule = async <T>(modulePath: string, runtimeMock: RuntimeMock) => {
   vi.resetModules();
   vi.doMock("@/lib/controlplane/runtime", () => ({
-    isStudioDomainApiModeEnabled: () => true,
+    isROCclawDomainApiModeEnabled: () => true,
     getControlPlaneRuntime: () => runtimeMock,
   }));
   return await import(modulePath) as T;
@@ -98,7 +98,7 @@ describe("runtime routes", () => {
   it("summary route returns degraded projection freshness when gateway start fails", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {
           throw new Error("gateway offline");
@@ -146,7 +146,7 @@ describe("runtime routes", () => {
   it("summary route includes structured start failure metadata when startup fails with connect metadata", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {
           throw new ControlPlaneGatewayConnectError({
@@ -197,7 +197,7 @@ describe("runtime routes", () => {
   it("summary route returns 503 when runtime initialization fails", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => {
         throw new Error("runtime init failed");
       },
@@ -221,7 +221,7 @@ describe("runtime routes", () => {
   it("summary route returns native mismatch remediation when runtime init fails on ABI drift", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => {
         const error = new Error(
           "The module '/tmp/better_sqlite3.node' was compiled against a different Node.js version using NODE_MODULE_VERSION 141."
@@ -250,7 +250,7 @@ describe("runtime routes", () => {
   it("summary route returns 404 when domain mode is disabled", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => false,
+      isROCclawDomainApiModeEnabled: () => false,
       getControlPlaneRuntime: vi.fn(),
     }));
 
@@ -1133,7 +1133,7 @@ describe("runtime routes", () => {
   it("stream route returns 503 when runtime cannot start", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {
           throw new Error("gateway unavailable");
@@ -1152,7 +1152,7 @@ describe("runtime routes", () => {
   it("agent-rename and agent-delete intent routes forward to runtime", async () => {
     const callGateway = vi.fn(async () => ({ ok: true }));
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         callGateway,
@@ -1192,7 +1192,7 @@ describe("runtime routes", () => {
   it("intent routes return 503 when runtime initialization fails", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => {
         throw new Error("runtime init failed");
       },
@@ -1216,7 +1216,7 @@ describe("runtime routes", () => {
   it("runtime fleet route hydrates through control-plane runtime", async () => {
     const callGateway = vi.fn(async () => ({ ok: true }));
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         snapshot: () => ({
@@ -1230,7 +1230,7 @@ describe("runtime routes", () => {
       }),
     }));
     vi.doMock("@/lib/rocclaw/settings-store", () => ({
-      loadStudioSettings: () => ({
+      loadROCclawSettings: () => ({
         version: 1,
         gateway: { url: "ws://localhost:3000/ws", token: "" },
         localGatewayDefaults: { url: "", token: "" },
@@ -1264,7 +1264,7 @@ describe("runtime routes", () => {
   it("runtime fleet route returns degraded projection payload when runtime cannot start", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {
           throw new Error("gateway unavailable");
@@ -1354,7 +1354,7 @@ describe("runtime routes", () => {
   it("runtime fleet route degrades when hydration fails with missing scope", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         snapshot: () => ({
@@ -1382,7 +1382,7 @@ describe("runtime routes", () => {
       }),
     }));
     vi.doMock("@/lib/rocclaw/settings-store", () => ({
-      loadStudioSettings: () => ({
+      loadROCclawSettings: () => ({
         version: 1,
         gateway: { url: "ws://localhost:3000/ws", token: "" },
         localGatewayDefaults: { url: "", token: "" },
@@ -1503,7 +1503,7 @@ describe("runtime routes", () => {
   it("runtime fleet route returns 503 when runtime initialization fails", async () => {
     vi.resetModules();
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => {
         throw new Error("runtime init failed");
       },

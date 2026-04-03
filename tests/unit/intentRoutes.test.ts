@@ -11,7 +11,7 @@ describe("intent routes", () => {
   it("chat-send route forwards to gateway intent runtime", async () => {
     const callGateway = vi.fn(async () => ({ runId: "run-1", status: "started" }));
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         callGateway,
@@ -44,7 +44,7 @@ describe("intent routes", () => {
   it("sessions-reset, session-settings-sync, and agent-wait routes forward expected payloads", async () => {
     const callGateway = vi.fn(async () => ({ ok: true }));
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         callGateway,
@@ -127,7 +127,7 @@ describe("intent routes", () => {
       return { ok: true };
     });
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         callGateway,
@@ -172,7 +172,7 @@ describe("intent routes", () => {
       return { ok: true };
     });
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         callGateway,
@@ -249,7 +249,7 @@ describe("intent routes", () => {
       return { ok: true };
     });
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         callGateway,
@@ -289,7 +289,7 @@ describe("intent routes", () => {
 
   it("chat-send returns deterministic gateway_unavailable response when runtime cannot start", async () => {
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {
           throw new Error("gateway unavailable");
@@ -320,7 +320,7 @@ describe("intent routes", () => {
 
   it("chat-send returns native mismatch remediation when runtime init fails", async () => {
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => {
         const error = new Error(
           "The module '/tmp/better_sqlite3.node' was compiled against a different Node.js version using NODE_MODULE_VERSION 141."
@@ -360,7 +360,7 @@ describe("intent routes", () => {
 
   it("chat-send returns 404 when domain mode is disabled", async () => {
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => false,
+      isROCclawDomainApiModeEnabled: () => false,
       getControlPlaneRuntime: vi.fn(),
     }));
     const mod = await import("@/app/api/intents/chat-send/route");
@@ -420,7 +420,7 @@ describe("intent routes", () => {
       return { ok: true };
     });
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         callGateway,
@@ -476,7 +476,7 @@ describe("intent routes", () => {
       });
     });
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => ({
         ensureStarted: async () => {},
         callGateway,

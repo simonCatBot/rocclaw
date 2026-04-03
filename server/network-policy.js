@@ -63,16 +63,16 @@ const isPublicHost = (host) => {
   return true;
 };
 
-const assertPublicHostAllowed = ({ host, studioAccessToken }) => {
+const assertPublicHostAllowed = ({ host, rocclawAccessToken }) => {
   if (!isPublicHost(host)) return;
 
-  const token = String(studioAccessToken ?? "").trim();
+  const token = String(rocclawAccessToken ?? "").trim();
   if (token) return;
 
   const normalized = normalizeHost(host) || String(host ?? "").trim() || "(unknown)";
   throw new Error(
-    `Refusing to bind Studio to public host "${normalized}" without STUDIO_ACCESS_TOKEN. ` +
-      "Set STUDIO_ACCESS_TOKEN or bind HOST to 127.0.0.1/::1/localhost."
+    `Refusing to bind ROCclaw to public host "${normalized}" without ROCCLAW_ACCESS_TOKEN. ` +
+      "Set ROCCLAW_ACCESS_TOKEN or bind HOST to 127.0.0.1/::1/localhost."
   );
 };
 

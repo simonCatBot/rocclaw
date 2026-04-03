@@ -46,7 +46,7 @@ describe("session settings sync helper", () => {
     await expect(
       syncGatewaySessionSettings({
         client,
-        sessionKey: "agent:1:studio:abc",
+        sessionKey: "agent:1:rocclaw:abc",
       })
     ).rejects.toThrow("At least one session setting must be provided.");
   });
@@ -58,13 +58,13 @@ describe("session settings sync helper", () => {
 
     await syncGatewaySessionSettings({
       client,
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       model: "openai/gpt-5",
       thinkingLevel: "medium",
     });
 
     expect(client.call).toHaveBeenCalledWith("sessions.patch", {
-      key: "agent:1:studio:abc",
+      key: "agent:1:rocclaw:abc",
       model: "openai/gpt-5",
       thinkingLevel: "medium",
     });
@@ -77,12 +77,12 @@ describe("session settings sync helper", () => {
 
     await syncGatewaySessionSettings({
       client,
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       model: null,
     });
 
     expect(client.call).toHaveBeenCalledWith("sessions.patch", {
-      key: "agent:1:studio:abc",
+      key: "agent:1:rocclaw:abc",
       model: null,
     });
   });
@@ -94,14 +94,14 @@ describe("session settings sync helper", () => {
 
     await syncGatewaySessionSettings({
       client,
-      sessionKey: "agent:1:studio:abc",
+      sessionKey: "agent:1:rocclaw:abc",
       execHost: "gateway",
       execSecurity: "allowlist",
       execAsk: "always",
     });
 
     expect(client.call).toHaveBeenCalledWith("sessions.patch", {
-      key: "agent:1:studio:abc",
+      key: "agent:1:rocclaw:abc",
       execHost: "gateway",
       execSecurity: "allowlist",
       execAsk: "always",

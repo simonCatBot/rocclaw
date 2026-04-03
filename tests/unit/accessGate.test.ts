@@ -42,7 +42,7 @@ describe("createAccessGate", () => {
     const { createAccessGate } = await import("../../server/access-gate");
     const gate = createAccessGate({ token: "abc" });
     expect(
-      gate.allowUpgrade({ headers: { cookie: "studio_access=abc" } })
+      gate.allowUpgrade({ headers: { cookie: "rocclaw_access=abc" } })
     ).toBe(true);
   });
 });

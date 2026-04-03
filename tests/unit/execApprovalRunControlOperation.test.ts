@@ -13,10 +13,10 @@ import type { ExecApprovalPendingSnapshot } from "@/features/agents/approvals/ex
 import type { AgentState } from "@/features/agents/state/store";
 import { EXEC_APPROVAL_AUTO_RESUME_MARKER } from "@/lib/text/message-extract";
 import type { EventFrame } from "@/lib/gateway/GatewayClient";
-import { postStudioIntent } from "@/lib/controlplane/intents-client";
+import { postROCclawIntent } from "@/lib/controlplane/intents-client";
 
 vi.mock("@/lib/controlplane/intents-client", () => ({
-  postStudioIntent: vi.fn(async () => ({ ok: true })),
+  postROCclawIntent: vi.fn(async () => ({ ok: true })),
 }));
 
 const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
@@ -82,20 +82,20 @@ const createPendingState = (
 });
 
 describe("execApprovalRunControlOperation", () => {
-  const mockedPostStudioIntent = vi.mocked(postStudioIntent);
+  const mockedPostROCclawIntent = vi.mocked(postROCclawIntent);
 
   afterEach(() => {
-    delete process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE;
+    delete process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE;
   });
 
   it("uses legacy gateway calls when domain mode is disabled", () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    expect(process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE).toBe("false");
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    expect(process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE).toBe("false");
   });
 
   it("pauses a run for pending approval after stale paused-run cleanup", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    mockedPostStudioIntent.mockReset();
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    mockedPostROCclawIntent.mockReset();
     const call = vi.fn(async () => ({ ok: true }));
     const pausedRunIdByAgentId = new Map<string, string>([
       ["stale-agent", "stale-run"],
@@ -106,7 +106,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       approval: createApproval("approval-1"),
       preferredAgentId: "agent-1",
@@ -124,8 +124,8 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("reverts paused-run map entry when pause abort call fails", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    mockedPostStudioIntent.mockReset();
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    mockedPostROCclawIntent.mockReset();
     const call = vi.fn(async () => {
       throw new Error("abort failed");
     });
@@ -137,7 +137,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       approval: createApproval("approval-1"),
       preferredAgentId: "agent-1",
@@ -155,8 +155,8 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("auto-resumes in order: dispatch running, wait paused run, then send follow-up", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    mockedPostStudioIntent.mockReset();
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    mockedPostROCclawIntent.mockReset();
     const call = vi.fn(async (method: string) => {
       if (method === "agent.wait") return { status: "ok" };
       throw new Error(`Unexpected method ${method}`);
@@ -170,7 +170,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       dispatch,
       approval: createApproval("approval-1"),
@@ -210,8 +210,8 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("skips follow-up send when post-wait auto-resume intent no longer holds", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    mockedPostStudioIntent.mockReset();
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    mockedPostROCclawIntent.mockReset();
     const call = vi.fn(async () => ({ status: "ok" }));
     const dispatch = vi.fn();
     const sendChatMessage = vi.fn(async () => ({ ok: true }));
@@ -231,7 +231,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       dispatch,
       approval: createApproval("approval-1"),
@@ -252,8 +252,8 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("re-evaluates pending approvals after wait and skips follow-up when blocked", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    mockedPostStudioIntent.mockReset();
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    mockedPostROCclawIntent.mockReset();
     const call = vi.fn(async () => ({ status: "ok" }));
     const dispatch = vi.fn();
     const sendChatMessage = vi.fn(async () => ({ ok: true }));
@@ -277,7 +277,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       dispatch,
       approval: createApproval("approval-1"),
@@ -299,8 +299,8 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("stops auto-resume when paused-run wait fails with disconnect-like error", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    mockedPostStudioIntent.mockReset();
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    mockedPostROCclawIntent.mockReset();
     const waitError = new Error("connection closed");
     const call = vi.fn(async (method: string) => {
       if (method === "agent.wait") {
@@ -318,7 +318,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: false,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       dispatch,
       approval: createApproval("approval-1"),
@@ -340,8 +340,8 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("resolves approvals through resolver and delegates allow flow to auto-resume operation", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    mockedPostStudioIntent.mockReset();
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    mockedPostROCclawIntent.mockReset();
     const resolveExecApproval = vi.fn(async (params: { onAllowed?: (input: {
       approval: PendingExecApproval;
       targetAgentId: string;
@@ -358,7 +358,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call: vi.fn(async () => ({ ok: true })) } as never,
         useDomainIntents: false,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       approvalId: "approval-1",
       decision: "allow-once",
@@ -384,8 +384,8 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("executes ingress commands from gateway events", () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "false";
-    mockedPostStudioIntent.mockReset();
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "false";
+    mockedPostROCclawIntent.mockReset();
     const dispatch = vi.fn();
     const replacePendingState = vi.fn();
     const pauseRunForApproval = vi.fn(async () => undefined);
@@ -436,9 +436,9 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("uses intents for pause and wait in domain mode", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "true";
-    mockedPostStudioIntent.mockReset();
-    mockedPostStudioIntent.mockResolvedValue({ ok: true });
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "true";
+    mockedPostROCclawIntent.mockReset();
+    mockedPostROCclawIntent.mockResolvedValue({ ok: true });
     const call = vi.fn(async () => ({ ok: true }));
     const pausedRunIdByAgentId = new Map<string, string>();
 
@@ -447,7 +447,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: true,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       approval: createApproval("approval-1"),
       preferredAgentId: "agent-1",
@@ -462,7 +462,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: true,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       dispatch: vi.fn(),
       approval: createApproval("approval-1"),
@@ -475,10 +475,10 @@ describe("execApprovalRunControlOperation", () => {
       sendChatMessage: vi.fn(async () => ({ ok: true })),
     });
 
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/chat-abort", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/chat-abort", {
       sessionKey: "agent:agent-1:main",
     });
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/agent-wait", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/agent-wait", {
       runId: "run-1",
       timeoutMs: EXEC_APPROVAL_AUTO_RESUME_WAIT_TIMEOUT_MS,
     });
@@ -487,9 +487,9 @@ describe("execApprovalRunControlOperation", () => {
   });
 
   it("pauses in domain mode when status is disconnected", async () => {
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "true";
-    mockedPostStudioIntent.mockReset();
-    mockedPostStudioIntent.mockResolvedValue({ ok: true });
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "true";
+    mockedPostROCclawIntent.mockReset();
+    mockedPostROCclawIntent.mockResolvedValue({ ok: true });
     const call = vi.fn(async () => ({ ok: true }));
     const pausedRunIdByAgentId = new Map<string, string>();
 
@@ -498,7 +498,7 @@ describe("execApprovalRunControlOperation", () => {
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
         useDomainIntents: true,
-        postIntent: mockedPostStudioIntent,
+        postIntent: mockedPostROCclawIntent,
       }),
       approval: createApproval("approval-1"),
       preferredAgentId: "agent-1",
@@ -509,7 +509,7 @@ describe("execApprovalRunControlOperation", () => {
     });
 
     expect(pausedRunIdByAgentId.get("agent-1")).toBe("run-1");
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/chat-abort", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/chat-abort", {
       sessionKey: "agent:agent-1:main",
     });
     expect(call).not.toHaveBeenCalledWith("chat.abort", expect.anything());

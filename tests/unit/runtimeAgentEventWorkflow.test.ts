@@ -23,7 +23,7 @@ type InputOverrides = Partial<Omit<RuntimeAgentWorkflowInput, "payload" | "agent
 const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
   agentId: "agent-1",
   name: "Agent One",
-  sessionKey: "agent:agent-1:studio:test-session",
+  sessionKey: "agent:agent-1:rocclaw:test-session",
   status: "running",
   sessionCreated: true,
   awaitingUserInput: false,
@@ -58,7 +58,7 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => ({
 
 const createPayload = (overrides?: Partial<AgentEventPayload>): AgentEventPayload => ({
   runId: "run-1",
-  sessionKey: "agent:agent-1:studio:test-session",
+  sessionKey: "agent:agent-1:rocclaw:test-session",
   stream: "assistant",
   data: { delta: "hello" },
   ...(overrides ?? {}),

@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  mergeStudioSettings,
-  normalizeStudioSettings,
+  mergeROCclawSettings,
+  normalizeROCclawSettings,
   resolveFocusedPreference,
 } from "@/lib/rocclaw/settings";
 
-describe("studio settings normalization", () => {
+describe("rocclaw settings normalization", () => {
   it("returns defaults for empty input", () => {
-    const normalized = normalizeStudioSettings(null);
+    const normalized = normalizeROCclawSettings(null);
     expect(normalized.version).toBe(1);
     expect(normalized.gateway).toBeNull();
     expect(normalized.focused).toEqual({});
@@ -16,7 +16,7 @@ describe("studio settings normalization", () => {
   });
 
   it("normalizes gateway entries", () => {
-    const normalized = normalizeStudioSettings({
+    const normalized = normalizeROCclawSettings({
       gateway: { url: " ws://localhost:18789 ", token: " token " },
     });
 
@@ -25,7 +25,7 @@ describe("studio settings normalization", () => {
   });
 
   it("normalizes loopback ip gateway urls to localhost", () => {
-    const normalized = normalizeStudioSettings({
+    const normalized = normalizeROCclawSettings({
       gateway: { url: "ws://127.0.0.1:18789", token: "token" },
     });
 
@@ -33,7 +33,7 @@ describe("studio settings normalization", () => {
   });
 
   it("normalizes focused preference keys to canonical loopback url", () => {
-    const normalized = normalizeStudioSettings({
+    const normalized = normalizeROCclawSettings({
       focused: {
         "ws://127.0.0.1:18789": {
           mode: "focused",
@@ -61,7 +61,7 @@ describe("studio settings normalization", () => {
   });
 
   it("normalizes_dual_mode_preferences", () => {
-    const normalized = normalizeStudioSettings({
+    const normalized = normalizeROCclawSettings({
       focused: {
         " ws://localhost:18789 ": {
           mode: "focused",
@@ -89,7 +89,7 @@ describe("studio settings normalization", () => {
   });
 
   it("normalizes_legacy_idle_filter_to_approvals", () => {
-    const normalized = normalizeStudioSettings({
+    const normalized = normalizeROCclawSettings({
       focused: {
         "ws://localhost:18789": {
           mode: "focused",
@@ -107,7 +107,7 @@ describe("studio settings normalization", () => {
   });
 
   it("merges_dual_mode_preferences", () => {
-    const current = normalizeStudioSettings({
+    const current = normalizeROCclawSettings({
       focused: {
         "ws://localhost:18789": {
           mode: "focused",
@@ -117,7 +117,7 @@ describe("studio settings normalization", () => {
       },
     });
 
-    const merged = mergeStudioSettings(current, {
+    const merged = mergeROCclawSettings(current, {
       focused: {
         "ws://localhost:18789": {
           filter: "approvals",
@@ -133,7 +133,7 @@ describe("studio settings normalization", () => {
   });
 
   it("merges focused patches across loopback aliases under one key", () => {
-    const current = normalizeStudioSettings({
+    const current = normalizeROCclawSettings({
       focused: {
         "ws://localhost:18789": {
           mode: "focused",
@@ -143,7 +143,7 @@ describe("studio settings normalization", () => {
       },
     });
 
-    const merged = mergeStudioSettings(current, {
+    const merged = mergeROCclawSettings(current, {
       focused: {
         "ws://127.0.0.1:18789": {
           selectedAgentId: "agent-2",
@@ -161,11 +161,11 @@ describe("studio settings normalization", () => {
   });
 
   it("preserves gateway token when patching only url", () => {
-    const current = normalizeStudioSettings({
+    const current = normalizeROCclawSettings({
       gateway: { url: "ws://gateway.old:18789", token: "secret-token" },
     });
 
-    const merged = mergeStudioSettings(current, {
+    const merged = mergeROCclawSettings(current, {
       gateway: { url: "ws://gateway.new:18789" },
     });
 
@@ -176,7 +176,7 @@ describe("studio settings normalization", () => {
   });
 
   it("normalizes avatar seeds per gateway", () => {
-    const normalized = normalizeStudioSettings({
+    const normalized = normalizeROCclawSettings({
       avatars: {
         " ws://localhost:18789 ": {
           " agent-1 ": " seed-1 ",
@@ -192,7 +192,7 @@ describe("studio settings normalization", () => {
   });
 
   it("merges avatar patches", () => {
-    const current = normalizeStudioSettings({
+    const current = normalizeROCclawSettings({
       avatars: {
         "ws://localhost:18789": {
           "agent-1": "seed-1",
@@ -200,7 +200,7 @@ describe("studio settings normalization", () => {
       },
     });
 
-    const merged = mergeStudioSettings(current, {
+    const merged = mergeROCclawSettings(current, {
       avatars: {
         "ws://localhost:18789": {
           "agent-1": "seed-2",

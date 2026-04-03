@@ -6,29 +6,29 @@ import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import { fetchJson } from "@/lib/http";
 import {
-  defaultStudioInstallContext,
-  type StudioInstallContext,
+  defaultROCclawInstallContext,
+  type ROCclawInstallContext,
 } from "@/lib/rocclaw/install-context";
 import {
-  defaultStudioSettings,
-  type StudioGatewaySettings,
-  type StudioSettings,
-  type StudioSettingsPatch,
+  defaultROCclawSettings,
+  type ROCclawGatewaySettings,
+  type ROCclawSettings,
+  type ROCclawSettingsPatch,
 } from "@/lib/rocclaw/settings";
-import type { StudioSettingsResponse } from "@/lib/rocclaw/coordinator";
+import type { ROCclawSettingsResponse } from "@/lib/rocclaw/coordinator";
 
 const DEFAULT_UPSTREAM_GATEWAY_URL =
   process.env.NEXT_PUBLIC_GATEWAY_URL || "ws://localhost:18789";
 
 const removedGatewayClient: GatewayClient = {
   call: async () => {
-    throw new Error("Browser gateway transport has been removed. Use Studio domain APIs.");
+    throw new Error("Browser gateway transport has been removed. Use ROCclaw domain APIs.");
   },
   onEvent: () => () => {},
   onGap: () => () => {},
 };
 
-const normalizeLocalGatewayDefaults = (value: unknown): StudioGatewaySettings | null => {
+const normalizeLocalGatewayDefaults = (value: unknown): ROCclawGatewaySettings | null => {
   if (!value || typeof value !== "object") return null;
   const raw = value as { url?: unknown; token?: unknown };
   const url = typeof raw.url === "string" ? raw.url.trim() : "";
@@ -45,7 +45,7 @@ type GatewayStartFailure = {
 } | null;
 
 const CONTROL_UI_COMPATIBILITY_GUIDANCE =
-  "OpenClaw rejected this connection because its control-ui compatibility mode needs HTTPS or localhost device identity. Use wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the Studio host.";
+  "OpenClaw rejected this connection because its control-ui compatibility mode needs HTTPS or localhost device identity. Use wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the ROCclaw host.";
 
 const readGatewayStartFailureProfileId = (value: GatewayStartFailure): string =>
   value && typeof value.profileId === "string" ? value.profileId.trim().toLowerCase() : "";
@@ -112,24 +112,24 @@ type TestConnectionResponse = {
   startFailure?: GatewayStartFailure;
 };
 
-type StudioSettingsCoordinatorLike = {
-  loadSettings: () => Promise<StudioSettings | null>;
-  loadSettingsEnvelope?: () => Promise<StudioSettingsResponse>;
+type ROCclawSettingsCoordinatorLike = {
+  loadSettings: () => Promise<ROCclawSettings | null>;
+  loadSettingsEnvelope?: () => Promise<ROCclawSettingsResponse>;
   flushPending: () => Promise<void>;
 };
 
-type StudioGatewaySettingsState = {
+type ROCclawGatewaySettingsState = {
   client: GatewayClient;
   status: GatewayStatus;
   statusReason: string | null;
   gatewayUrl: string;
   draftGatewayUrl: string;
   token: string;
-  localGatewayDefaults: StudioGatewaySettings | null;
+  localGatewayDefaults: ROCclawGatewaySettings | null;
   localGatewayDefaultsHasToken: boolean;
   hasStoredToken: boolean;
   hasUnsavedChanges: boolean;
-  installContext: StudioInstallContext;
+  installContext: ROCclawInstallContext;
   domainApiModeEnabled: boolean;
   error: string | null;
   testResult:
@@ -172,19 +172,19 @@ const fetchRuntimeSummaryEnvelope = async (): Promise<RuntimeSummaryEnvelope> =>
   return data;
 };
 
-export const useStudioGatewaySettings = (
-  settingsCoordinator: StudioSettingsCoordinatorLike
-): StudioGatewaySettingsState => {
+export const useROCclawGatewaySettings = (
+  settingsCoordinator: ROCclawSettingsCoordinatorLike
+): ROCclawGatewaySettingsState => {
   const [gatewayUrl, setGatewayUrlState] = useState(DEFAULT_UPSTREAM_GATEWAY_URL);
   const [draftGatewayUrl, setDraftGatewayUrlState] = useState(DEFAULT_UPSTREAM_GATEWAY_URL);
   const [token, setTokenState] = useState("");
-  const [localGatewayDefaults, setLocalGatewayDefaults] = useState<StudioGatewaySettings | null>(
+  const [localGatewayDefaults, setLocalGatewayDefaults] = useState<ROCclawGatewaySettings | null>(
     null
   );
   const [localGatewayDefaultsHasToken, setLocalGatewayDefaultsHasToken] = useState(false);
   const [hasStoredToken, setHasStoredToken] = useState(false);
-  const [installContext, setInstallContext] = useState<StudioInstallContext>(
-    defaultStudioInstallContext()
+  const [installContext, setInstallContext] = useState<ROCclawInstallContext>(
+    defaultROCclawInstallContext()
   );
   const domainApiModeEnabled = true;
   const [status, setStatus] = useState<GatewayStatus>("disconnected");
@@ -265,7 +265,7 @@ export const useStudioGatewaySettings = (
 
   const applySettingsEnvelope = useCallback(
     (
-      envelope: StudioSettingsResponse,
+      envelope: ROCclawSettingsResponse,
       options: {
         resetDraft: boolean;
       } = { resetDraft: true }
@@ -277,7 +277,7 @@ export const useStudioGatewaySettings = (
       setHasStoredToken(Boolean(envelope.gatewayMeta?.hasStoredToken));
       setLocalGatewayDefaults(normalizeLocalGatewayDefaults(envelope.localGatewayDefaults));
       setLocalGatewayDefaultsHasToken(Boolean(envelope.localGatewayDefaultsMeta?.hasToken));
-      setInstallContext(envelope.installContext ?? defaultStudioInstallContext());
+      setInstallContext(envelope.installContext ?? defaultROCclawInstallContext());
       if (options.resetDraft) {
         setDraftGatewayUrlState(nextUrl);
         setTokenState("");
@@ -294,7 +294,7 @@ export const useStudioGatewaySettings = (
           typeof settingsCoordinator.loadSettingsEnvelope === "function"
             ? await settingsCoordinator.loadSettingsEnvelope()
             : {
-                settings: (await settingsCoordinator.loadSettings()) ?? defaultStudioSettings(),
+                settings: (await settingsCoordinator.loadSettings()) ?? defaultROCclawSettings(),
                 localGatewayDefaults: null,
               };
         if (cancelled) return;
@@ -341,12 +341,12 @@ export const useStudioGatewaySettings = (
     didAutoConnectRef.current = false;
     try {
       await settingsCoordinator.flushPending();
-      const patch: StudioSettingsPatch = {
+      const patch: ROCclawSettingsPatch = {
         gateway: trimmedToken
           ? { url: trimmedGatewayUrl, token: trimmedToken }
           : { url: trimmedGatewayUrl },
       };
-      const envelope = await fetchJson<StudioSettingsResponse>("/api/rocclaw", {
+      const envelope = await fetchJson<ROCclawSettingsResponse>("/api/rocclaw", {
         method: "PUT",
         keepalive: true,
         headers: { "Content-Type": "application/json" },

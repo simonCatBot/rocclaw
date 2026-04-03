@@ -12,7 +12,7 @@ describe("runtime route bootstrap", () => {
 
   it("returns mode-disabled when domain mode is off", async () => {
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => false,
+      isROCclawDomainApiModeEnabled: () => false,
       getControlPlaneRuntime: vi.fn(),
     }));
 
@@ -23,7 +23,7 @@ describe("runtime route bootstrap", () => {
 
   it("returns runtime-init-failed when runtime creation throws", async () => {
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => {
         throw new Error("runtime init failed");
       },
@@ -43,7 +43,7 @@ describe("runtime route bootstrap", () => {
 
   it("classifies better-sqlite3 ABI mismatch as native module mismatch", async () => {
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => {
         const error = new Error(
           "The module '/tmp/better_sqlite3.node' was compiled against a different Node.js version using NODE_MODULE_VERSION 141."
@@ -74,7 +74,7 @@ describe("runtime route bootstrap", () => {
       },
     };
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => runtime,
     }));
 
@@ -103,7 +103,7 @@ describe("runtime route bootstrap", () => {
       },
     };
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => runtime,
     }));
 
@@ -128,7 +128,7 @@ describe("runtime route bootstrap", () => {
       ensureStarted: async () => {},
     };
     vi.doMock("@/lib/controlplane/runtime", () => ({
-      isStudioDomainApiModeEnabled: () => true,
+      isROCclawDomainApiModeEnabled: () => true,
       getControlPlaneRuntime: () => runtime,
     }));
 

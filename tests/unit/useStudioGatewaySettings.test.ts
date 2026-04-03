@@ -3,15 +3,15 @@ import { act, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { fetchJson } from "@/lib/http";
-import type { StudioSettingsResponse } from "@/lib/rocclaw/coordinator";
-import { defaultStudioInstallContext } from "@/lib/rocclaw/install-context";
-import { useStudioGatewaySettings } from "@/lib/rocclaw/useStudioGatewaySettings";
+import type { ROCclawSettingsResponse } from "@/lib/rocclaw/coordinator";
+import { defaultROCclawInstallContext } from "@/lib/rocclaw/install-context";
+import { useROCclawGatewaySettings } from "@/lib/rocclaw/useROCclawGatewaySettings";
 
 vi.mock("@/lib/http", () => ({
   fetchJson: vi.fn(),
 }));
 
-type HookValue = ReturnType<typeof useStudioGatewaySettings>;
+type HookValue = ReturnType<typeof useROCclawGatewaySettings>;
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -29,7 +29,7 @@ const createDeferred = <T,>(): Deferred<T> => {
   return { promise, resolve, reject };
 };
 
-const buildEnvelope = (): StudioSettingsResponse => ({
+const buildEnvelope = (): ROCclawSettingsResponse => ({
   settings: {
     version: 1,
     gateway: {
@@ -47,7 +47,7 @@ const buildEnvelope = (): StudioSettingsResponse => ({
   gatewayMeta: {
     hasStoredToken: true,
   },
-  installContext: defaultStudioInstallContext(),
+  installContext: defaultROCclawInstallContext(),
   domainApiModeEnabled: true,
 });
 
@@ -60,7 +60,7 @@ const renderHook = () => {
   const valueRef: { current: HookValue | null } = { current: null };
 
   const Probe = () => {
-    const value = useStudioGatewaySettings(coordinator);
+    const value = useROCclawGatewaySettings(coordinator);
     useEffect(() => {
       valueRef.current = value;
     }, [value]);
@@ -81,7 +81,7 @@ const renderHook = () => {
   };
 };
 
-describe("useStudioGatewaySettings", () => {
+describe("useROCclawGatewaySettings", () => {
   const mockedFetchJson = vi.mocked(fetchJson);
   const fetchMock = vi.fn();
 
@@ -203,10 +203,10 @@ describe("useStudioGatewaySettings", () => {
     expect(ctx.getValue().testResult).toEqual({
       kind: "error",
       message:
-        "OpenClaw rejected this connection because its control-ui compatibility mode needs HTTPS or localhost device identity. Use wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the Studio host.",
+        "OpenClaw rejected this connection because its control-ui compatibility mode needs HTTPS or localhost device identity. Use wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the ROCclaw host.",
     });
     expect(ctx.getValue().error).toBe(
-      "OpenClaw rejected this connection because its control-ui compatibility mode needs HTTPS or localhost device identity. Use wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the Studio host."
+      "OpenClaw rejected this connection because its control-ui compatibility mode needs HTTPS or localhost device identity. Use wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the ROCclaw host."
     );
 
     ctx.unmount();
@@ -278,7 +278,7 @@ describe("useStudioGatewaySettings", () => {
       expect(ctx.getValue().status).toBe("error");
     });
     expect(ctx.getValue().error).toBe(
-      "OpenClaw rejected this connection because its control-ui compatibility mode needs HTTPS or localhost device identity. Use wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the Studio host."
+      "OpenClaw rejected this connection because its control-ui compatibility mode needs HTTPS or localhost device identity. Use wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the ROCclaw host."
     );
 
     ctx.unmount();

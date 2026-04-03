@@ -26,7 +26,7 @@ export const resolveGatewaySshTargetFromGatewayUrl = (
   const trimmed = gatewayUrl.trim();
   if (!trimmed) {
     throw new Error(
-      `Gateway URL is missing. Set it in Studio settings or set ${SSH_TARGET_ENV}.`
+      `Gateway URL is missing. Set it in ROCclaw settings or set ${SSH_TARGET_ENV}.`
     );
   }
   let hostname: string;

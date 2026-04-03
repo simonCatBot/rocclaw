@@ -32,8 +32,8 @@ const resolveStateDir = (env = process.env) => {
   return path.join(home, NEW_STATE_DIRNAME);
 };
 
-const resolveStudioSettingsPath = (env = process.env) => {
-  return path.join(resolveStateDir(env), "openclaw-studio", "settings.json");
+const resolveROCclawSettingsPath = (env = process.env) => {
+  return path.join(resolveStateDir(env), "openclaw-rocclaw", "settings.json");
 };
 
 const readJsonFile = (filePath) => {
@@ -69,7 +69,7 @@ const readOpenclawGatewayDefaults = (env = process.env) => {
 };
 
 const loadUpstreamGatewaySettings = (env = process.env) => {
-  const parsed = readJsonFile(resolveStudioSettingsPath(env));
+  const parsed = readJsonFile(resolveROCclawSettingsPath(env));
   const gateway = parsed && typeof parsed === "object" ? parsed.gateway : null;
   const url = typeof gateway?.url === "string" ? gateway.url.trim() : "";
   const token = typeof gateway?.token === "string" ? gateway.token.trim() : "";
@@ -89,7 +89,7 @@ const loadUpstreamGatewaySettings = (env = process.env) => {
 };
 
 module.exports = {
-  resolveStudioSettingsPath,
+  resolveROCclawSettingsPath,
   loadUpstreamGatewaySettings,
   readOpenclawGatewayDefaults,
 };

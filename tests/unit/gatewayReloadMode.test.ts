@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  ensureGatewayReloadModeHotForLocalStudio,
+  ensureGatewayReloadModeHotForLocalROCclaw,
   shouldAwaitDisconnectRestartForRemoteMutation,
 } from "@/lib/gateway/gatewayReloadMode";
 import { GatewayResponseError, type GatewayClient } from "@/lib/gateway/GatewayClient";
 
-describe("ensureGatewayReloadModeHotForLocalStudio", () => {
+describe("ensureGatewayReloadModeHotForLocalROCclaw", () => {
   it("skips non-local upstream gateways", async () => {
     const client = { call: vi.fn() } as unknown as GatewayClient;
-    await ensureGatewayReloadModeHotForLocalStudio({
+    await ensureGatewayReloadModeHotForLocalROCclaw({
       client,
       upstreamGatewayUrl: "ws://10.0.0.5:18789",
     });
@@ -35,7 +35,7 @@ describe("ensureGatewayReloadModeHotForLocalStudio", () => {
       }),
     } as unknown as GatewayClient;
 
-    await ensureGatewayReloadModeHotForLocalStudio({
+    await ensureGatewayReloadModeHotForLocalROCclaw({
       client,
       upstreamGatewayUrl: "ws://127.0.0.1:18789",
     });
@@ -54,7 +54,7 @@ describe("ensureGatewayReloadModeHotForLocalStudio", () => {
       }),
     } as unknown as GatewayClient;
 
-    await ensureGatewayReloadModeHotForLocalStudio({
+    await ensureGatewayReloadModeHotForLocalROCclaw({
       client,
       upstreamGatewayUrl: "ws://localhost:18789",
     });
@@ -81,7 +81,7 @@ describe("ensureGatewayReloadModeHotForLocalStudio", () => {
       }),
     } as unknown as GatewayClient;
 
-    await ensureGatewayReloadModeHotForLocalStudio({
+    await ensureGatewayReloadModeHotForLocalROCclaw({
       client,
       upstreamGatewayUrl: "ws://127.0.0.1:18789",
     });

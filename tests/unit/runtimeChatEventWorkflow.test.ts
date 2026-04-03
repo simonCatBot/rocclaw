@@ -23,7 +23,7 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => {
   const base: AgentState = {
     agentId: "agent-1",
     name: "Agent One",
-    sessionKey: "agent:agent-1:studio:test-session",
+    sessionKey: "agent:agent-1:rocclaw:test-session",
     status: "running",
     sessionCreated: true,
     awaitingUserInput: false,
@@ -62,7 +62,7 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => {
 
 const createPayload = (overrides?: Partial<ChatEventPayload>): ChatEventPayload => ({
   runId: "run-1",
-  sessionKey: "agent:agent-1:studio:test-session",
+  sessionKey: "agent:agent-1:rocclaw:test-session",
   state: "delta",
   message: { role: "assistant", content: "Hello" },
   ...(overrides ?? {}),
@@ -272,7 +272,7 @@ describe("runtime chat event workflow", () => {
 
     expect(findCommand(result.commands, "markThinkingDebugSession")).toEqual({
       kind: "markThinkingDebugSession",
-      sessionKey: "agent:agent-1:studio:test-session",
+      sessionKey: "agent:agent-1:rocclaw:test-session",
     });
 
     const warn = findCommand(result.commands, "logWarn");

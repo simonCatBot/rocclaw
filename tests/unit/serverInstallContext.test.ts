@@ -15,7 +15,7 @@ describe("server install context detector", () => {
         return {
           stdout: JSON.stringify({
             BackendState: "Running",
-            Self: { DNSName: "studio-host.tailnet.ts.net." },
+            Self: { DNSName: "rocclaw-host.tailnet.ts.net." },
           }),
         };
       }
@@ -26,7 +26,7 @@ describe("server install context detector", () => {
       {
         NODE_ENV: "test",
         SSH_CONNECTION: "1 2 3 4",
-        STUDIO_ACCESS_TOKEN: "studio-secret",
+        ROCCLAW_ACCESS_TOKEN: "rocclaw-secret",
       },
       {
         resolveHosts: () => ["127.0.0.1"],
@@ -39,16 +39,16 @@ describe("server install context detector", () => {
       }
     );
 
-    expect(context.studioHost.remoteShell).toBe(true);
-    expect(context.studioHost.loopbackOnly).toBe(true);
-    expect(context.studioHost.studioAccessTokenConfigured).toBe(true);
+    expect(context.rocclawHost.remoteShell).toBe(true);
+    expect(context.rocclawHost.loopbackOnly).toBe(true);
+    expect(context.rocclawHost.rocclawAccessTokenConfigured).toBe(true);
     expect(context.localGateway.defaultsDetected).toBe(true);
     expect(context.localGateway.hasToken).toBe(true);
     expect(context.localGateway.probeHealthy).toBe(true);
-    expect(context.studioCli.installed).toBe(false);
-    expect(context.studioCli.updateAvailable).toBe(false);
+    expect(context.rocclawCli.installed).toBe(false);
+    expect(context.rocclawCli.updateAvailable).toBe(false);
     expect(context.tailscale.loggedIn).toBe(true);
-    expect(context.tailscale.dnsName).toBe("studio-host.tailnet.ts.net");
+    expect(context.tailscale.dnsName).toBe("rocclaw-host.tailnet.ts.net");
   });
 
   it("falls back cleanly when openclaw and tailscale are missing", async () => {
@@ -74,8 +74,8 @@ describe("server install context detector", () => {
     expect(context.localGateway.cliAvailable).toBe(false);
     expect(context.localGateway.probeHealthy).toBe(false);
     expect(context.localGateway.issues).toContain("cli_not_found");
-    expect(context.studioCli.installed).toBe(false);
-    expect(context.studioCli.updateAvailable).toBe(false);
+    expect(context.rocclawCli.installed).toBe(false);
+    expect(context.rocclawCli.updateAvailable).toBe(false);
     expect(context.tailscale.installed).toBe(false);
     expect(context.tailscale.loggedIn).toBe(false);
   });
@@ -86,13 +86,13 @@ describe("server install context detector", () => {
     const lines = buildStartupGuidance({
       port: 3000,
       installContext: {
-        studioHost: {
+        rocclawHost: {
           hostname: "ip-10-0-1-35",
           configuredHosts: ["127.0.0.1"],
           publicHosts: [],
           loopbackOnly: true,
           remoteShell: true,
-          studioAccessTokenConfigured: false,
+          rocclawAccessTokenConfigured: false,
         },
         localGateway: {
           defaultsDetected: true,
@@ -104,7 +104,7 @@ describe("server install context detector", () => {
           probeHealthy: true,
           issues: [],
         },
-        studioCli: {
+        rocclawCli: {
           installed: false,
           currentVersion: null,
           latestVersion: null,
@@ -120,6 +120,6 @@ describe("server install context detector", () => {
       },
     });
 
-    expect(lines).toContain("SSH tunnel fallback: ssh -L 3000:127.0.0.1:3000 <studio-host>");
+    expect(lines).toContain("SSH tunnel fallback: ssh -L 3000:127.0.0.1:3000 <rocclaw-host>");
   });
 });

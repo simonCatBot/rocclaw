@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { AgentState } from "@/features/agents/state/store";
-import { sendChatMessageViaStudio } from "@/features/agents/operations/chatSendOperation";
+import { sendChatMessageViaROCclaw } from "@/features/agents/operations/chatSendOperation";
 import { createRuntimeWriteTransport } from "@/features/agents/operations/runtimeWriteTransport";
 import { GatewayResponseError } from "@/lib/gateway/errors";
 import { formatMetaMarkdown } from "@/lib/text/message-extract";
@@ -10,7 +10,7 @@ const createAgent = (overrides?: Partial<AgentState>): AgentState => {
   const base: AgentState = {
     agentId: "agent-1",
     name: "Agent One",
-    sessionKey: "agent:agent-1:studio:test-session",
+    sessionKey: "agent:agent-1:rocclaw:test-session",
     status: "idle",
     sessionCreated: false,
     awaitingUserInput: false,
@@ -57,7 +57,7 @@ const createWebchatBlockedPatchError = () =>
     message: "webchat clients cannot patch sessions; use chat.send for session-scoped updates",
   });
 
-describe("sendChatMessageViaStudio", () => {
+describe("sendChatMessageViaROCclaw", () => {
   it("handles_reset_command", async () => {
     const agent = createAgent({
       outputLines: ["old"],
@@ -71,7 +71,7 @@ describe("sendChatMessageViaStudio", () => {
     const call = vi.fn(async () => ({}));
     const clearRunTracking = vi.fn();
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -114,7 +114,7 @@ describe("sendChatMessageViaStudio", () => {
       return { ok: true };
     });
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -159,7 +159,7 @@ describe("sendChatMessageViaStudio", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
@@ -206,7 +206,7 @@ describe("sendChatMessageViaStudio", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       runtimeWriteTransport: createRuntimeWriteTransport({
         client: { call } as never,
@@ -255,7 +255,7 @@ describe("sendChatMessageViaStudio", () => {
       return { ok: true };
     });
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -308,7 +308,7 @@ describe("sendChatMessageViaStudio", () => {
       return { ok: true };
     });
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -355,7 +355,7 @@ describe("sendChatMessageViaStudio", () => {
       return { ok: true };
     });
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -365,7 +365,7 @@ describe("sendChatMessageViaStudio", () => {
       now: () => 1234,
       generateRunId: () => "run-1",
     });
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -404,7 +404,7 @@ describe("sendChatMessageViaStudio", () => {
       return { ok: true };
     });
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -431,7 +431,7 @@ describe("sendChatMessageViaStudio", () => {
     const dispatch = vi.fn();
     const call = vi.fn(async () => ({ runId: "run-1", status: "started" }));
 
-    const result = await sendChatMessageViaStudio({
+    const result = await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -458,7 +458,7 @@ describe("sendChatMessageViaStudio", () => {
     const dispatch = vi.fn();
     const call = vi.fn(async () => ({ ok: true }));
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -486,7 +486,7 @@ describe("sendChatMessageViaStudio", () => {
     const dispatch = vi.fn();
     const call = vi.fn(async () => ({ ok: true, aborted: false, runIds: [] }));
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -520,7 +520,7 @@ describe("sendChatMessageViaStudio", () => {
       const dispatch = vi.fn();
       const call = vi.fn(async () => payload);
 
-      await sendChatMessageViaStudio({
+      await sendChatMessageViaROCclaw({
         client: { call },
         dispatch,
         getAgent: () => agent,
@@ -548,7 +548,7 @@ describe("sendChatMessageViaStudio", () => {
     const dispatch = vi.fn();
     const call = vi.fn(async () => ({ runId: "different-run", status: "started" }));
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -576,7 +576,7 @@ describe("sendChatMessageViaStudio", () => {
     const dispatch = vi.fn();
     const call = vi.fn(async () => ({ ok: true }));
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -613,7 +613,7 @@ describe("sendChatMessageViaStudio", () => {
       return { ok: true };
     });
 
-    const result = await sendChatMessageViaStudio({
+    const result = await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -642,7 +642,7 @@ describe("sendChatMessageViaStudio", () => {
     const dispatch = vi.fn();
     const call = vi.fn(async () => ({ ok: true }));
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -672,7 +672,7 @@ describe("sendChatMessageViaStudio", () => {
   });
 
   it("uses_monotonic_timestamp_for_optimistic_user_turn_ordering", async () => {
-    const sessionKey = "agent:agent-1:studio:test-session";
+    const sessionKey = "agent:agent-1:rocclaw:test-session";
     const agent = createAgent({
       sessionSettingsSynced: true,
       transcriptEntries: [
@@ -694,7 +694,7 @@ describe("sendChatMessageViaStudio", () => {
     const dispatch = vi.fn();
     const call = vi.fn(async () => ({ ok: true }));
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,
@@ -724,7 +724,7 @@ describe("sendChatMessageViaStudio", () => {
   });
 
   it("uses_output_meta_timestamps_when_transcript_entries_are_missing", async () => {
-    const sessionKey = "agent:agent-1:studio:test-session";
+    const sessionKey = "agent:agent-1:rocclaw:test-session";
     const agent = createAgent({
       sessionSettingsSynced: true,
       transcriptEntries: undefined,
@@ -736,7 +736,7 @@ describe("sendChatMessageViaStudio", () => {
     const dispatch = vi.fn();
     const call = vi.fn(async () => ({ ok: true }));
 
-    await sendChatMessageViaStudio({
+    await sendChatMessageViaROCclaw({
       client: { call },
       dispatch,
       getAgent: () => agent,

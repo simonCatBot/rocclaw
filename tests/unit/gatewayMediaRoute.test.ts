@@ -26,8 +26,8 @@ let GET: typeof import("@/app/api/runtime/media/route")["GET"];
 
 const makeTempDir = (name: string) => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
-const writeStudioSettings = (stateDir: string, gatewayUrl: string) => {
-  const settingsDir = path.join(stateDir, "openclaw-studio");
+const writeROCclawSettings = (stateDir: string, gatewayUrl: string) => {
+  const settingsDir = path.join(stateDir, "openclaw-rocclaw");
   fs.mkdirSync(settingsDir, { recursive: true });
   fs.writeFileSync(
     path.join(settingsDir, "settings.json"),
@@ -71,7 +71,7 @@ describe("/api/runtime/media route", () => {
     tempDir = makeTempDir("gateway-media-route-remote");
     process.env.OPENCLAW_STATE_DIR = tempDir;
     process.env.OPENCLAW_GATEWAY_SSH_TARGET = "me@host.test";
-    writeStudioSettings(tempDir, "ws://example.test:18789");
+    writeROCclawSettings(tempDir, "ws://example.test:18789");
 
     const payloadBytes = Buffer.from("fake", "utf8");
     mockedSpawnSync.mockReturnValueOnce({

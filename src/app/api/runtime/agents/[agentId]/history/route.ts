@@ -49,7 +49,7 @@ const historyCache = new Map<string, HistoryCacheEntry>();
 const historyInFlight = new Map<string, Promise<HistoryCacheEntry>>();
 
 const HISTORY_DEBUG_ENABLED = /^(1|true|yes|on)$/i.test(
-  (process.env.NEXT_PUBLIC_STUDIO_TRANSCRIPT_DEBUG ?? "").trim()
+  (process.env.NEXT_PUBLIC_ROCCLAW_TRANSCRIPT_DEBUG ?? "").trim()
 );
 
 const logHistoryRouteMetric = (metric: string, meta: Record<string, unknown>) => {

@@ -14,11 +14,11 @@ describe("createAgentBootstrapWorkflow", () => {
     expect(commands).toEqual([
       {
         kind: "set-create-modal-error",
-        message: 'Agent "Agent One" was created, but Studio could not load it yet.',
+        message: 'Agent "Agent One" was created, but ROCclaw could not load it yet.',
       },
       {
         kind: "set-global-error",
-        message: 'Agent "Agent One" was created, but Studio could not load it yet.',
+        message: 'Agent "Agent One" was created, but ROCclaw could not load it yet.',
       },
       { kind: "set-create-block", value: null },
       { kind: "set-create-modal-open", open: false },

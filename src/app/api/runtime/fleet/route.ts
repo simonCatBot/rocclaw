@@ -7,7 +7,7 @@ import type { ControlPlaneOutboxEntry, ControlPlaneRuntimeSnapshot } from "@/lib
 import { serializeRuntimeInitFailure } from "@/lib/controlplane/runtime-init-errors";
 import { ControlPlaneGatewayError } from "@/lib/controlplane/openclaw-adapter";
 import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstrap";
-import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
+import { loadROCclawSettings } from "@/lib/rocclaw/settings-store";
 
 export const runtime = "nodejs";
 
@@ -186,7 +186,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const settings = loadStudioSettings();
+    const settings = loadROCclawSettings();
     const gatewayUrl = settings.gateway?.url?.trim() ?? "";
     if (!gatewayUrl) {
       return NextResponse.json({ enabled: true, error: "gateway_url_not_configured" }, { status: 503 });
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
       },
       gatewayUrl,
       cachedConfigSnapshot,
-      loadStudioSettings: async () => settings,
+      loadROCclawSettings: async () => settings,
       isDisconnectLikeError: () => false,
       logError: (message, error) => console.error(message, error),
     });

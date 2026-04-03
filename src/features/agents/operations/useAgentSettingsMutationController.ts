@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { AgentPermissionsDraft } from "@/features/agents/operations/agentPermissionsOperation";
-import { updateAgentPermissionsViaStudio } from "@/features/agents/operations/agentPermissionsOperation";
+import { updateAgentPermissionsViaROCclaw } from "@/features/agents/operations/agentPermissionsOperation";
 import { performCronCreateFlow } from "@/features/agents/operations/cronCreateOperation";
-import { deleteAgentViaStudio } from "@/features/agents/operations/deleteAgentOperation";
+import { deleteAgentViaROCclaw } from "@/features/agents/operations/deleteAgentOperation";
 import {
   planAgentSettingsMutation,
   type AgentSettingsMutationContext,
@@ -351,7 +351,7 @@ export function useAgentSettingsMutationController(params: UseAgentSettingsMutat
         agentName: agent.name,
         label: `Delete ${agent.name}`,
         executeMutation: async () => {
-          await deleteAgentViaStudio({
+          await deleteAgentViaROCclaw({
             client: params.client,
             runtimeWriteTransport: params.runtimeWriteTransport,
             agentId: decision.normalizedAgentId,
@@ -542,7 +542,7 @@ export function useAgentSettingsMutationController(params: UseAgentSettingsMutat
         kind: "update-agent-permissions",
         label: `Update permissions for ${agent.name}`,
         run: async () => {
-          await updateAgentPermissionsViaStudio({
+          await updateAgentPermissionsViaROCclaw({
             client: params.client,
             runtimeWriteTransport: params.runtimeWriteTransport,
             agentId: decision.normalizedAgentId,

@@ -16,7 +16,7 @@ export type CreateBootstrapCommand =
   | { kind: "set-mobile-pane"; pane: "chat" };
 
 const buildMissingCreatedAgentMessage = (agentName: string): string =>
-  `Agent "${agentName}" was created, but Studio could not load it yet.`;
+  `Agent "${agentName}" was created, but ROCclaw could not load it yet.`;
 
 const buildBootstrapGlobalErrorMessage = (errorMessage: string): string =>
   `Agent created, but default permissions could not be applied: ${errorMessage}`;

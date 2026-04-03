@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { postStudioIntent } from "@/lib/controlplane/intents-client";
+import { postROCclawIntent } from "@/lib/controlplane/intents-client";
 import { createGatewayAgent, deleteGatewayAgent, renameGatewayAgent } from "@/lib/gateway/agentConfig";
 import {
   readGatewayAgentExecApprovals,
@@ -9,7 +9,7 @@ import {
 import { createRuntimeWriteTransport } from "@/features/agents/operations/runtimeWriteTransport";
 
 vi.mock("@/lib/controlplane/intents-client", () => ({
-  postStudioIntent: vi.fn(async () => ({ ok: true })),
+  postROCclawIntent: vi.fn(async () => ({ ok: true })),
 }));
 
 vi.mock("@/lib/gateway/agentConfig", async () => {
@@ -36,7 +36,7 @@ vi.mock("@/lib/gateway/execApprovals", async () => {
 });
 
 describe("runtimeWriteTransport", () => {
-  const mockedPostStudioIntent = vi.mocked(postStudioIntent);
+  const mockedPostROCclawIntent = vi.mocked(postROCclawIntent);
   const mockedCreateGatewayAgent = vi.mocked(createGatewayAgent);
   const mockedDeleteGatewayAgent = vi.mocked(deleteGatewayAgent);
   const mockedRenameGatewayAgent = vi.mocked(renameGatewayAgent);
@@ -44,8 +44,8 @@ describe("runtimeWriteTransport", () => {
   const mockedUpsertGatewayAgentExecApprovals = vi.mocked(upsertGatewayAgentExecApprovals);
 
   beforeEach(() => {
-    mockedPostStudioIntent.mockReset();
-    mockedPostStudioIntent.mockResolvedValue({ ok: true });
+    mockedPostROCclawIntent.mockReset();
+    mockedPostROCclawIntent.mockResolvedValue({ ok: true });
     mockedCreateGatewayAgent.mockReset();
     mockedCreateGatewayAgent.mockResolvedValue({ id: "agent-1", name: "Agent One" });
     mockedDeleteGatewayAgent.mockReset();
@@ -59,7 +59,7 @@ describe("runtimeWriteTransport", () => {
   });
 
   it("routes chat send through domain intent and unwraps payload envelopes", async () => {
-    mockedPostStudioIntent.mockResolvedValue({
+    mockedPostROCclawIntent.mockResolvedValue({
       ok: true,
       payload: { runId: "run-1", status: "started" },
     });
@@ -78,7 +78,7 @@ describe("runtimeWriteTransport", () => {
       idempotencyKey: "run-1",
     });
 
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/chat-send", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/chat-send", {
       sessionKey: "agent:agent-1:main",
       message: "hello",
       deliver: false,
@@ -108,7 +108,7 @@ describe("runtimeWriteTransport", () => {
       deliver: false,
       idempotencyKey: "run-1",
     });
-    expect(mockedPostStudioIntent).not.toHaveBeenCalled();
+    expect(mockedPostROCclawIntent).not.toHaveBeenCalled();
     expect(result).toEqual({ runId: "run-1", status: "started" });
   });
 
@@ -126,19 +126,19 @@ describe("runtimeWriteTransport", () => {
       model: "openai/gpt-5",
     });
 
-    expect(mockedPostStudioIntent).toHaveBeenNthCalledWith(1, "/api/intents/chat-abort", {
+    expect(mockedPostROCclawIntent).toHaveBeenNthCalledWith(1, "/api/intents/chat-abort", {
       sessionKey: "agent:1",
     });
-    expect(mockedPostStudioIntent).toHaveBeenNthCalledWith(2, "/api/intents/sessions-reset", {
+    expect(mockedPostROCclawIntent).toHaveBeenNthCalledWith(2, "/api/intents/sessions-reset", {
       key: "agent:1",
     });
-    expect(mockedPostStudioIntent).toHaveBeenNthCalledWith(3, "/api/intents/session-settings-sync", {
+    expect(mockedPostROCclawIntent).toHaveBeenNthCalledWith(3, "/api/intents/session-settings-sync", {
       sessionKey: "agent:1",
       model: "openai/gpt-5",
     });
     expect(domainCall).not.toHaveBeenCalled();
 
-    mockedPostStudioIntent.mockReset();
+    mockedPostROCclawIntent.mockReset();
     const gatewayCall = vi.fn(async () => ({}));
     const gatewayTransport = createRuntimeWriteTransport({
       client: { call: gatewayCall } as never,
@@ -158,7 +158,7 @@ describe("runtimeWriteTransport", () => {
       key: "agent:2",
       thinkingLevel: "high",
     });
-    expect(mockedPostStudioIntent).not.toHaveBeenCalled();
+    expect(mockedPostROCclawIntent).not.toHaveBeenCalled();
   });
 
   it("propagates runId on chat-abort when provided", async () => {
@@ -170,13 +170,13 @@ describe("runtimeWriteTransport", () => {
 
     await domainTransport.chatAbort({ sessionKey: " agent:3 ", runId: " run-3 " });
 
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/chat-abort", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/chat-abort", {
       sessionKey: "agent:3",
       runId: "run-3",
     });
     expect(domainCall).not.toHaveBeenCalled();
 
-    mockedPostStudioIntent.mockReset();
+    mockedPostROCclawIntent.mockReset();
     const gatewayCall = vi.fn(async () => ({}));
     const gatewayTransport = createRuntimeWriteTransport({
       client: { call: gatewayCall } as never,
@@ -189,7 +189,7 @@ describe("runtimeWriteTransport", () => {
       sessionKey: "agent:4",
       runId: "run-4",
     });
-    expect(mockedPostStudioIntent).not.toHaveBeenCalled();
+    expect(mockedPostROCclawIntent).not.toHaveBeenCalled();
   });
 
   it("routes rename and delete by mode", async () => {
@@ -220,11 +220,11 @@ describe("runtimeWriteTransport", () => {
     await domainTransport.agentRename({ agentId: "agent-2", name: "Agent Two" });
     await domainTransport.agentDelete({ agentId: "agent-2" });
 
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/agent-rename", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/agent-rename", {
       agentId: "agent-2",
       name: "Agent Two",
     });
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/agent-delete", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/agent-delete", {
       agentId: "agent-2",
     });
     expect(mockedRenameGatewayAgent).not.toHaveBeenCalled();
@@ -247,8 +247,8 @@ describe("runtimeWriteTransport", () => {
     });
 
     mockedCreateGatewayAgent.mockReset();
-    mockedPostStudioIntent.mockReset();
-    mockedPostStudioIntent.mockResolvedValue({
+    mockedPostROCclawIntent.mockReset();
+    mockedPostROCclawIntent.mockResolvedValue({
       ok: true,
       payload: { ok: true, agentId: "agent-2", name: "Agent Two" },
     });
@@ -260,7 +260,7 @@ describe("runtimeWriteTransport", () => {
       id: "agent-2",
       name: "Agent Two",
     });
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/agent-create", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/agent-create", {
       name: "Agent Two",
     });
     expect(mockedCreateGatewayAgent).not.toHaveBeenCalled();
@@ -279,13 +279,13 @@ describe("runtimeWriteTransport", () => {
     });
 
     mockedRenameGatewayAgent.mockReset();
-    mockedPostStudioIntent.mockReset();
+    mockedPostROCclawIntent.mockReset();
     const domainTransport = createRuntimeWriteTransport({
       client: { call: vi.fn(async () => ({})) } as never,
       useDomainIntents: true,
     });
     await domainTransport.agentRename({ agentId: "  agent-2  ", name: "  Agent Two  " });
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/agent-rename", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/agent-rename", {
       agentId: "agent-2",
       name: "Agent Two",
     });
@@ -306,13 +306,13 @@ describe("runtimeWriteTransport", () => {
     });
 
     call.mockReset();
-    mockedPostStudioIntent.mockReset();
+    mockedPostROCclawIntent.mockReset();
     const domainTransport = createRuntimeWriteTransport({
       client: { call } as never,
       useDomainIntents: true,
     });
     await domainTransport.execApprovalResolve({ id: "approval-2", decision: "deny" });
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/exec-approval-resolve", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/exec-approval-resolve", {
       id: "approval-2",
       decision: "deny",
     });
@@ -363,7 +363,7 @@ describe("runtimeWriteTransport", () => {
     ).rejects.toThrow(
       "execApprovalsSet is not supported in domain intent mode; use agentPermissionsUpdate."
     );
-    expect(mockedPostStudioIntent).not.toHaveBeenCalled();
+    expect(mockedPostROCclawIntent).not.toHaveBeenCalled();
     expect(mockedReadGatewayAgentExecApprovals).not.toHaveBeenCalled();
     expect(mockedUpsertGatewayAgentExecApprovals).not.toHaveBeenCalled();
     expect(call).not.toHaveBeenCalled();
@@ -381,7 +381,7 @@ describe("runtimeWriteTransport", () => {
       webAccess: true,
       fileTools: false,
     });
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/agent-permissions-update", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/agent-permissions-update", {
       agentId: "agent-1",
       sessionKey: "agent:agent-1:main",
       commandMode: "ask",
@@ -445,7 +445,7 @@ describe("runtimeWriteTransport", () => {
     await expect(transport.agentCreate({ name: "   " })).rejects.toThrow("Agent name is required.");
 
     expect(call).not.toHaveBeenCalled();
-    expect(mockedPostStudioIntent).not.toHaveBeenCalled();
+    expect(mockedPostROCclawIntent).not.toHaveBeenCalled();
   });
 
   it("routes agent wait through mode-specific transport with timeout passthrough", async () => {
@@ -457,13 +457,13 @@ describe("runtimeWriteTransport", () => {
     await gatewayTransport.agentWait({ runId: "run-1", timeoutMs: 2500 });
     expect(gatewayCall).toHaveBeenCalledWith("agent.wait", { runId: "run-1", timeoutMs: 2500 });
 
-    mockedPostStudioIntent.mockReset();
+    mockedPostROCclawIntent.mockReset();
     const domainTransport = createRuntimeWriteTransport({
       client: { call: vi.fn(async () => ({})) } as never,
       useDomainIntents: true,
     });
     await domainTransport.agentWait({ runId: "run-2", timeoutMs: 3000 });
-    expect(mockedPostStudioIntent).toHaveBeenCalledWith("/api/intents/agent-wait", {
+    expect(mockedPostROCclawIntent).toHaveBeenCalledWith("/api/intents/agent-wait", {
       runId: "run-2",
       timeoutMs: 3000,
     });

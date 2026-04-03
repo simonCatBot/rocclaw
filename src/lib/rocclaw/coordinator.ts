@@ -1,22 +1,22 @@
 import { fetchJson } from "@/lib/http";
 import type {
-  StudioFocusedPreference,
-  StudioGatewaySettings,
-  StudioSettings,
-  StudioSettingsPatch,
+  ROCclawFocusedPreference,
+  ROCclawGatewaySettings,
+  ROCclawSettings,
+  ROCclawSettingsPatch,
 } from "@/lib/rocclaw/settings";
-import type { StudioInstallContext } from "@/lib/rocclaw/install-context";
+import type { ROCclawInstallContext } from "@/lib/rocclaw/install-context";
 
-export type StudioSettingsResponse = {
-  settings: StudioSettings;
-  localGatewayDefaults?: StudioGatewaySettings | null;
+export type ROCclawSettingsResponse = {
+  settings: ROCclawSettings;
+  localGatewayDefaults?: ROCclawGatewaySettings | null;
   localGatewayDefaultsMeta?: {
     hasToken: boolean;
   };
   gatewayMeta?: {
     hasStoredToken: boolean;
   };
-  installContext?: StudioInstallContext;
+  installContext?: ROCclawInstallContext;
   domainApiModeEnabled?: boolean;
   runtimeReconnect?: {
     attempted: boolean;
@@ -27,12 +27,12 @@ export type StudioSettingsResponse = {
   } | null;
 };
 
-type FocusedPatch = Record<string, Partial<StudioFocusedPreference> | null>;
+type FocusedPatch = Record<string, Partial<ROCclawFocusedPreference> | null>;
 type AvatarsPatch = Record<string, Record<string, string | null> | null>;
 
-type StudioSettingsCoordinatorTransport = {
-  fetchSettings: () => Promise<StudioSettingsResponse>;
-  updateSettings: (patch: StudioSettingsPatch) => Promise<StudioSettingsResponse>;
+type ROCclawSettingsCoordinatorTransport = {
+  fetchSettings: () => Promise<ROCclawSettingsResponse>;
+  updateSettings: (patch: ROCclawSettingsPatch) => Promise<ROCclawSettingsResponse>;
 };
 
 const mergeFocusedPatch = (
@@ -67,10 +67,10 @@ const mergeAvatarsPatch = (
   return merged;
 };
 
-const mergeStudioPatch = (
-  current: StudioSettingsPatch | null,
-  next: StudioSettingsPatch
-): StudioSettingsPatch => {
+const mergeROCclawPatch = (
+  current: ROCclawSettingsPatch | null,
+  next: ROCclawSettingsPatch
+): ROCclawSettingsPatch => {
   if (!current) {
     return {
       ...(next.gateway !== undefined ? { gateway: next.gateway } : {}),
@@ -91,43 +91,43 @@ const mergeStudioPatch = (
   };
 };
 
-export class StudioSettingsCoordinator {
-  private pendingPatch: StudioSettingsPatch | null = null;
+export class ROCclawSettingsCoordinator {
+  private pendingPatch: ROCclawSettingsPatch | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private queue: Promise<void> = Promise.resolve();
   private disposed = false;
 
   constructor(
-    private readonly transport: StudioSettingsCoordinatorTransport,
+    private readonly transport: ROCclawSettingsCoordinatorTransport,
     private readonly defaultDebounceMs: number = 350
   ) {}
 
-  async loadSettings(): Promise<StudioSettings | null> {
+  async loadSettings(): Promise<ROCclawSettings | null> {
     const result = await this.loadSettingsEnvelope();
     return result.settings ?? null;
   }
 
-  async loadSettingsEnvelope(): Promise<StudioSettingsResponse> {
+  async loadSettingsEnvelope(): Promise<ROCclawSettingsResponse> {
     return await this.transport.fetchSettings();
   }
 
-  schedulePatch(patch: StudioSettingsPatch, debounceMs: number = this.defaultDebounceMs): void {
+  schedulePatch(patch: ROCclawSettingsPatch, debounceMs: number = this.defaultDebounceMs): void {
     if (this.disposed) return;
-    this.pendingPatch = mergeStudioPatch(this.pendingPatch, patch);
+    this.pendingPatch = mergeROCclawPatch(this.pendingPatch, patch);
     if (this.timer) {
       clearTimeout(this.timer);
     }
     this.timer = setTimeout(() => {
       this.timer = null;
       void this.flushPending().catch((err) => {
-        console.error("Failed to flush pending studio settings patch.", err);
+        console.error("Failed to flush pending rocclaw settings patch.", err);
       });
     }, debounceMs);
   }
 
-  async applyPatchNow(patch: StudioSettingsPatch): Promise<void> {
+  async applyPatchNow(patch: ROCclawSettingsPatch): Promise<void> {
     if (this.disposed) return;
-    this.pendingPatch = mergeStudioPatch(this.pendingPatch, patch);
+    this.pendingPatch = mergeROCclawPatch(this.pendingPatch, patch);
     await this.flushPending();
   }
 
@@ -150,12 +150,12 @@ export class StudioSettingsCoordinator {
       try {
         await this.transport.updateSettings(patch);
       } catch (err) {
-        this.pendingPatch = mergeStudioPatch(this.pendingPatch, patch);
+        this.pendingPatch = mergeROCclawPatch(this.pendingPatch, patch);
         throw err;
       }
     });
     this.queue = write.catch((err) => {
-      console.error("Failed to persist studio settings patch.", err);
+      console.error("Failed to persist rocclaw settings patch.", err);
     });
     return write;
   }
@@ -170,14 +170,14 @@ export class StudioSettingsCoordinator {
   }
 }
 
-const fetchStudioSettings = async (): Promise<StudioSettingsResponse> => {
-  return fetchJson<StudioSettingsResponse>("/api/rocclaw", { cache: "no-store" });
+const fetchROCclawSettings = async (): Promise<ROCclawSettingsResponse> => {
+  return fetchJson<ROCclawSettingsResponse>("/api/rocclaw", { cache: "no-store" });
 };
 
-const updateStudioSettings = async (
-  patch: StudioSettingsPatch
-): Promise<StudioSettingsResponse> => {
-  return fetchJson<StudioSettingsResponse>("/api/rocclaw", {
+const updateROCclawSettings = async (
+  patch: ROCclawSettingsPatch
+): Promise<ROCclawSettingsResponse> => {
+  return fetchJson<ROCclawSettingsResponse>("/api/rocclaw", {
     method: "PUT",
     keepalive: true,
     headers: { "Content-Type": "application/json" },
@@ -185,13 +185,13 @@ const updateStudioSettings = async (
   });
 };
 
-export const createStudioSettingsCoordinator = (options?: {
+export const createROCclawSettingsCoordinator = (options?: {
   debounceMs?: number;
-}): StudioSettingsCoordinator => {
-  return new StudioSettingsCoordinator(
+}): ROCclawSettingsCoordinator => {
+  return new ROCclawSettingsCoordinator(
     {
-      fetchSettings: fetchStudioSettings,
-      updateSettings: updateStudioSettings,
+      fetchSettings: fetchROCclawSettings,
+      updateSettings: updateROCclawSettings,
     },
     options?.debounceMs
   );

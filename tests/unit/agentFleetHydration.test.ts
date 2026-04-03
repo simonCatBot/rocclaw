@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { hydrateAgentFleetFromGateway } from "@/features/agents/operations/agentFleetHydration";
-import type { StudioSettings } from "@/lib/rocclaw/settings";
+import type { ROCclawSettings } from "@/lib/rocclaw/settings";
 
 describe("hydrateAgentFleetFromGateway", () => {
   it("maps_gateway_results_into_seeds_and_selects_latest_assistant_agent", async () => {
     const gatewayUrl = "ws://127.0.0.1:18789";
 
-    const settings: StudioSettings = {
+    const settings: ROCclawSettings = {
       version: 1,
       gateway: null,
       gatewayAutoStart: true,
@@ -139,7 +139,7 @@ describe("hydrateAgentFleetFromGateway", () => {
       client: { call },
       gatewayUrl,
       cachedConfigSnapshot: null,
-      loadStudioSettings: async () => settings,
+      loadROCclawSettings: async () => settings,
       isDisconnectLikeError: () => false,
     });
 
@@ -247,7 +247,7 @@ describe("hydrateAgentFleetFromGateway", () => {
       client: { call },
       gatewayUrl: "ws://127.0.0.1:18789",
       cachedConfigSnapshot: null,
-      loadStudioSettings: async () => ({
+      loadROCclawSettings: async () => ({
         version: 1,
         gateway: null,
         gatewayAutoStart: true,
@@ -295,7 +295,7 @@ describe("hydrateAgentFleetFromGateway", () => {
       client: { call },
       gatewayUrl: "ws://127.0.0.1:18789",
       cachedConfigSnapshot: null,
-      loadStudioSettings: async () => ({
+      loadROCclawSettings: async () => ({
         version: 1,
         gateway: null,
         gatewayAutoStart: true,
@@ -343,7 +343,7 @@ describe("hydrateAgentFleetFromGateway", () => {
       client: { call },
       gatewayUrl: "ws://127.0.0.1:18789",
       cachedConfigSnapshot: null,
-      loadStudioSettings: async () => ({
+      loadROCclawSettings: async () => ({
         version: 1,
         gateway: null,
         gatewayAutoStart: true,

@@ -1,6 +1,6 @@
 import {
   getControlPlaneRuntime,
-  isStudioDomainApiModeEnabled,
+  isROCclawDomainApiModeEnabled,
   type ControlPlaneRuntime,
 } from "@/lib/controlplane/runtime";
 import { serializeControlPlaneGatewayConnectFailure } from "@/lib/controlplane/openclaw-adapter";
@@ -26,7 +26,7 @@ const resolveErrorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error ? error.message : fallback;
 
 export async function bootstrapDomainRuntime(): Promise<DomainRuntimeBootstrapResult> {
-  if (!isStudioDomainApiModeEnabled()) {
+  if (!isROCclawDomainApiModeEnabled()) {
     return { kind: "mode-disabled" };
   }
 

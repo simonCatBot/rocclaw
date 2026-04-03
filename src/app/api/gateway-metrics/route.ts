@@ -257,8 +257,8 @@ async function getGatewayPresence(controlPlane: { callGateway: (method: string, 
 async function getGatewayUrlFromSettings(): Promise<string | null> {
   try {
     // Import settings store dynamically to avoid circular deps
-    const { loadStudioSettings } = await import("@/lib/rocclaw/settings-store");
-    const settings = loadStudioSettings();
+    const { loadROCclawSettings } = await import("@/lib/rocclaw/settings-store");
+    const settings = loadROCclawSettings();
     return settings.gateway?.url || null;
   } catch {
     return null;

@@ -10,7 +10,7 @@ import {
   restoreAgentStateOverSsh,
   trashAgentStateOverSsh,
 } from "@/lib/ssh/agent-state";
-import { loadStudioSettings } from "@/lib/rocclaw/settings-store";
+import { loadROCclawSettings } from "@/lib/rocclaw/settings-store";
 
 export const runtime = "nodejs";
 
@@ -28,7 +28,7 @@ const isSafeAgentId = (value: string) => /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.tes
 const resolveAgentStateSshTarget = (): string | null => {
   const configured = resolveConfiguredSshTarget(process.env);
   if (configured) return configured;
-  const settings = loadStudioSettings();
+  const settings = loadROCclawSettings();
   const gatewayUrl = settings.gateway?.url ?? "";
   if (isLocalGatewayUrl(gatewayUrl)) return null;
   return resolveGatewaySshTargetFromGatewayUrl(gatewayUrl, process.env);

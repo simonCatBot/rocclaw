@@ -12,11 +12,11 @@ const readBooleanFlag = (value: string | undefined): boolean => {
 };
 
 export const TRANSCRIPT_V2_ENABLED = readBooleanFlag(
-  process.env.NEXT_PUBLIC_STUDIO_TRANSCRIPT_V2
+  process.env.NEXT_PUBLIC_ROCCLAW_TRANSCRIPT_V2
 );
 
 export const TRANSCRIPT_DEBUG_ENABLED = readBooleanFlag(
-  process.env.NEXT_PUBLIC_STUDIO_TRANSCRIPT_DEBUG
+  process.env.NEXT_PUBLIC_ROCCLAW_TRANSCRIPT_DEBUG
 );
 
 export const logTranscriptDebugMetric = (metric: string, meta?: unknown) => {

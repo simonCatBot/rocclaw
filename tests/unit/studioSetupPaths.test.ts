@@ -4,20 +4,20 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-describe("studio setup paths", () => {
+describe("rocclaw setup paths", () => {
   it("resolves settings path under OPENCLAW_STATE_DIR when set", async () => {
-    const { resolveStudioSettingsPath } = await import("../../server/rocclaw-settings");
-    const settingsPath = resolveStudioSettingsPath({
+    const { resolveROCclawSettingsPath } = await import("../../server/rocclaw-settings");
+    const settingsPath = resolveROCclawSettingsPath({
       OPENCLAW_STATE_DIR: "/tmp/openclaw-state",
     } as unknown as NodeJS.ProcessEnv);
-    expect(settingsPath).toBe("/tmp/openclaw-state/openclaw-studio/settings.json");
+    expect(settingsPath).toBe("/tmp/openclaw-state/openclaw-rocclaw/settings.json");
   });
 
   it("resolves settings path under ~/.openclaw by default", async () => {
-    const { resolveStudioSettingsPath } = await import("../../server/rocclaw-settings");
-    const settingsPath = resolveStudioSettingsPath({} as NodeJS.ProcessEnv);
+    const { resolveROCclawSettingsPath } = await import("../../server/rocclaw-settings");
+    const settingsPath = resolveROCclawSettingsPath({} as NodeJS.ProcessEnv);
     expect(settingsPath).toBe(
-      path.join(os.homedir(), ".openclaw", "openclaw-studio", "settings.json")
+      path.join(os.homedir(), ".openclaw", "openclaw-rocclaw", "settings.json")
     );
   });
 });

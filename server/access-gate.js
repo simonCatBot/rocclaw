@@ -26,7 +26,7 @@ const buildRedirectUrl = (req, nextPathWithQuery) => {
 
 function createAccessGate(options) {
   const token = String(options?.token ?? "").trim();
-  const cookieName = String(options?.cookieName ?? "studio_access").trim() || "studio_access";
+  const cookieName = String(options?.cookieName ?? "rocclaw_access").trim() || "rocclaw_access";
   const queryParam = String(options?.queryParam ?? "access_token").trim() || "access_token";
 
   const enabled = Boolean(token);
@@ -48,7 +48,7 @@ function createAccessGate(options) {
       if (provided !== token) {
         res.statusCode = 401;
         res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ error: "Invalid Studio access token." }));
+        res.end(JSON.stringify({ error: "Invalid ROCclaw access token." }));
         return true;
       }
 
@@ -68,7 +68,7 @@ function createAccessGate(options) {
         res.end(
           JSON.stringify({
             error:
-              "Studio access token required. Open /?access_token=... once to set a cookie.",
+              "ROCclaw access token required. Open /?access_token=... once to set a cookie.",
           })
         );
         return true;

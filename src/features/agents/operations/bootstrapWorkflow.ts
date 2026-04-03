@@ -1,8 +1,8 @@
 import type { FocusFilter } from "@/features/agents/state/store";
 import {
   resolveFocusedPreference,
-  type StudioSettings,
-  type StudioSettingsPatch,
+  type ROCclawSettings,
+  type ROCclawSettingsPatch,
 } from "@/lib/rocclaw/settings";
 
 const FOCUSED_PATCH_DEBOUNCE_MS = 300;
@@ -43,7 +43,7 @@ type FocusFilterPatchIntent =
     }
   | {
       kind: "patch";
-      patch: StudioSettingsPatch;
+      patch: ROCclawSettingsPatch;
       debounceMs: number;
     };
 
@@ -86,7 +86,7 @@ type FocusedSelectionPatchIntent =
     }
   | {
       kind: "patch";
-      patch: StudioSettingsPatch;
+      patch: ROCclawSettingsPatch;
       persistence: "immediate";
     };
 
@@ -189,7 +189,7 @@ type FocusedPreferenceRestoreIntent = {
 };
 
 export function planFocusedPreferenceRestore(params: {
-  settings: StudioSettings | null;
+  settings: ROCclawSettings | null;
   gatewayKey: string;
   focusFilterTouched: boolean;
 }): FocusedPreferenceRestoreIntent {

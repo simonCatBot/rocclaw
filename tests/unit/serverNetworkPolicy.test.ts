@@ -28,7 +28,7 @@ describe("server network policy", () => {
     const { isPublicHost } = await import("../../server/network-policy");
     expect(isPublicHost("0.0.0.0")).toBe(true);
     expect(isPublicHost("::")).toBe(true);
-    expect(isPublicHost("studio.example.com")).toBe(true);
+    expect(isPublicHost("rocclaw.example.com")).toBe(true);
   });
 
   it("classifies loopback hosts as non-public", async () => {
@@ -46,16 +46,16 @@ describe("server network policy", () => {
     expect(isPublicHost("::ffff:192.168.1.10")).toBe(true);
   });
 
-  it("rejects public bind without non-empty studio access token", async () => {
+  it("rejects public bind without non-empty rocclaw access token", async () => {
     const { assertPublicHostAllowed } = await import("../../server/network-policy");
-    expect(() => assertPublicHostAllowed({ host: "0.0.0.0", studioAccessToken: "" })).toThrow(
-      /Refusing to bind Studio to public host/
+    expect(() => assertPublicHostAllowed({ host: "0.0.0.0", rocclawAccessToken: "" })).toThrow(
+      /Refusing to bind ROCclaw to public host/
     );
-    expect(() => assertPublicHostAllowed({ host: "0.0.0.0", studioAccessToken: "   " })).toThrow(
-      /Refusing to bind Studio to public host/
+    expect(() => assertPublicHostAllowed({ host: "0.0.0.0", rocclawAccessToken: "   " })).toThrow(
+      /Refusing to bind ROCclaw to public host/
     );
     expect(() =>
-      assertPublicHostAllowed({ host: "0.0.0.0", studioAccessToken: "abc" })
+      assertPublicHostAllowed({ host: "0.0.0.0", rocclawAccessToken: "abc" })
     ).not.toThrow();
   });
 });

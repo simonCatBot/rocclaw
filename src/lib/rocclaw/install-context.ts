@@ -1,13 +1,13 @@
 import { isLocalGatewayUrl } from "@/lib/gateway/local-gateway";
 
-export type StudioInstallContext = {
-  studioHost: {
+export type ROCclawInstallContext = {
+  rocclawHost: {
     hostname: string | null;
     configuredHosts: string[];
     publicHosts: string[];
     loopbackOnly: boolean;
     remoteShell: boolean;
-    studioAccessTokenConfigured: boolean;
+    rocclawAccessTokenConfigured: boolean;
   };
   localGateway: {
     defaultsDetected: boolean;
@@ -20,7 +20,7 @@ export type StudioInstallContext = {
     issues: string[];
     runtimeVersion: string | null;
   };
-  studioCli: {
+  rocclawCli: {
     installed: boolean;
     currentVersion: string | null;
     latestVersion: string | null;
@@ -35,27 +35,27 @@ export type StudioInstallContext = {
   };
 };
 
-export type StudioSetupScenario =
+export type ROCclawSetupScenario =
   | "same-computer"
   | "remote-gateway"
   | "same-cloud-host";
 
-export type StudioConnectionWarningTone = "info" | "warn";
+export type ROCclawConnectionWarningTone = "info" | "warn";
 
-export type StudioConnectionWarning = {
+export type ROCclawConnectionWarning = {
   id: string;
-  tone: StudioConnectionWarningTone;
+  tone: ROCclawConnectionWarningTone;
   message: string;
 };
 
-export const defaultStudioInstallContext = (): StudioInstallContext => ({
-  studioHost: {
+export const defaultROCclawInstallContext = (): ROCclawInstallContext => ({
+  rocclawHost: {
     hostname: null,
     configuredHosts: [],
     publicHosts: [],
     loopbackOnly: true,
     remoteShell: false,
-    studioAccessTokenConfigured: false,
+    rocclawAccessTokenConfigured: false,
   },
   localGateway: {
     defaultsDetected: false,
@@ -68,7 +68,7 @@ export const defaultStudioInstallContext = (): StudioInstallContext => ({
     issues: [],
     runtimeVersion: null,
   },
-  studioCli: {
+  rocclawCli: {
     installed: false,
     currentVersion: null,
     latestVersion: null,
@@ -129,20 +129,20 @@ const resolveParsedUrl = (gatewayUrl: string): URL | null => {
   }
 };
 
-export const isStudioLikelyRemote = (installContext: StudioInstallContext | null): boolean => {
+export const isROCclawLikelyRemote = (installContext: ROCclawInstallContext | null): boolean => {
   if (!installContext) return false;
-  return installContext.studioHost.remoteShell || installContext.studioHost.publicHosts.length > 0;
+  return installContext.rocclawHost.remoteShell || installContext.rocclawHost.publicHosts.length > 0;
 };
 
 export const resolveDefaultSetupScenario = (params: {
-  installContext: StudioInstallContext | null;
+  installContext: ROCclawInstallContext | null;
   gatewayUrl: string;
-}): StudioSetupScenario => {
+}): ROCclawSetupScenario => {
   const trimmedGatewayUrl = normalizeUrl(params.gatewayUrl);
   if (trimmedGatewayUrl && !isLocalGatewayUrl(trimmedGatewayUrl)) {
     return "remote-gateway";
   }
-  if (isStudioLikelyRemote(params.installContext)) {
+  if (isROCclawLikelyRemote(params.installContext)) {
     return "same-cloud-host";
   }
   return "same-computer";
@@ -150,12 +150,12 @@ export const resolveDefaultSetupScenario = (params: {
 
 export const resolveGatewayConnectionWarnings = (params: {
   gatewayUrl: string;
-  installContext: StudioInstallContext | null;
-  scenario: StudioSetupScenario;
+  installContext: ROCclawInstallContext | null;
+  scenario: ROCclawSetupScenario;
   hasStoredToken: boolean;
   hasLocalGatewayToken: boolean;
-}): StudioConnectionWarning[] => {
-  const warnings: StudioConnectionWarning[] = [];
+}): ROCclawConnectionWarning[] => {
+  const warnings: ROCclawConnectionWarning[] = [];
   const trimmedGatewayUrl = normalizeUrl(params.gatewayUrl);
   if (!trimmedGatewayUrl) {
     return warnings;
@@ -188,7 +188,7 @@ export const resolveGatewayConnectionWarnings = (params: {
       id: "remote-ws-control-ui-auth",
       tone: "warn",
       message:
-        "Remote ws:// gateway URLs are fragile with modern OpenClaw auth. Prefer wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the Studio host.",
+        "Remote ws:// gateway URLs are fragile with modern OpenClaw auth. Prefer wss:// via Tailscale Serve, or tunnel the gateway to ws://localhost from the ROCclaw host.",
     });
   }
 
@@ -204,13 +204,13 @@ export const resolveGatewayConnectionWarnings = (params: {
   if (
     params.scenario === "same-cloud-host" &&
     localGateway &&
-    isStudioLikelyRemote(params.installContext)
+    isROCclawLikelyRemote(params.installContext)
   ) {
     warnings.push({
       id: "remote-localhost",
       tone: "info",
       message:
-        "localhost points to the cloud machine running Studio. This is the right upstream when Studio and OpenClaw share that host.",
+        "localhost points to the cloud machine running ROCclaw. This is the right upstream when ROCclaw and OpenClaw share that host.",
     });
   }
 
@@ -219,7 +219,7 @@ export const resolveGatewayConnectionWarnings = (params: {
       id: "prefer-localhost-same-host",
       tone: "info",
       message:
-        "If Studio and OpenClaw are on the same cloud machine, prefer ws://localhost:18789 for the upstream and solve browser access to Studio separately.",
+        "If ROCclaw and OpenClaw are on the same cloud machine, prefer ws://localhost:18789 for the upstream and solve browser access to ROCclaw separately.",
     });
   }
 
@@ -228,7 +228,7 @@ export const resolveGatewayConnectionWarnings = (params: {
       id: "tailscale-still-needs-token",
       tone: "info",
       message:
-        "Studio still needs a gateway token for upstream connections, even when the OpenClaw Control UI can use Tailscale identity headers.",
+        "ROCclaw still needs a gateway token for upstream connections, even when the OpenClaw Control UI can use Tailscale identity headers.",
     });
   }
 

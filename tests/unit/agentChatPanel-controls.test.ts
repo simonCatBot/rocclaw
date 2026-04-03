@@ -9,7 +9,7 @@ import { formatThinkingMarkdown } from "@/lib/text/message-extract";
 const createAgent = (): AgentState => ({
   agentId: "agent-1",
   name: "Agent One",
-  sessionKey: "agent:agent-1:studio:test-session",
+  sessionKey: "agent:agent-1:rocclaw:test-session",
   status: "idle",
   sessionCreated: true,
   awaitingUserInput: false,
@@ -414,7 +414,7 @@ describe("AgentChatPanel controls", () => {
 
   it("disables_stop_button_with_tooltip_when_stop_is_unavailable", () => {
     const stopDisabledReason =
-      "This task is running as an automatic heartbeat check. Stopping heartbeat runs from Studio isn't available yet (coming soon).";
+      "This task is running as an automatic heartbeat check. Stopping heartbeat runs from ROCclaw isn't available yet (coming soon).";
     render(
       createElement(AgentChatPanel, {
         agent: { ...createAgent(), status: "running" },

@@ -1,5 +1,5 @@
 import { registerOTel } from "@vercel/otel";
 
 export const register = () => {
-  registerOTel({ serviceName: "openclaw-studio" });
+  registerOTel({ serviceName: "openclaw-rocclaw" });
 };

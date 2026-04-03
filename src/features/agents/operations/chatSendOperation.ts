@@ -73,7 +73,7 @@ const resolveChatSendCompletionMode = (
   return "terminal-immediate";
 };
 
-export async function sendChatMessageViaStudio(params: {
+export async function sendChatMessageViaROCclaw(params: {
   client: GatewayClientLike;
   runtimeWriteTransport?: RuntimeWriteTransport;
   dispatch: SendDispatch;

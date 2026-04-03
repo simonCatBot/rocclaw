@@ -1,22 +1,22 @@
 import type { Page, Route, Request } from "@playwright/test";
-import type { StudioInstallContext } from "@/lib/rocclaw/install-context";
+import type { ROCclawInstallContext } from "@/lib/rocclaw/install-context";
 
-type StudioSettingsFixture = {
+type ROCclawSettingsFixture = {
   version: 1;
   gateway: { url: string; token: string } | null;
   focused: Record<string, { mode: "focused"; filter: string; selectedAgentId: string | null }>;
   avatars: Record<string, Record<string, string>>;
 };
 
-type StudioRouteEnvelopeFixture = {
+type ROCclawRouteEnvelopeFixture = {
   localGatewayDefaults?: { url: string; token: string } | null;
   localGatewayDefaultsMeta?: { hasToken: boolean };
   gatewayMeta?: { hasStoredToken: boolean };
-  installContext?: StudioInstallContext;
+  installContext?: ROCclawInstallContext;
   domainApiModeEnabled?: boolean;
 };
 
-const DEFAULT_SETTINGS: StudioSettingsFixture = {
+const DEFAULT_SETTINGS: ROCclawSettingsFixture = {
   version: 1,
   gateway: null,
   focused: {},
@@ -44,11 +44,11 @@ const normalizeGatewayKey = (value: string): string => {
   }
 };
 
-const createStudioRoute = (
-  initial: StudioSettingsFixture = DEFAULT_SETTINGS,
-  envelope: StudioRouteEnvelopeFixture = {}
+const createROCclawRoute = (
+  initial: ROCclawSettingsFixture = DEFAULT_SETTINGS,
+  envelope: ROCclawRouteEnvelopeFixture = {}
 ) => {
-  let settings: StudioSettingsFixture = {
+  let settings: ROCclawSettingsFixture = {
     version: 1,
     gateway: initial.gateway ?? null,
     focused: { ...(initial.focused ?? {}) },
@@ -123,7 +123,7 @@ const createStudioRoute = (
 
     if (patch.avatars && typeof patch.avatars === "object") {
       const avatarsPatch = patch.avatars as Record<string, Record<string, string | null> | null>;
-      const avatarsNext: StudioSettingsFixture["avatars"] = { ...next.avatars };
+      const avatarsNext: ROCclawSettingsFixture["avatars"] = { ...next.avatars };
       for (const [gatewayKey, gatewayPatch] of Object.entries(avatarsPatch)) {
         if (gatewayPatch === null) {
           delete avatarsNext[gatewayKey];
@@ -158,8 +158,8 @@ const createStudioRoute = (
 
 export const stubRocclawRoute = async (
   page: Page,
-  initial: StudioSettingsFixture = DEFAULT_SETTINGS,
-  envelope?: StudioRouteEnvelopeFixture
+  initial: ROCclawSettingsFixture = DEFAULT_SETTINGS,
+  envelope?: ROCclawRouteEnvelopeFixture
 ) => {
-  await page.route("**/api/rocclaw", createStudioRoute(initial, envelope));
+  await page.route("**/api/rocclaw", createROCclawRoute(initial, envelope));
 };

@@ -8,16 +8,16 @@ import { GET, PUT } from "@/app/api/rocclaw/route";
 
 const makeTempDir = (name: string) => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
 
-describe("studio settings route", () => {
+describe("rocclaw settings route", () => {
   const priorStateDir = process.env.OPENCLAW_STATE_DIR;
-  const priorStudioDomainApiMode = process.env.STUDIO_DOMAIN_API_MODE;
-  const priorNextPublicStudioDomainApiMode = process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE;
+  const priorROCclawDomainApiMode = process.env.ROCCLAW_DOMAIN_API_MODE;
+  const priorNextPublicROCclawDomainApiMode = process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE;
   let tempDir: string | null = null;
 
   afterEach(() => {
     process.env.OPENCLAW_STATE_DIR = priorStateDir;
-    process.env.STUDIO_DOMAIN_API_MODE = priorStudioDomainApiMode;
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = priorNextPublicStudioDomainApiMode;
+    process.env.ROCCLAW_DOMAIN_API_MODE = priorROCclawDomainApiMode;
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = priorNextPublicROCclawDomainApiMode;
     if (tempDir) {
       fs.rmSync(tempDir, { recursive: true, force: true });
       tempDir = null;
@@ -25,7 +25,7 @@ describe("studio settings route", () => {
   });
 
   it("GET returns default settings when missing", async () => {
-    tempDir = makeTempDir("studio-settings-get-default");
+    tempDir = makeTempDir("rocclaw-settings-get-default");
     process.env.OPENCLAW_STATE_DIR = tempDir;
 
     const response = await GET();
@@ -50,10 +50,10 @@ describe("studio settings route", () => {
   });
 
   it("GET always reports domain mode enabled", async () => {
-    tempDir = makeTempDir("studio-settings-domain-mode");
+    tempDir = makeTempDir("rocclaw-settings-domain-mode");
     process.env.OPENCLAW_STATE_DIR = tempDir;
-    process.env.NEXT_PUBLIC_STUDIO_DOMAIN_API_MODE = "true";
-    process.env.STUDIO_DOMAIN_API_MODE = "false";
+    process.env.NEXT_PUBLIC_ROCCLAW_DOMAIN_API_MODE = "true";
+    process.env.ROCCLAW_DOMAIN_API_MODE = "false";
 
     const response = await GET();
     const body = (await response.json()) as { domainApiModeEnabled?: unknown };
@@ -62,7 +62,7 @@ describe("studio settings route", () => {
   });
 
   it("GET returns local gateway defaults from openclaw.json", async () => {
-    tempDir = makeTempDir("studio-settings-get-local-defaults");
+    tempDir = makeTempDir("rocclaw-settings-get-local-defaults");
     process.env.OPENCLAW_STATE_DIR = tempDir;
     fs.writeFileSync(
       path.join(tempDir, "openclaw.json"),
@@ -92,7 +92,7 @@ describe("studio settings route", () => {
   });
 
   it("PUT returns 400 for non-object JSON payload", async () => {
-    tempDir = makeTempDir("studio-settings-put-invalid");
+    tempDir = makeTempDir("rocclaw-settings-put-invalid");
     process.env.OPENCLAW_STATE_DIR = tempDir;
 
     const response = await PUT({
@@ -106,7 +106,7 @@ describe("studio settings route", () => {
   });
 
   it("PUT persists a patch and GET returns merged settings", async () => {
-    tempDir = makeTempDir("studio-settings-put-persist");
+    tempDir = makeTempDir("rocclaw-settings-put-persist");
     process.env.OPENCLAW_STATE_DIR = tempDir;
 
     const patch = {
@@ -128,7 +128,7 @@ describe("studio settings route", () => {
     expect(body.settings?.gateway).toEqual({ url: "ws://example.test:1234", token: "" });
     expect(body.gatewayMeta?.hasStoredToken).toBe(true);
 
-    const settingsPath = path.join(tempDir, "openclaw-studio", "settings.json");
+    const settingsPath = path.join(tempDir, "openclaw-rocclaw", "settings.json");
     expect(fs.existsSync(settingsPath)).toBe(true);
     const raw = fs.readFileSync(settingsPath, "utf8");
     const parsed = JSON.parse(raw) as {
@@ -140,11 +140,11 @@ describe("studio settings route", () => {
   });
 
   it("PUT url-only gateway patch preserves existing token", async () => {
-    tempDir = makeTempDir("studio-settings-put-url-only");
+    tempDir = makeTempDir("rocclaw-settings-put-url-only");
     process.env.OPENCLAW_STATE_DIR = tempDir;
-    fs.mkdirSync(path.join(tempDir, "openclaw-studio"), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, "openclaw-rocclaw"), { recursive: true });
     fs.writeFileSync(
-      path.join(tempDir, "openclaw-studio", "settings.json"),
+      path.join(tempDir, "openclaw-rocclaw", "settings.json"),
       JSON.stringify(
         {
           version: 1,
@@ -173,7 +173,7 @@ describe("studio settings route", () => {
     expect(body.gatewayMeta?.hasStoredToken).toBe(true);
 
     const persisted = JSON.parse(
-      fs.readFileSync(path.join(tempDir, "openclaw-studio", "settings.json"), "utf8")
+      fs.readFileSync(path.join(tempDir, "openclaw-rocclaw", "settings.json"), "utf8")
     ) as { gateway?: { url?: string; token?: string }; gatewayAutoStart?: boolean };
     expect(persisted.gateway).toEqual({
       url: "ws://new.example:18789",

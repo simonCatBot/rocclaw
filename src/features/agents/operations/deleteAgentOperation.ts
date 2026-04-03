@@ -116,7 +116,7 @@ const runDeleteFlow = async (
   }
 };
 
-export const deleteAgentViaStudio = async (params: {
+export const deleteAgentViaROCclaw = async (params: {
   client: GatewayClient;
   runtimeWriteTransport?: RuntimeWriteTransport;
   agentId: string;

@@ -9,7 +9,7 @@ import type { RuntimeWriteTransport } from "@/features/agents/operations/runtime
 
 type SetState<T> = (next: T | ((current: T) => T)) => void;
 
-export const resolveExecApprovalViaStudio = async (params: {
+export const resolveExecApprovalViaROCclaw = async (params: {
   runtimeWriteTransport: RuntimeWriteTransport;
   approvalId: string;
   decision: ExecApprovalDecision;
