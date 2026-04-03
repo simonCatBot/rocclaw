@@ -12,12 +12,12 @@ import { FleetSidebar } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { FooterBar } from "@/components/FooterBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
-import { GatewayConnectScreen } from "@/features/agents/components/GatewayConnectScreen";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
 import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { ConnectionPage } from "@/components/ConnectionPage";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
@@ -1335,6 +1335,21 @@ const AgentStudioPage = () => {
     }
   }, [gatewayError]);
 
+  // Close connection tab when connected (only auto-hide, don't prevent user from re-enabling)
+  const activeTabsRef = useRef(activeTabs);
+  activeTabsRef.current = activeTabs;
+  useEffect(() => {
+    if (!gatewayConnected) return;
+    const timer = setTimeout(() => {
+      if (activeTabsRef.current.includes("connection")) {
+        setActiveTabs((current) => 
+          current.includes("connection") ? current.filter((id) => id !== "connection") : current
+        );
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [gatewayConnected]);
+
   if (
     !agentsLoadedOnce &&
     !coreConnected &&
@@ -1381,7 +1396,7 @@ const AgentStudioPage = () => {
                 </button>
               </div>
             ) : null}
-            <GatewayConnectScreen
+            <ConnectionPage
               savedGatewayUrl={gatewayUrl}
               draftGatewayUrl={draftGatewayUrl}
               token={token}
@@ -1392,8 +1407,6 @@ const AgentStudioPage = () => {
               installContext={installContext}
               status={gatewayStatus}
               statusReason={statusReason}
-              error={gatewayError}
-              testResult={testResult}
               saving={gatewaySaving}
               testing={gatewayTesting}
               disconnecting={gatewayDisconnecting}
@@ -1403,6 +1416,10 @@ const AgentStudioPage = () => {
               onSaveSettings={() => void saveSettings()}
               onTestConnection={() => void testConnection()}
               onDisconnect={() => void disconnect()}
+              onConnect={() => {
+                setShowConnectSetup(false);
+                void saveSettings();
+              }}
             />
           </div>
         </div>
@@ -1744,6 +1761,34 @@ const AgentStudioPage = () => {
                         className="items-center p-6 text-center text-sm"
                       />
                     )}
+                  </div>
+                ) : null}
+
+                {/* Connection Tab */}
+                {activeTabs.includes("connection") ? (
+                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                    <ConnectionPage
+                      savedGatewayUrl={gatewayUrl}
+                      draftGatewayUrl={draftGatewayUrl}
+                      token={token}
+                      localGatewayDefaults={localGatewayDefaults}
+                      localGatewayDefaultsHasToken={localGatewayDefaultsHasToken}
+                      hasStoredToken={hasStoredToken}
+                      hasUnsavedChanges={hasUnsavedChanges}
+                      installContext={installContext}
+                      status={gatewayStatus}
+                      statusReason={statusReason}
+                      saving={gatewaySaving}
+                      testing={gatewayTesting}
+                      disconnecting={gatewayDisconnecting}
+                      onGatewayUrlChange={setGatewayUrl}
+                      onTokenChange={setToken}
+                      onUseLocalDefaults={useLocalGatewayDefaults}
+                      onSaveSettings={() => void saveSettings()}
+                      onTestConnection={() => void testConnection()}
+                      onDisconnect={() => void disconnect()}
+                      onConnect={() => void saveSettings()}
+                    />
                   </div>
                 ) : null}
 

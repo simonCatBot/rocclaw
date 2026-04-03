@@ -4,15 +4,12 @@ import { useEffect, useState, useCallback } from "react";
 import { 
   Server, 
   Cpu, 
-  Clock, 
   Globe, 
   Shield, 
   Zap, 
   FolderOpen,
-  RefreshCw,
   Save,
-  Loader2,
-  Settings as SettingsIcon
+  Loader2
 } from "lucide-react";
 
 interface SettingsState {
@@ -79,9 +76,8 @@ export function SettingsPanel() {
         });
         
         if (configResponse.ok) {
-          const configData = await configResponse.json();
-          // Update with real config data if available
-          // For now, we use defaults until we know the exact config structure
+          // Config data available but not yet integrated
+          // const configData = await configResponse.json();
         }
         
         // Load from localStorage for UI preferences

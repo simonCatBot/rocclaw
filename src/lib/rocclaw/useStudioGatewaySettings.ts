@@ -335,11 +335,10 @@ export const useStudioGatewaySettings = (
     setSaving(true);
     setActionError(null);
     setTestResult(null);
-    setStatus("connecting");
-    setStatusReason(null);
-    setConnectionError(null);
-    manualDisconnectRef.current = true;
-    didAutoConnectRef.current = true;
+    // Don't set status here - let the auto-connect effect handle it
+    // Reset refs to allow auto-connect after explicit save
+    manualDisconnectRef.current = false;
+    didAutoConnectRef.current = false;
     try {
       await settingsCoordinator.flushPending();
       const patch: StudioSettingsPatch = {
@@ -355,11 +354,7 @@ export const useStudioGatewaySettings = (
       });
       manualDisconnectRef.current = false;
       applySettingsEnvelope(envelope);
-      // After saving, show disconnected so the user can test the connection first.
-      // The auto-connect guard (didAutoConnectRef) prevents background reconnect.
-      setStatus("disconnected");
-      setStatusReason(null);
-      setConnectionError(null);
+      // Status is already set by auto-connect effect, don't override it
       return true;
     } catch (nextError) {
       manualDisconnectRef.current = false;

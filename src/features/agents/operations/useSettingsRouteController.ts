@@ -197,18 +197,6 @@ export function useSettingsRouteController(
     [applyCommands, focusedAgentId, inspectSidebar]
   );
 
-  const handleFleetSelectAgent = useCallback(
-    (agentId: string) => {
-      const commands = planFleetSelectCommands({
-        agentId,
-        currentInspectSidebar: inspectSidebar,
-        focusedAgentId,
-      });
-      applyCommands(commands);
-    },
-    [applyCommands, focusedAgentId, inspectSidebar]
-  );
-
   useEffect(() => {
     const routeAgentId = (settingsRouteAgentId ?? "").trim();
     const hasRouteAgent = routeAgentId
