@@ -135,7 +135,7 @@ export const FleetSidebar = ({
                   </div>
 
                   {/* Identity Name */}
-                  <p className="font-bold text-foreground text-base truncate w-full mb-0.5">
+                  <p className="font-bold text-foreground text-base truncate w-full mb-1.5">
                     {displayName}
                   </p>
 
