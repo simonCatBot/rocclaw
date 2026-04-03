@@ -34,6 +34,8 @@ type AgentsListResult = {
   agents: Array<{
     id: string;
     name?: string;
+    identityName?: string | null;
+    identityEmoji?: string | null;
     identity?: {
       name?: string;
       theme?: string;
