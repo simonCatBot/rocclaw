@@ -110,27 +110,30 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
         {runningAgents.length > 0 && (
           <>
             <div className="h-4 w-px bg-border/60" />
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center -space-x-1.5">
-                {runningAgents.map((agent) => (
-                  <div
-                    key={agent.agentId}
-                    className="relative overflow-hidden rounded-full ring-1 ring-black/20 dark:ring-white/10"
-                    title={agent.name}
-                  >
-                    <Image
-                      src={getFooterAvatarSrc(agent)}
-                      alt={agent.name}
-                      width={24}
-                      height={24}
-                      className="h-6 w-6"
-                      unoptimized
-                    />
-                  </div>
-                ))}
-              </div>
-              <AvatarModeToggle />
+            <div className="flex items-center -space-x-1.5">
+              {runningAgents.map((agent) => (
+                <div
+                  key={agent.agentId}
+                  className="relative overflow-hidden rounded-full ring-1 ring-black/20 dark:ring-white/10"
+                  title={agent.name}
+                >
+                  <Image
+                    src={getFooterAvatarSrc(agent)}
+                    alt={agent.name}
+                    width={24}
+                    height={24}
+                    className="h-6 w-6"
+                    unoptimized
+                  />
+                </div>
+              ))}
             </div>
+          </>
+        )}
+        {agentCount > 0 && (
+          <>
+            <div className="h-4 w-px bg-border/60" />
+            <AvatarModeToggle />
           </>
         )}
         <div className="h-4 w-px bg-border/60" />
