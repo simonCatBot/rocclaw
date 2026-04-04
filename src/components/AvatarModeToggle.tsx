@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ImageIcon, Shuffle } from "lucide-react";
+import { ImageIcon, Shuffle, Smile } from "lucide-react";
 import { useAvatarMode, useSetAvatarMode } from "@/components/AvatarModeContext";
 import type { AvatarDisplayMode } from "@/components/AvatarModeContext";
 
@@ -51,11 +51,7 @@ export function AvatarModeToggle() {
 
   const iconMap: Record<AvatarDisplayMode, React.ReactNode> = {
     auto: <Shuffle className="h-3.5 w-3.5" />,
-    default: (
-      <div className="flex h-4 w-4 items-center justify-center">
-        <div className="flex h-3 w-3 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-violet-500" />
-      </div>
-    ),
+    default: <Smile className="h-3.5 w-3.5" />,
     custom: <ImageIcon className="h-3.5 w-3.5" />,
   };
 

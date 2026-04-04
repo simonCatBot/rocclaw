@@ -57,6 +57,8 @@ import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
 import { buildDefaultAvatarUrl } from "@/features/agents/components/AgentAvatar";
 import { useAvatarMode, type AvatarDisplayMode } from "@/components/AvatarModeContext";
 
+const DEFAULT_AVATAR_COUNT = 12;
+
 // ─── Priority ─────────────────────────────────────────────────────────────────
 
 const PRIORITY_CONFIG: Record<CronPriority, { label: string; color: string; icon: React.ElementType }> = {
@@ -77,16 +79,12 @@ function agentAvatarSrc(
   if (footerMode === "default") {
     return buildDefaultAvatarUrl(
       ((agentId.split("").reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0) + defaultAvatarIndex) %
-        6 +
-        6) %
-        6
+        DEFAULT_AVATAR_COUNT +
+        DEFAULT_AVATAR_COUNT) %
+        DEFAULT_AVATAR_COUNT
     );
   }
-  if (footerMode === "custom") {
-    // Custom URL is stored on the agent in the store — we can't access it here
-    // Fall back to auto avatar for custom mode in task dashboard
-    return buildAvatarDataUrl(seed);
-  }
+  // For auto and custom modes, use the same seed-based multiavatar
   return buildAvatarDataUrl(seed);
 }
 

@@ -6,8 +6,7 @@ import {
   type SummarySnapshotPatch,
   type SummaryStatusSnapshot,
 } from "@/features/agents/state/runtimeEventBridge";
-import type { AgentFileName } from "@/lib/agents/agentFiles";
-import { parsePersonalityFiles } from "@/lib/agents/personalityBuilder";
+import { fetchJson } from "@/lib/http";
 import type { AgentStoreSeed } from "@/features/agents/state/store";
 import { deriveHydrateAgentFleetResult } from "@/features/agents/operations/agentFleetHydrationDerivation";
 
@@ -36,40 +35,47 @@ const callGateway = async <T>(
 type IdentityByAgent = Record<string, { name: string; emoji: string }>;
 
 const fetchIdentityFilesForAgents = async (
-  client: GatewayClientLike,
   agentIds: string[],
+  baseUrl: string,
   parallel = 6
 ): Promise<IdentityByAgent> => {
   const results: IdentityByAgent = {};
 
-  // Process in batches to avoid overwhelming the gateway
   for (let i = 0; i < agentIds.length; i += parallel) {
     const batch = agentIds.slice(i, i + parallel);
     const files = await Promise.all(
       batch.map(async (agentId) => {
         try {
-          const response = await callGateway<{
-            file?: { missing?: unknown; content?: unknown };
-          }>(client, "agents.files.get", { agentId, name: "IDENTITY.md" as AgentFileName });
+          const result = await fetchJson<{
+            ok?: boolean;
+            payload?: { file?: { missing?: unknown; content?: string } };
+            error?: string;
+          }>(
+            `${baseUrl}/api/runtime/agent-file?agentId=${encodeURIComponent(agentId)}&name=IDENTITY.md`,
+            { cache: "no-store" }
+          );
 
-          const file = response?.file;
-          const fileRecord = file && typeof file === "object" ? (file as Record<string, unknown>) : null;
+          const fileRecord = result?.payload?.file;
           const missing = fileRecord?.missing === true;
-          const content =
-            fileRecord && typeof fileRecord.content === "string" ? fileRecord.content : "";
+          const content = typeof fileRecord?.content === "string" ? fileRecord.content : "";
 
           if (missing || !content.trim()) {
             return { agentId, name: "", emoji: "" };
           }
 
-          const draft = parsePersonalityFiles({
-            "IDENTITY.md": { content, exists: true },
-          } as Record<AgentFileName, { content: string; exists: boolean }>);
-          return {
-            agentId,
-            name: draft.identity.name || "",
-            emoji: draft.identity.emoji || "",
-          };
+          const lines = content.split("\n");
+          let name = "";
+          let emoji = "";
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("- Name:") || trimmed.startsWith("Name:")) {
+              name = trimmed.split(":", 2).slice(1).join(":").trim();
+            }
+            if (trimmed.startsWith("- Emoji:") || trimmed.startsWith("Emoji:")) {
+              emoji = trimmed.split(":", 2).slice(1).join(":").trim();
+            }
+          }
+          return { agentId, name, emoji };
         } catch {
           return { agentId, name: "", emoji: "" };
         }
@@ -194,9 +200,10 @@ export async function hydrateAgentFleetFromGateway(params: {
   const mainKey = agentsResult.mainKey?.trim() || "main";
 
   // Fetch identity files for all agents in parallel
+  const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const identityByAgent = await fetchIdentityFilesForAgents(
-    params.client,
-    agentsResult.agents.map((a) => a.id)
+    agentsResult.agents.map((a) => a.id),
+    appBaseUrl
   );
 
   const mainSessionKeyByAgent = new Map<string, SessionsListEntry | null>();
