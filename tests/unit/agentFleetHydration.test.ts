@@ -146,7 +146,7 @@ describe("hydrateAgentFleetFromGateway", () => {
 
     expect(call).toHaveBeenCalledWith("agents.list", {});
     expect(call).toHaveBeenCalledWith("exec.approvals.get", {});
-    expect(call).toHaveBeenCalledTimes(6);
+    expect(call).toHaveBeenCalledTimes(8); // 6 + 2 agents.files.get for IDENTITY.md
     expect(call.mock.calls.filter(([method]) => method === "sessions.list")).toHaveLength(1);
     expect(result.seeds).toHaveLength(2);
     expect(result.seeds[0]).toEqual(
