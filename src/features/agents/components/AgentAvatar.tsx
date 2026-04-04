@@ -24,7 +24,7 @@ const UNSET_INDEX = -1;
  *  Blends explicitIndex (if set) with seed hash so:
  *    - same explicitIndex still yields different images for different agents
  *    - explicitIndex is used as a base offset within the 6-image set */
-const deriveDefaultIndex = (seed: string, explicitIndex: number): number => {
+export const deriveDefaultIndex = (seed: string, explicitIndex: number): number => {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) & 0xffffffff;

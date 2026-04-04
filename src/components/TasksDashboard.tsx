@@ -54,10 +54,8 @@ import {
 import { useSortable, SortableContext } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
-import { buildDefaultAvatarUrl } from "@/features/agents/components/AgentAvatar";
+import { buildDefaultAvatarUrl, deriveDefaultIndex } from "@/features/agents/components/AgentAvatar";
 import { useAvatarMode, type AvatarDisplayMode } from "@/components/AvatarModeContext";
-
-const DEFAULT_AVATAR_COUNT = 12;
 
 // ─── Priority ─────────────────────────────────────────────────────────────────
 
@@ -77,14 +75,8 @@ function agentAvatarSrc(
 ) {
   const seed = avatarSeed?.trim() || agentId;
   if (footerMode === "default") {
-    return buildDefaultAvatarUrl(
-      ((agentId.split("").reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0) + defaultAvatarIndex) %
-        DEFAULT_AVATAR_COUNT +
-        DEFAULT_AVATAR_COUNT) %
-        DEFAULT_AVATAR_COUNT
-    );
+    return buildDefaultAvatarUrl(deriveDefaultIndex(seed, defaultAvatarIndex));
   }
-  // For auto and custom modes, use the same seed-based multiavatar
   return buildAvatarDataUrl(seed);
 }
 
