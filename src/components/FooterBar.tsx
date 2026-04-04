@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useAgentStore } from "@/features/agents/state/store";
 import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
-import { buildDefaultAvatarUrl } from "@/features/agents/components/AgentAvatar";
+import { buildDefaultAvatarUrl, deriveDefaultIndex } from "@/features/agents/components/AgentAvatar";
 import { resolveGatewayStatusLabel } from "@/features/agents/components/colorSemantics";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import { AvatarModeToggle } from "@/components/AvatarModeToggle";
@@ -71,7 +71,7 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
     }
     // Use context mode
     if (avatarMode === "default") {
-      return buildDefaultAvatarUrl(agent.defaultAvatarIndex ?? 0);
+      return buildDefaultAvatarUrl(deriveDefaultIndex(agent.avatarSeed ?? agent.agentId, agent.defaultAvatarIndex ?? 0));
     }
     // auto
     return buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId);
