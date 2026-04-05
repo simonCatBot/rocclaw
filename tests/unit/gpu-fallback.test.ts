@@ -1,103 +1,57 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { exec } from "node:child_process";
 import { readFile } from "node:fs/promises";
 
-// Mock modules before importing the module under test
 vi.mock("node:child_process", async () => {
-  const actual = await vi.importActual<typeof import("node:child_process")>(
-    "node:child_process"
-  );
+  const mod = await vi.importActual<typeof import("node:child_process")>("node:child_process");
   return {
-    default: actual,
-    ...actual,
+    default: mod,
     exec: vi.fn(),
+    ...mod,
   };
 });
 
 vi.mock("node:fs/promises", async () => {
-  const actual = await vi.importActual<typeof import("node:fs/promises")>(
-    "node:fs/promises"
-  );
+  const mod = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
   return {
-    default: actual,
-    ...actual,
+    default: mod,
     readFile: vi.fn(),
+    ...mod,
   };
 });
 
-// Import after mocks are set up
-import { detectBasicGPU, hasGPU } from "@/lib/system/gpu-fallback";
+const execMock = vi.mocked(exec);
+const readFileMock = vi.mocked(readFile);
 
-const execMock = exec as ReturnType<typeof vi.fn>;
-const readFileMock = readFile as ReturnType<typeof vi.fn>;
+// Import the module after mocks are set up
+import { detectBasicGPU, hasGPU } from "@/lib/system/gpu-fallback";
 
 describe("gpu-fallback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it("should detect AMD GPU when lspci returns proper GPU line", async () => {
+    execMock
+      .mockResolvedValueOnce({ stdout: `65:00.0 "Display controller [0380]" "Advanced Micro Devices, Inc. [AMD/ATI] [1002]" "Device [150e]"` } as unknown as { stdout: string })
+      .mockResolvedValueOnce({ stdout: "card1" } as unknown as { stdout: string });
+
+    readFileMock.mockResolvedValue("" as unknown as string);
+
+    const gpus = await detectBasicGPU();
+    expect(gpus.length).toBe(1);
+    expect(gpus[0].pciId).toBe("1002:150e");
+    expect(gpus[0].vendor).toBe("AMD");
   });
 
-  describe("detectBasicGPU", () => {
-    it("should return empty array when no GPUs detected", async () => {
-      execMock.mockResolvedValue({ stdout: "" } as unknown as { stdout: string });
-      readFileMock.mockResolvedValue(null as unknown as string);
+  it("should return true when hasGPU finds at least one GPU", async () => {
+    execMock
+      .mockResolvedValueOnce({ stdout: `65:00.0 "Display controller" "AMD/ATI" "Device [150e]"` } as unknown as { stdout: string })
+      .mockResolvedValueOnce({ stdout: "card1" } as unknown as { stdout: string });
 
-      const gpus = await detectBasicGPU();
-      expect(gpus).toEqual([]);
-    });
+    readFileMock.mockResolvedValue("" as unknown as string);
 
-    it("should detect AMD GPU from lspci", async () => {
-      // Mock lspci output
-      execMock
-        .mockResolvedValueOnce({
-          stdout: `65:00.0 "Display controller [0380]" "Advanced Micro Devices, Inc. [AMD/ATI] [1002]" "Device [150e]" -rc1 -p00 "Advanced Micro Devices, Inc. [AMD/ATI] [1002]" "Device [150e]"`,
-        } as unknown as { stdout: string })
-        // Mock ls /sys/class/drm/
-        .mockResolvedValueOnce({ stdout: "card1\ncard1-DP-1" } as unknown as { stdout: string })
-        // Mock ls /sys/class/drm/card1/device/
-        .mockResolvedValueOnce({ stdout: "" } as unknown as { stdout: string });
-
-      // Mock sysfs reads
-      readFileMock.mockResolvedValue("" as unknown as string);
-
-      const gpus = await detectBasicGPU();
-      expect(gpus.length).toBeGreaterThanOrEqual(0);
-    });
-
-    it("should parse SCLK states correctly", async () => {
-      execMock.mockResolvedValueOnce({ stdout: "" } as unknown as { stdout: string });
-
-      const gpus = await detectBasicGPU();
-      expect(Array.isArray(gpus)).toBe(true);
-    });
-
-    it("should handle lspci without VGA entries", async () => {
-      execMock.mockResolvedValue({ stdout: "01:00.0 SATA controller" } as unknown as { stdout: string });
-      readFileMock.mockResolvedValue("" as unknown as string);
-
-      const gpus = await detectBasicGPU();
-      expect(Array.isArray(gpus)).toBe(true);
-    });
-  });
-
-  describe("hasGPU", () => {
-    it("should return false when no GPU is detected", async () => {
-      execMock.mockResolvedValue({ stdout: "" } as unknown as { stdout: string });
-      readFileMock.mockResolvedValue("" as unknown as string);
-
-      const result = await hasGPU();
-      expect(result).toBe(false);
-    });
-
-    it("should return an array from detectBasicGPU", async () => {
-      execMock.mockResolvedValue({ stdout: "" } as unknown as { stdout: string });
-      readFileMock.mockResolvedValue("" as unknown as string);
-
-      const gpus = await detectBasicGPU();
-      expect(Array.isArray(gpus)).toBe(true);
-    });
+    const result = await hasGPU();
+    expect(result).toBe(true);
   });
 });

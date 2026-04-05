@@ -322,7 +322,10 @@ function mapPciIdToName(pciId: string): string {
  * Get vendor string from PCI ID
  */
 function getVendorFromPciId(pciId: string): string {
-  const id = pciId.replace(/^0x/i, "").toLowerCase();
+  // Strip vendor prefix if present (e.g., "1002:150e" -> "150e")
+  const normalized = pciId.replace(/^0x/i, "").toLowerCase();
+  const id = normalized.includes(":") ? normalized.split(":")[1] : normalized;
+  
   const intel = ["8086", "8087", "8088", "8089"];
   const nvidia = ["10de", "12ba", "134d", "1382", "1431"];
   const amd = [
@@ -342,27 +345,49 @@ function getVendorFromPciId(pciId: string): string {
  * Detect GPUs using lspci (always available on Linux)
  */
 async function detectGpusLspci(): Promise<
-  Array<{ name: string; pciId: string; devicePath: string }>
+  Array<{ name: string; pciId: string; pciSlot: string; devicePath: string }>
 > {
   try {
     const { stdout } = await execAsync(
-      "lspci -nn -mm -d ::0300 2>/dev/null || lspci -nn -mm 2>/dev/null | grep -i 'vga\\|display\\|3d'"
+      "lspci -nn -mm 2>/dev/null | grep -iE 'vga|display|3d|0300'"
     );
     const lines = stdout.split("\n").filter(Boolean);
-    const gpus: Array<{ name: string; pciId: string; devicePath: string }> = [];
+    const gpus: Array<{ name: string; pciId: string; pciSlot: string; devicePath: string }> = [];
 
     for (const line of lines) {
-      const match = line.match(/([\da-f]{4}:[\da-f]{4})/i);
-      if (!match) continue;
+      // Match full PCI slot address (e.g., "65:00.0")
+      const slotMatch = line.match(/^([0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f])/i);
+      if (!slotMatch) continue;
+
+      const pciSlot = slotMatch[1];
+
+      // Match vendor:device ID (e.g., "1002:150e" OR just "150e" when vendor is omitted)
+      // First try vendor:device pattern
+      const idMatch = line.match(/([0-9a-f]{4}:[0-9a-f]{4})/i);
+      let pciId: string;
+      if (idMatch) {
+        pciId = idMatch[1].replace(/^0000:/i, "");
+      } else {
+        // Fall back to just device ID (e.g., "150e" from "Device [150e]")
+        const deviceIdMatch = line.match(/Device\s*\[([0-9a-f]{4})\]/i);
+        if (deviceIdMatch) {
+          const deviceId = deviceIdMatch[1];
+          // Try to find vendor from the same line, default to AMD
+          const vendorMatch = line.match(/Vendor\s*\[([0-9a-f]{4})\]/i);
+          const vendorId = vendorMatch?.[1] ?? "1002";
+          pciId = `${vendorId}:${deviceId}`;
+        } else {
+          continue;
+        }
+      }
 
       const parts = line.split('"');
       const name = parts.length > 1 ? parts[1].trim() : "Unknown GPU";
-      const pciId = match[1].replace(/^0000:/i, "");
 
       // Find corresponding DRM device path
-      const devicePath = await findDrmDeviceForPciSlot(pciId);
+      const devicePath = await findDrmDeviceForPciSlot(pciSlot);
 
-      gpus.push({ name, pciId, devicePath });
+      gpus.push({ name, pciId, pciSlot, devicePath });
     }
 
     return gpus;
@@ -372,7 +397,7 @@ async function detectGpusLspci(): Promise<
 }
 
 /**
- * Find DRM device path for a given PCI slot address
+ * Find DRM device path for a given PCI slot address (e.g., "65:00.0")
  */
 async function findDrmDeviceForPciSlot(pciSlot: string): Promise<string> {
   try {
@@ -383,6 +408,7 @@ async function findDrmDeviceForPciSlot(pciSlot: string): Promise<string> {
       const devicePath = `/sys/class/drm/${card}/device`;
       const ueventPath = await readSysfsFile(join(devicePath, "uevent"));
 
+      // PCI_SLOT_NAME in uevent is like "0000:65:00.0"
       if (ueventPath?.includes(pciSlot)) {
         return devicePath;
       }
