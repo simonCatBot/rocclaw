@@ -42,7 +42,7 @@ jobs:
           node-version: "22"
           cache: "npm"
       - run: npm ci
-      - run: npm run build -- --webpack
+      - run: npm run build
 
   e2e:
     name: E2E Tests
