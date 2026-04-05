@@ -152,7 +152,6 @@ jobs:
           draft: false
           prerelease: false
 
-  # Publish to npm - only on tags
   publish-npm:
     name: Publish to npm
     needs: build
