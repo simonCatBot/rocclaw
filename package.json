@@ -1,10 +1,43 @@
 {
-  "name": "rocclaw",
+  "name": "@simoncatbot/rocclaw",
   "version": "0.1.0",
-  "private": true,
+  "description": "Focused operator studio for OpenClaw - Web dashboard for AI agent management",
+  "main": "server/index.js",
+  "bin": {
+    "rocclaw": "./server/index.js"
+  },
   "engines": {
     "node": ">=20.9.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simoncatbot/rocclaw.git"
+  },
+  "keywords": [
+    "openclaw",
+    "ai",
+    "agent",
+    "dashboard",
+    "chat",
+    "nextjs"
+  ],
+  "author": "SimonCatBot",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/simoncatbot/rocclaw/issues"
+  },
+  "homepage": "https://github.com/simoncatbot/rocclaw#readme",
+  "files": [
+    ".next/",
+    "server/",
+    "public/",
+    "scripts/verify-native-runtime.mjs",
+    "package.json",
+    "package-lock.json",
+    "next.config.ts",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "verify:native-runtime:check": "node scripts/verify-native-runtime.mjs --check",
     "verify:native-runtime:repair": "node scripts/verify-native-runtime.mjs --repair",

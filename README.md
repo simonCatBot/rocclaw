@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://discord.gg/EFkFHbZw"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-20.9%2B-339933?logo=nodedotjs&logoColor=white" alt="Node.js"></a>
+  <a href="https://github.com/simoncatbot/rocclaw/releases"><img src="https://img.shields.io/github/v/release/simoncatbot/rocclaw?include_prereleases&logo=github&color=blue" alt="GitHub Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
 </p>
 
@@ -73,6 +74,46 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) and paste your gateway token. Click **Test Connection**, then **Save Settings**.
 
 🎉 You're in!
+
+---
+
+## 📦 Installation Options
+
+### Option 1: Pre-built Package (Fastest)
+
+Download ready-to-run packages from [GitHub Releases](https://github.com/simoncatbot/rocclaw/releases):
+
+**Linux/macOS:**
+```bash
+# Download and extract latest release
+curl -L -o rocclaw.tar.gz https://github.com/simoncatbot/rocclaw/releases/latest/download/rocclaw-linux-x64.tar.gz
+tar -xzf rocclaw.tar.gz
+cd rocclaw
+
+# Start the application
+./start.sh
+```
+
+**Windows:**
+1. Download `rocclaw-windows-x64.zip` from [GitHub Releases](https://github.com/simoncatbot/rocclaw/releases/latest)
+2. Extract the zip file
+3. Run `start.bat`
+
+### Option 2: npm (Global Install)
+
+```bash
+npm install -g @simoncatbot/rocclaw
+rocclaw
+```
+
+### Option 3: From Source
+
+```bash
+git clone https://github.com/simoncatbot/rocclaw.git
+cd rocclaw
+npm install
+npm run dev
+```
 
 ---
 
