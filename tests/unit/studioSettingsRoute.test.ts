@@ -140,7 +140,6 @@ describe("rocclaw settings route", () => {
   });
 
   it("PUT url-only gateway patch preserves existing token", async () => {
-    await testTimeout(30000);
     tempDir = makeTempDir("rocclaw-settings-put-url-only");
     process.env.OPENCLAW_STATE_DIR = tempDir;
     fs.mkdirSync(path.join(tempDir, "openclaw-rocclaw"), { recursive: true });

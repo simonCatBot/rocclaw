@@ -34,6 +34,7 @@ describe("AvatarModeContext", () => {
 
   describe("useAvatarMode", () => {
     it("defaults to 'auto' when nothing is stored", () => {
+      // @ts-expect-error -- localStorage getItem returns string|null
       localStorageMock.getItem.mockReturnValue(null);
       const { result } = renderHook(() => useAvatarMode(), {
         wrapper: AvatarModeProvider,
