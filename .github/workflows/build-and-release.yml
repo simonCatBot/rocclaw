@@ -1,0 +1,179 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [master, main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Create distribution package
+        run: |
+          mkdir -p dist/rocclaw
+          cp -r .next dist/rocclaw/
+          cp -r server dist/rocclaw/
+          cp package.json dist/rocclaw/
+          cp package-lock.json dist/rocclaw/
+          cp next.config.ts dist/rocclaw/
+          cp -r public dist/rocclaw/
+          cp README.md dist/rocclaw/
+          cp LICENSE dist/rocclaw/
+          cp .env.example dist/rocclaw/
+          mkdir -p dist/rocclaw/scripts
+          cp scripts/verify-native-runtime.mjs dist/rocclaw/scripts/
+          
+          # Create startup script
+          cat > dist/rocclaw/start.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          echo "Starting rocCLAW..."
+          echo "Make sure you have Node.js 20.9+ installed"
+          
+          # Install production dependencies
+          npm ci --production
+          
+          # Start the server
+          node server/index.js
+          EOF
+          chmod +x dist/rocclaw/start.sh
+          
+          # Create Windows startup script
+          cat > dist/rocclaw/start.bat << 'EOF'
+          @echo off
+          echo Starting rocCLAW...
+          echo Make sure you have Node.js 20.9+ installed
+          
+          REM Install production dependencies
+          call npm ci --production
+          
+          REM Start the server
+          node server/index.js
+          EOF
+          
+          # Create tar.gz archive
+          cd dist
+          tar -czf rocclaw-linux-x64.tar.gz rocclaw
+          
+          # Create zip archive
+          zip -r rocclaw-windows-x64.zip rocclaw
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocclaw-build
+          path: dist/*
+          retention-days: 30
+
+  # Continuous release - updates on every push to master
+  release-latest:
+    name: Create Latest Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: rocclaw-build
+          path: dist
+
+      - name: Update Latest Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Latest Build
+          tag_name: latest
+          body: |
+            This is the latest build from the master branch.
+            
+            **Note:** This is a continuous build and may be unstable.
+            For stable releases, use the versioned releases.
+            
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+          files: |
+            dist/rocclaw-linux-x64.tar.gz
+            dist/rocclaw-windows-x64.zip
+          generate_release_notes: false
+          draft: false
+          prerelease: true
+          make_latest: false
+
+  # Versioned release - only on tags
+  release:
+    name: Create Versioned Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: rocclaw-build
+          path: dist
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/rocclaw-linux-x64.tar.gz
+            dist/rocclaw-windows-x64.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+  publish-npm:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

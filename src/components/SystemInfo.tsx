@@ -75,7 +75,7 @@ export function SystemInfoPanel() {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const response = await fetch("/api/system/metrics");
+      const response = await fetch("/api/system/metrics?includeBasicGpu=true");
       const result = await response.json();
       if (result.success) {
         setMetrics(result.data);

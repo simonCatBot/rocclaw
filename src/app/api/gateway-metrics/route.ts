@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import si from "systeminformation";
 import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstrap";
 import { detectROCm, ROCmGPUInfo } from "@/lib/system/rocm";
+import { detectBasicGPU, BasicGPUInfo } from "@/lib/system/gpu-fallback";
 
 // Cache to remember when gateway doesn't support system.metrics
 // Set once on first detection, not checked again until server restart
@@ -139,7 +140,17 @@ async function getLocalMetrics(): Promise<SystemMetrics> {
       rocmGpus = rocmInfo.gpus;
     }
   } catch {
-    // ROCm detection failed, fall back to systeminformation
+    // ROCm detection failed, fall back to basic sysfs detection
+  }
+
+  // Try basic GPU detection via sysfs/lspci if no ROCm GPUs found
+  let basicGpus: BasicGPUInfo[] = [];
+  if (rocmGpus.length === 0) {
+    try {
+      basicGpus = await detectBasicGPU();
+    } catch {
+      // Basic GPU detection also failed
+    }
   }
 
   let gpuMetrics: SystemMetrics["gpu"] = [];
@@ -167,6 +178,20 @@ async function getLocalMetrics(): Promise<SystemMetrics> {
       guid: gpu.guid,
       pciBus: gpu.pciBus,
       currentClockMHz: gpu.currentClockMHz,
+    }));
+  } else if (basicGpus.length > 0) {
+    // Use basic sysfs GPU data (no ROCm required)
+    gpuMetrics = basicGpus.map((gpu) => ({
+      name: gpu.name,
+      usage: gpu.gpuUtilPercent,
+      temperature: gpu.currentTemp !== null ? Math.round(gpu.currentTemp) : null,
+      memory: {
+        total: gpu.vramBytes !== null ? Math.round(gpu.vramBytes / (1024 * 1024 * 1024) * 100) / 100 : null,
+        used: gpu.vramUsedBytes !== null ? Math.round(gpu.vramUsedBytes / (1024 * 1024 * 1024) * 100) / 100 : null,
+      },
+      vendor: gpu.vendor,
+      maxClockMHz: gpu.maxClockMHz ?? undefined,
+      currentClockMHz: gpu.currentClockMHz ?? undefined,
     }));
   } else {
     gpuMetrics = gpuData.controllers

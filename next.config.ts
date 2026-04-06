@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   serverExternalPackages: ["ws", "better-sqlite3", "systeminformation"],
+  // Turbopack configuration for Next.js 16+
+  turbopack: {
+    // Migrate webpack ignoreWarnings to Turbopack
+    resolveAlias: {},
+  },
   webpack: (config) => {
     // Suppress warnings about optional macOS temperature-sensor dependencies
     // that are attempted to be loaded on Linux/Windows builds. These packages

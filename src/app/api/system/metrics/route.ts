@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import si from 'systeminformation';
 import { detectROCm, ROCmGPUInfo } from '@/lib/system/rocm';
+import { detectBasicGPU, BasicGPUInfo } from '@/lib/system/gpu-fallback';
 
 export interface SystemMetrics {
   cpu: {
@@ -74,12 +75,26 @@ export interface SystemMetrics {
   uptime: number;
   hostname: string;
   platform: string;
+  // GPU fallback source info (indicates which detection method was used)
+  gpuDetectionMethod?: "rocm" | "systeminfo" | "basic-sysfs" | "none";
+}
+
+export interface SystemMetricsOptions {
+  /**
+   * When true, also attempt fallback GPU detection via sysfs/lspci
+   * when ROCm is not installed. This provides basic GPU info even on
+   * systems without ROCm drivers.
+   * @default false
+   */
+  includeBasicGpu?: boolean;
 }
 
 export async function GET(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _request: NextRequest
+  request: NextRequest
 ): Promise<NextResponse> {
+  const { searchParams } = new URL(request.url);
+  const includeBasicGpu = searchParams.get("includeBasicGpu") === "true";
+
   try {
     const [
       cpuData,
@@ -116,21 +131,34 @@ export async function GET(
     const rxSec = netData.reduce((acc, net) => acc + (net.rx_sec ?? 0), 0);
     const txSec = netData.reduce((acc, net) => acc + (net.tx_sec ?? 0), 0);
 
-    // Detect and use ROCm GPU data if available
+    // GPU detection - try ROCm first, then optionally fallback to basic sysfs
     let rocmGpus: ROCmGPUInfo[] = [];
+    let basicGpus: BasicGPUInfo[] = [];
+    let gpuDetectionMethod: SystemMetrics["gpuDetectionMethod"] = "none";
+
     try {
       const rocmInfo = await detectROCm();
       if (rocmInfo.detected && rocmInfo.gpus.length > 0) {
         rocmGpus = rocmInfo.gpus;
       }
     } catch (error) {
-      console.log('ROCm detection failed, falling back to systeminformation:', error);
+      console.log('ROCm detection failed:', error);
     }
 
-    // Process GPU data - prefer ROCm data if available
+    // If no ROCm GPUs and basic GPU detection is enabled, try sysfs/lspci
+    if (rocmGpus.length === 0 && includeBasicGpu) {
+      try {
+        basicGpus = await detectBasicGPU();
+      } catch (error) {
+        console.log('Basic GPU detection failed:', error);
+      }
+    }
+
+    // Process GPU data - prefer ROCm data if available, then basic sysfs, then systeminformation
     let gpuMetrics: SystemMetrics['gpu'] = [];
     
     if (rocmGpus.length > 0) {
+      gpuDetectionMethod = "rocm";
       // Use ROCm GPU data with detailed info
       gpuMetrics = rocmGpus.map(gpu => ({
         name: gpu.marketingName || gpu.name,
@@ -157,7 +185,23 @@ export async function GET(
         pciBus: gpu.pciBus,
         currentClockMHz: gpu.currentClockMHz,
       }));
+    } else if (basicGpus.length > 0) {
+      gpuDetectionMethod = "basic-sysfs";
+      // Use basic sysfs GPU data
+      gpuMetrics = basicGpus.map(gpu => ({
+        name: gpu.name,
+        usage: gpu.gpuUtilPercent,
+        temperature: gpu.currentTemp !== null ? Math.round(gpu.currentTemp) : null,
+        memory: {
+          total: gpu.vramBytes !== null ? Math.round(gpu.vramBytes / (1024 * 1024 * 1024) * 100) / 100 : null,
+          used: gpu.vramUsedBytes !== null ? Math.round(gpu.vramUsedBytes / (1024 * 1024 * 1024) * 100) / 100 : null,
+        },
+        vendor: gpu.vendor,
+        maxClockMHz: gpu.maxClockMHz ?? undefined,
+        currentClockMHz: gpu.currentClockMHz ?? undefined,
+      }));
     } else {
+      gpuDetectionMethod = "systeminfo";
       // Fallback to systeminformation GPU data
       gpuMetrics = gpuData.controllers
         .filter(gpu => gpu.model || gpu.vendor)
@@ -219,6 +263,7 @@ export async function GET(
       uptime: Math.round(process.uptime()),
       hostname: osInfo.hostname,
       platform: `${osInfo.platform} ${osInfo.arch}`,
+      gpuDetectionMethod,
     };
 
     return NextResponse.json({ 
