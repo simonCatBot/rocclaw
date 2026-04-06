@@ -69,20 +69,32 @@ describe("AvatarSelector", () => {
     expect(call.avatarSeed).toBeTruthy();
   });
 
-  it("calls onChange when a default avatar is selected", () => {
+  it("calls onChange when a default avatar is selected", async () => {
     const onChange = vi.fn();
-    renderSelector(
-      { ...defaultValue, avatarSource: "default", defaultAvatarIndex: 0 },
+    const { container } = renderSelector(
+      { ...defaultValue, avatarSource: "default" },
       onChange
     );
 
-    // Click the 3rd avatar (index 2)
-    const avatars = screen.getAllByRole("img");
-    expect(avatars.length).toBeGreaterThanOrEqual(3);
-    fireEvent.click(avatars[2]);
+    // Switch to the Default tab first (component defaults to Auto) — this fires onChange once
+    const defaultTab = screen.getByRole("button", { name: /^default$/i });
+    fireEvent.click(defaultTab);
+
+    // Wait for the grid to appear
+    await new Promise((r) => setTimeout(r, 0));
+
+    // Click "Avatar 3" button in the grid
+    const avatarButton = container.querySelector('button[title="Avatar 3"]');
+    expect(avatarButton).not.toBeNull();
+    fireEvent.click(avatarButton!);
+
+    // onChange fired for tab switch + avatar selection
     expect(onChange).toHaveBeenCalled();
-    const call = onChange.mock.calls[0][0] as AvatarSelectorValue;
-    expect(call.defaultAvatarIndex).toBe(2);
+    // Find the call with the correct avatar index
+    const avatarCalls = onChange.mock.calls.filter(
+      (call) => (call[0] as AvatarSelectorValue).defaultAvatarIndex === 2
+    );
+    expect(avatarCalls.length).toBeGreaterThan(0);
   });
 
   it("calls onChange with custom source when custom tab is clicked", () => {
