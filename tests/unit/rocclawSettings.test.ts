@@ -5,7 +5,7 @@ import {
   resolveFocusedPreference,
   resolveAgentAvatarSeed,
   resolveAgentAvatarConfig,
-  defaultROCclawSettings,
+
   normalizeGatewayKey,
 } from "@/lib/rocclaw/settings";
 

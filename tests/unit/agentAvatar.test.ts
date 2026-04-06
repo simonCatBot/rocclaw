@@ -43,7 +43,7 @@ describe("deriveDefaultIndex", () => {
   it("handles negative explicitIndex as UNSET (uses seed hash only)", () => {
     // -1 is UNSET_INDEX sentinel
     const withNeg = deriveDefaultIndex("test-seed", -1);
-    const withZero = deriveDefaultIndex("test-seed", 0);
+
     // -1 should produce a different result than 0 in most cases
     // (because UNSET_INDEX = -1 causes base=0, but hash still varies)
     expect(typeof withNeg).toBe("number");
