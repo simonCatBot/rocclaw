@@ -1,8 +1,7 @@
 {
   "name": "@simoncatbot/rocclaw",
   "version": "0.9.0-alpha.0",
-  "description": "⚠️ ALPHA PREVIEW — Focused operator studio for OpenClaw AI agents. This is early softwareexpect rough edges.",
-  "keywords": [
+  "description": "⚠️ ALPHA PREVIEW — Focused operator studio for OpenClaw AI agents. This is early software — expect rough edges.",
   "main": "server/index.js",
   "bin": {
     "rocclaw": "./server/index.js"
@@ -20,7 +19,9 @@
     "agent",
     "dashboard",
     "chat",
-    "nextjs"
+    "nextjs",
+    "alpha",
+    "operator-studio"
   ],
   "author": "SimonCatBot",
   "license": "MIT",
