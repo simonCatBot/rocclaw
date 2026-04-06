@@ -1,7 +1,8 @@
 {
   "name": "@simoncatbot/rocclaw",
-  "version": "0.1.0",
-  "description": "Focused operator studio for OpenClaw - Web dashboard for AI agent management",
+  "version": "0.9.0-alpha.0",
+  "description": "⚠️ ALPHA PREVIEW — Focused operator studio for OpenClaw AI agents. This is early softwareexpect rough edges.",
+  "keywords": [
   "main": "server/index.js",
   "bin": {
     "rocclaw": "./server/index.js"

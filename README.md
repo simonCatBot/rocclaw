@@ -1,13 +1,15 @@
 <div align="center">
 
-# 🎛️ rocCLAW
+# ⚠️ rocCLAW — Alpha Preview
 
-**Your focused operator rocclaw for OpenClaw**
+> **This is early, unstable software (v0.9.0-alpha).** Expect rough edges, breaking changes, and incomplete features. Do not use in production environments. Feedback welcome!
+
+**Your focused operator studio for OpenClaw AI agents**
 
 <p align="center">
   <a href="https://discord.gg/EFkFHbZw"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-20.9%2B-339933?logo=nodedotjs&logoColor=white" alt="Node.js"></a>
-  <a href="https://github.com/simoncatbot/rocclaw/releases"><img src="https://img.shields.io/github/v/release/simoncatbot/rocclaw?include_prereleases&logo=github&color=blue" alt="GitHub Release"></a>
+  <a href="https://github.com/simoncatbot/rocclaw/releases"><img src="https://img.shields.io/github/v/release/simoncatbot/rocclaw?include_prereleases&logo=github&color=red" alt="GitHub Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
 </p>
 
@@ -121,6 +123,7 @@ npm run dev
 
 | Guide | What you'll learn |
 |-------|-------------------|
+| [📋 Changelog](CHANGELOG.md) | Release history and what's new |
 | [📚 Setup & Configuration](README.md#setup-guides) | Detailed installation for different scenarios |
 | [🖥️ UI Guide](docs/ui-guide.md) | How to use each feature in the interface |
 | [🔐 Permissions & Sandboxing](docs/permissions-sandboxing.md) | Security settings explained |

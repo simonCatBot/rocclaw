@@ -1,5 +1,7 @@
 # 🖥️ rocCLAW UI Guide
 
+> ⚠️ **Alpha Preview** — This guide reflects v0.9.0-alpha. UI elements and behavior may change between releases.
+
 Complete walkthrough of the rocCLAW interface — what every button does and how to use it effectively.
 
 ---

@@ -1,5 +1,7 @@
 # 🏗️ rocCLAW Architecture
 
+> ⚠️ **Alpha Preview** — This document describes the current architecture as of v0.9.0-alpha. Details may change as the project evolves.
+
 Technical deep-dive into how rocCLAW works under the hood.
 
 ---

@@ -1,5 +1,7 @@
 # 🤝 Contributing to rocCLAW
 
+> ⚠️ **Alpha Preview** — Contribution guidelines are a starting point. As the project matures, these will evolve. Please ask in Discussions before investing time in large contributions.
+
 Thank you for your interest in making rocCLAW better! This guide will help you get set up and contribute effectively.
 
 ---

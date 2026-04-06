@@ -1,5 +1,7 @@
 # 🔐 Permissions & Sandboxing Guide
 
+> ⚠️ **Alpha Preview** — Security model is under active development as of v0.9.0-alpha.
+
 Understanding how rocCLAW configures security and how the OpenClaw gateway enforces it.
 
 ---

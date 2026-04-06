@@ -1,5 +1,7 @@
 # 💬 Chat Streaming
 
+> ⚠️ **Alpha Preview** — This document describes the chat architecture as of v0.9.0-alpha. Implementation details may evolve.
+
 Understanding how real-time chat events flow from the OpenClaw gateway to your browser.
 
 ---
