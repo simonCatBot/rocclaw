@@ -42,34 +42,10 @@ jobs:
           mkdir -p dist/rocclaw/scripts
           cp scripts/verify-native-runtime.mjs dist/rocclaw/scripts/
           
-          # Create startup script
-          cat > dist/rocclaw/start.sh << 'EOF'
-          #!/bin/bash
-          set -e
-          
-          echo "Starting rocCLAW..."
-          echo "Make sure you have Node.js 20.9+ installed"
-          
-          # Install production dependencies
-          npm ci --production
-          
-          # Start the server
-          node server/index.js
-          EOF
+          # Copy startup scripts from the repo (not generated inline)
+          cp start.sh dist/rocclaw/
+          cp start.bat dist/rocclaw/
           chmod +x dist/rocclaw/start.sh
-          
-          # Create Windows startup script
-          cat > dist/rocclaw/start.bat << 'EOF'
-          @echo off
-          echo Starting rocCLAW...
-          echo Make sure you have Node.js 20.9+ installed
-          
-          REM Install production dependencies
-          call npm ci --production
-          
-          REM Start the server
-          node server/index.js
-          EOF
           
           # Create tar.gz archive
           cd dist

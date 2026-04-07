@@ -88,7 +88,7 @@ Download ready-to-run packages from [GitHub Releases](https://github.com/simonca
 
 **Linux/macOS:**
 ```bash
-# Download and extract latest release
+# Download and extract the latest release
 curl -L -o rocclaw.tar.gz https://github.com/simoncatbot/rocclaw/releases/latest/download/rocclaw-linux-x64.tar.gz
 tar -xzf rocclaw.tar.gz
 cd rocclaw
