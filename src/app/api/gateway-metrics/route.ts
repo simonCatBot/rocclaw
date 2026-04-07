@@ -84,6 +84,9 @@ export interface SystemMetrics {
   uptime: number;
   hostname: string;
   platform: string;
+  // ROCm system-level info (available when rocmGpus.length > 0)
+  rocmDetected: boolean;
+  rocmRuntimeVersion: string;
 }
 
 interface GatewayPresence {
@@ -134,8 +137,9 @@ async function getLocalMetrics(): Promise<SystemMetrics> {
 
   // Detect ROCm GPU data if available
   let rocmGpus: ROCmGPUInfo[] = [];
+  let rocmInfo: { detected: boolean; gpus: ROCmGPUInfo[]; runtimeVersion?: string } = { detected: false, gpus: [] };
   try {
-    const rocmInfo = await detectROCm();
+    rocmInfo = await detectROCm();
     if (rocmInfo.detected && rocmInfo.gpus.length > 0) {
       rocmGpus = rocmInfo.gpus;
     }
@@ -255,6 +259,8 @@ async function getLocalMetrics(): Promise<SystemMetrics> {
     uptime: Math.round(process.uptime()),
     hostname: osInfo.hostname,
     platform: `${osInfo.platform} ${osInfo.arch}`,
+    rocmDetected: rocmGpus.length > 0,
+    rocmRuntimeVersion: rocmInfo.runtimeVersion ?? "",
   };
 }
 

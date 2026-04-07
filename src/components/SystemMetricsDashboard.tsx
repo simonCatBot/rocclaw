@@ -547,7 +547,7 @@ export function SystemMetricsDashboard() {
                 {/* AMD ROCm logo — public/amd/rocgfx-logo.png or fallback text badge */}
                 <div className="flex items-center gap-1.5">
                   <Image
-                    src="/amd/rocgfx-logo.png"
+                    src="https://avatars.githubusercontent.com/u/16900649?s=280&v=4"
                     alt="AMD ROCm"
                     width={60}
                     height={24}
