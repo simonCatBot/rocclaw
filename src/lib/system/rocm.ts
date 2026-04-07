@@ -448,8 +448,35 @@ async function getComprehensiveGpuInfo(rocmSmiPath: string): Promise<{
 
 /**
  * Get ROCm runtime version
+ * Prefers /opt/rocm/.info/version-rocm (e.g. "7.2.1-81") which reflects the actual
+ * ROCm stack version. Falls back to rocminfo parsing which reports the GFX
+ * runtime version (e.g. "1.18" for gfx1151) rather than the ROCm release version.
  */
 async function getRocmVersion(rocmInfoPath: string): Promise<string> {
+  // Try the ROCm version file first — this is the actual ROCm release version
+  const versionFilePaths = [
+    "/opt/rocm/.info/version-rocm",
+    "/opt/rocm/.info/version",
+  ];
+
+  for (const versionFile of versionFilePaths) {
+    try {
+      const { stdout } = await execAsync(`cat ${versionFile} 2>/dev/null`);
+      const trimmed = stdout.trim();
+      // version files are in format "7.2.1-81" — strip the package suffix
+      const match = trimmed.match(/^(\d+\.\d+\.\d+)/);
+      if (match) {
+        return match[1];
+      }
+      if (trimmed) {
+        return trimmed;
+      }
+    } catch {
+      // Continue to next file
+    }
+  }
+
+  // Fallback: parse rocminfo output (less reliable — gives GFX runtime version)
   try {
     const { stdout } = await execAsync(`${rocmInfoPath} 2>&1`);
     const versionMatch = stdout.match(/Runtime Version:\s*([\d.]+)/);

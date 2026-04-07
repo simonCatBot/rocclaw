@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { 
   Cpu, 
@@ -84,6 +85,9 @@ interface SystemMetrics {
   uptime: number;
   hostname: string;
   platform: string;
+  // ROCm system-level info (only populated when rocmGpus.length > 0)
+  rocmDetected: boolean;
+  rocmRuntimeVersion: string;
 }
 
 function MetricRow({ 
@@ -536,6 +540,22 @@ export function SystemMetricsDashboard() {
                 </div>
               )}
             </div>
+
+            {/* ROCm Powered By — shown when ROCm is detected */}
+            {metrics.rocmDetected && (
+              <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+                <Image
+                  src="https://avatars.githubusercontent.com/u/16900649?s=280&v=4"
+                  alt="AMD ROCm"
+                  width={80}
+                  height={32}
+                  className="h-8 w-auto object-contain"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Powered by ROCm {metrics.rocmRuntimeVersion}
+                </span>
+              </div>
+            )}
 
             {/* GPU Hardware Details — collapsible */}
             {(primaryGpu.deviceId || primaryGpu.driverVersion || primaryGpu.vbiosVersion) && (

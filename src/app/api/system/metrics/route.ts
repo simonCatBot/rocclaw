@@ -75,6 +75,9 @@ export interface SystemMetrics {
   uptime: number;
   hostname: string;
   platform: string;
+  // ROCm system-level info (available when rocmGpus.length > 0)
+  rocmDetected: boolean;
+  rocmRuntimeVersion: string;
   // GPU fallback source info (indicates which detection method was used)
   gpuDetectionMethod?: "rocm" | "systeminfo" | "basic-sysfs" | "none";
 }
@@ -135,9 +138,11 @@ export async function GET(
     let rocmGpus: ROCmGPUInfo[] = [];
     let basicGpus: BasicGPUInfo[] = [];
     let gpuDetectionMethod: SystemMetrics["gpuDetectionMethod"] = "none";
+    // Keep rocmInfo in scope so we can read runtimeVersion for the response
+    let rocmInfo: { detected: boolean; gpus: ROCmGPUInfo[]; runtimeVersion?: string } = { detected: false, gpus: [] };
 
     try {
-      const rocmInfo = await detectROCm();
+      rocmInfo = await detectROCm();
       if (rocmInfo.detected && rocmInfo.gpus.length > 0) {
         rocmGpus = rocmInfo.gpus;
       }
@@ -263,6 +268,8 @@ export async function GET(
       uptime: Math.round(process.uptime()),
       hostname: osInfo.hostname,
       platform: `${osInfo.platform} ${osInfo.arch}`,
+      rocmDetected: rocmGpus.length > 0,
+      rocmRuntimeVersion: rocmInfo.runtimeVersion ?? "",
       gpuDetectionMethod,
     };
 
