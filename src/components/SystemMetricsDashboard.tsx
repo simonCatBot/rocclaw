@@ -552,7 +552,7 @@ export function SystemMetricsDashboard() {
                   className="h-8 w-auto object-contain"
                 />
                 <span className="text-xs text-muted-foreground">
-                  Powered by ROCm v{metrics.rocmRuntimeVersion}
+                  Powered by ROCm
                 </span>
               </div>
             )}
