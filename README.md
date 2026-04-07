@@ -89,7 +89,7 @@ Download ready-to-run packages from [GitHub Releases](https://github.com/simonca
 **Linux/macOS:**
 ```bash
 # Download and extract the latest release
-curl -L -o rocclaw.tar.gz https://github.com/simoncatbot/rocclaw/releases/download/V0.01/rocclaw-linux-x64.tar.gz
+curl -L -o rocclaw.tar.gz https://github.com/simoncatbot/rocclaw/releases/latest/download/rocclaw-linux-x64.tar.gz
 tar -xzf rocclaw.tar.gz
 cd rocclaw
 
@@ -98,7 +98,7 @@ cd rocclaw
 ```
 
 **Windows:**
-1. Download `rocclaw-windows-x64.zip` from [GitHub Releases](https://github.com/simoncatbot/rocclaw/releases/download/V0.01/rocclaw-windows-x64.zip)
+1. Download `rocclaw-windows-x64.zip` from [GitHub Releases](https://github.com/simoncatbot/rocclaw/releases/latest)
 2. Extract the zip file
 3. Run `start.bat`
 
