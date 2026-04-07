@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { 
   Cpu, 
@@ -84,6 +85,9 @@ interface SystemMetrics {
   uptime: number;
   hostname: string;
   platform: string;
+  // ROCm system-level info (only populated when rocmGpus.length > 0)
+  rocmDetected: boolean;
+  rocmRuntimeVersion: string;
 }
 
 function MetricRow({ 
@@ -536,6 +540,42 @@ export function SystemMetricsDashboard() {
                 </div>
               )}
             </div>
+
+            {/* ROCm Powered By — shown when ROCm is detected */}
+            {metrics.rocmDetected && (
+              <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+                {/* AMD ROCm logo — public/amd/rocgfx-logo.png or fallback text badge */}
+                <div className="flex items-center gap-1.5">
+                  <Image
+                    src="/amd/rocgfx-logo.png"
+                    alt="AMD ROCm"
+                    width={60}
+                    height={24}
+                    className="h-4 w-auto object-contain"
+                    onError={(e) => {
+                      // Fallback: hide broken image and show styled text badge instead
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = "none";
+                      const badge = target.nextElementSibling as HTMLElement | null;
+                      if (badge) badge.style.display = "flex";
+                    }}
+                  />
+                  <span
+                    className="hidden items-center gap-1 text-[10px] font-medium text-[#ED2939] border border-[#ED2939]/40 bg-[#ED2939]/10 px-1.5 py-0.5 rounded"
+                  >
+                    AMD ROCm
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  Powered by ROCm
+                </span>
+                {metrics.rocmRuntimeVersion && (
+                  <span className="text-[10px] text-muted-foreground/60">
+                    v{metrics.rocmRuntimeVersion}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* GPU Hardware Details — collapsible */}
             {(primaryGpu.deviceId || primaryGpu.driverVersion || primaryGpu.vbiosVersion) && (
