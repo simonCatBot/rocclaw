@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { 
   Cpu, 
@@ -543,11 +544,15 @@ export function SystemMetricsDashboard() {
             {/* ROCm Powered By — shown when ROCm is detected */}
             {metrics.rocmDetected && (
               <div className="flex items-center gap-2 pt-2 border-t border-border/30">
-                <span className="text-xs font-semibold text-[#ED2939] border border-[#ED2939]/40 bg-[#ED2939]/10 px-2 py-0.5 rounded">
-                  AMD ROCm v{metrics.rocmRuntimeVersion}
-                </span>
+                <Image
+                  src="https://avatars.githubusercontent.com/u/16900649?s=280&v=4"
+                  alt="AMD ROCm"
+                  width={80}
+                  height={32}
+                  className="h-8 w-auto object-contain"
+                />
                 <span className="text-xs text-muted-foreground">
-                  Powered by ROCm
+                  Powered by ROCm v{metrics.rocmRuntimeVersion}
                 </span>
               </div>
             )}
