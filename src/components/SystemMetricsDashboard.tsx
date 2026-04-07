@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { 
   Cpu, 
@@ -544,27 +543,16 @@ export function SystemMetricsDashboard() {
             {/* ROCm Powered By — shown when ROCm is detected */}
             {metrics.rocmDetected && (
               <div className="flex items-center gap-2 pt-2 border-t border-border/30">
-                {/* AMD ROCm logo — public/amd/rocgfx-logo.png or fallback text badge */}
+                {/* AMD ROCm badge */}
                 <div className="flex items-center gap-1.5">
-                  <Image
-                    src="https://avatars.githubusercontent.com/u/16900649?s=280&v=4"
-                    alt="AMD ROCm"
-                    width={60}
-                    height={24}
-                    className="h-4 w-auto object-contain"
-                    onError={(e) => {
-                      // Fallback: hide broken image and show styled text badge instead
-                      const target = e.currentTarget as HTMLImageElement;
-                      target.style.display = "none";
-                      const badge = target.nextElementSibling as HTMLElement | null;
-                      if (badge) badge.style.display = "flex";
-                    }}
-                  />
-                  <span
-                    className="hidden items-center gap-1 text-[10px] font-medium text-[#ED2939] border border-[#ED2939]/40 bg-[#ED2939]/10 px-1.5 py-0.5 rounded"
-                  >
+                  <span className="text-[10px] font-medium text-[#ED2939] border border-[#ED2939]/40 bg-[#ED2939]/10 px-1.5 py-0.5 rounded">
                     AMD ROCm
                   </span>
+                  {metrics.rocmRuntimeVersion && (
+                    <span className="text-[10px] text-muted-foreground">
+                      v{metrics.rocmRuntimeVersion}
+                    </span>
+                  )}
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   Powered by ROCm
