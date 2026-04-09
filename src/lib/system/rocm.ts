@@ -271,7 +271,8 @@ function matchGpuWithSmiData(
 
     // Check if this device ID matches the expected GPU type
     // Based on compute units and clock, is this likely a discrete GPU?
-    const likelyDiscrete = gpu.computeUnits > 16 || gpu.maxClockMHz >= 2500;
+    const likelyIGPU = isLikelyIGPU(gpu, gpu.name);
+    const likelyDiscrete = !likelyIGPU;
 
     // RDNA 3 discrete GPU device IDs
     const isRdna3Discrete = deviceId === "0x744c" || deviceId === "0x7440" ||
