@@ -342,10 +342,20 @@ function parseRocmInfo(output: string): ROCmGPUInfo[] {
       const maxClockMHz = parseInt(maxClockMatch?.[1] || "0", 10);
       const gfxVersion = gfxVersionMatch?.[1]?.trim() || "unknown";
 
+      // rocminfo often reports generic names like "AMD Radeon Graphics"
+      // When detected, use our computed marketing name instead
+      const rocminfoMarketingName = marketingNameMatch?.[1]?.trim();
+      const isGenericMarketingName =
+        !rocminfoMarketingName ||
+        rocminfoMarketingName === "AMD Radeon Graphics" ||
+        rocminfoMarketingName === "AMD GPU";
+
       gpus.push({
         index: gpuIndex++,
         name: nameMatch?.[1]?.trim() || "Unknown GPU",
-        marketingName: marketingNameMatch?.[1]?.trim() || getMarketingName(gfxVersion, { computeUnits, maxClockMHz }),
+        marketingName: isGenericMarketingName
+          ? getMarketingName(gfxVersion, { computeUnits, maxClockMHz })
+          : rocminfoMarketingName,
         vendor: vendorMatch?.[1]?.trim() || "AMD",
         deviceType: "GPU",
         gfxVersion,
