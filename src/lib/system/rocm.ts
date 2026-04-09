@@ -174,6 +174,7 @@ function resolveGfxVersion(deviceId: string | undefined, fallback: string): stri
   const deviceToGfx: Record<string, string> = {
     // Strix Point (Ryzen AI 300 series) - Radeon 890M iGPU
     "1502": "gfx1151", // AMD Radeon AI MAX+ Pro 395 (Strix Halo - 40 CUs)
+    "150e": "gfx1150", // AMD Radeon 890M (Strix Point iGPU - 16 CUs)
     "150f": "gfx1150", // AMD Radeon 890M (Strix Point iGPU - 16 CUs)
     "1586": "gfx1151", // AMD Radeon AI MAX+ Pro 395 (Strix Halo, alternate ID)
     // Strix Halo
