@@ -364,14 +364,11 @@ function parseRocmSmiAll(output: string): Map<number, Partial<ROCmGPUInfo>> {
       currentInfo.deviceId = deviceIdMatch[1];
     }
 
-    // GFX Version from IP version (rocm-smi shows actual GFX, not generic family)
-    // Format: "GPU[0] : IP version: 11.5.0" -> gfx1150
-    const ipVersionMatch = line.match(/IP version:\s*(\d+)\.(\d+)\.(\d+)/);
-    if (ipVersionMatch) {
-      const major = ipVersionMatch[1];
-      const minor = ipVersionMatch[2];
-      // Convert IP version to gfx string: 11.5.0 -> gfx1150
-      currentInfo.gfxVersion = `gfx${major}${minor}`;
+    // GFX Version from rocm-smi (most accurate - reports actual gfx like "gfx1150")
+    // Format: "GPU[0] : GFX Version: gfx1150"
+    const gfxVersionMatch = line.match(/GFX Version:\s*(gfx\d+[a-z]*)/);
+    if (gfxVersionMatch) {
+      currentInfo.gfxVersion = gfxVersionMatch[1];
     }
 
     // Device Revision
