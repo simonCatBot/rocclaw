@@ -281,6 +281,13 @@ function matchGpuWithSmiData(
     // Strix Point iGPU device IDs
     const isStrixPoint = deviceId === "0x1502" || deviceId === "0x150f" || deviceId === "0x1586";
 
+    // If the device ID is a known Strix Point/Halo ID, accept the match
+    // (Strix Halo can have 40 CUs which looks "discrete" by the heuristic,
+    // but 0x1586/0x1502/0x150f are definitely Strix APUs)
+    if (isStrixPoint) {
+      return smiGpu;
+    }
+
     // If rocminfo shows a high-end GPU but smi shows a low-end one, indices don't match
     if (likelyDiscrete && isStrixPoint) {
       // Index mismatch - this is likely a different GPU
