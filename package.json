@@ -36,6 +36,9 @@
     "package.json",
     "package-lock.json",
     "next.config.ts",
+    "start.sh",
+    "start.bat",
+    ".env.example",
     "README.md",
     "LICENSE"
   ],
