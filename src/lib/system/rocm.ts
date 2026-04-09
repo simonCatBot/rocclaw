@@ -103,31 +103,61 @@ async function findRocmSmi(): Promise<string | undefined> {
 }
 
 /**
- * Map GFX version to marketing name for AMD GPUs
+ * Get GPU name with marketing name and/or dynamic specs.
+ * Hybrid approach: uses hardcoded marketing names when known,
+ * falls back to dynamic description with detected specs.
  */
-function getMarketingName(gfxVersion: string | undefined): string {
+function getMarketingName(
+  gfxVersion: string | undefined,
+  gpu?: { computeUnits?: number; maxClockMHz?: number; deviceId?: string }
+): string {
   if (!gfxVersion) return "AMD GPU";
-  
+
   const gfxMap: Record<string, string> = {
-    "gfx1151": "AMD Radeon 8060S",
-    "gfx1150": "AMD Radeon 8050S",
+    // RDNA 3.5 (gfx115x) - Strix Point / Strix Halo
+    "gfx1151": "AMD Radeon AI MAX+ Pro 395",
+    "gfx1150": "AMD Radeon 890M",
+    // RDNA 3 (Radeon RX 7000 series)
     "gfx1100": "AMD Radeon RX 7900 XTX",
     "gfx1101": "AMD Radeon RX 7900 XT",
     "gfx1102": "AMD Radeon RX 7900 GRE",
+    "gfx1103": "AMD Radeon RX 7800 XT",
+    // RDNA 2 (Radeon RX 6000 series)
     "gfx1030": "AMD Radeon RX 6800 XT",
     "gfx1031": "AMD Radeon RX 6800",
     "gfx1032": "AMD Radeon RX 6700 XT",
+    // RDNA 1 (Radeon RX 5000 series)
     "gfx1010": "AMD Radeon RX 5700 XT",
     "gfx1011": "AMD Radeon RX 5700",
     "gfx1012": "AMD Radeon RX 5600 XT",
+    // Vega
     "gfx900": "AMD Radeon RX Vega",
     "gfx906": "AMD Radeon VII",
+    // CDNA / Instinct
     "gfx908": "AMD Instinct MI100",
     "gfx90a": "AMD Instinct MI200",
     "gfx942": "AMD Instinct MI300",
   };
-  
-  return gfxMap[gfxVersion] || `AMD GPU (${gfxVersion})`;
+
+  const marketingName = gfxMap[gfxVersion];
+
+  // If we have a known marketing name, return it without specs
+  if (marketingName) {
+    return marketingName;
+  }
+
+  // Unknown GPU - construct dynamic name from available data
+  const specs: string[] = [gfxVersion];
+  if (gpu?.deviceId) {
+    specs.push(`Device ID: ${gpu.deviceId}`);
+  }
+  if (gpu?.computeUnits && gpu.computeUnits > 0) {
+    specs.push(`${gpu.computeUnits} CUs`);
+  }
+  if (gpu?.maxClockMHz && gpu.maxClockMHz > 0) {
+    specs.push(`${(gpu.maxClockMHz / 1000).toFixed(2)} GHz`);
+  }
+  return `AMD GPU (${specs.join(", ")})`;
 }
 
 /**
@@ -142,10 +172,13 @@ function resolveGfxVersion(deviceId: string | undefined, fallback: string): stri
   // Normalize: strip leading "0x" and normalize to lowercase
   const id = deviceId.replace(/^0x/i, "").toLowerCase();
   const deviceToGfx: Record<string, string> = {
-    // Strix Point (Ryzen AI 300 series)
-    "1502": "gfx1151", // AMD Radeon 8060S (Strix Point)
-    "150f": "gfx1150", // AMD Radeon 8050S (Strix Point)
-    "1586": "gfx1151", // AMD Radeon 8060S (Strix Point, alternate ID)
+    // Strix Point (Ryzen AI 300 series) - Radeon 890M iGPU
+    "1502": "gfx1151", // AMD Radeon AI MAX+ Pro 395 (Strix Halo - 40 CUs)
+    "150f": "gfx1150", // AMD Radeon 890M (Strix Point iGPU - 16 CUs)
+    "1586": "gfx1151", // AMD Radeon AI MAX+ Pro 395 (Strix Halo, alternate ID)
+    // Strix Halo
+    "1150": "gfx1151", // AMD Radeon AI MAX+ Pro 395 (Strix Halo)
+    "1151": "gfx1151", // AMD Radeon AI MAX+ Pro 395 (Strix Halo)
     // RDNA 3 (Radeon RX 7000 series)
     "744c": "gfx1100", // AMD Radeon RX 7900 XTX
     "7440": "gfx1101", // AMD Radeon RX 7900 XT
@@ -175,6 +208,86 @@ function resolveGfxVersion(deviceId: string | undefined, fallback: string): stri
 }
 
 /**
+ * Check if a GPU is likely an integrated GPU (iGPU) based on rocminfo data.
+ * iGPUs typically have fewer CUs, lower clocks, and specific naming patterns.
+ */
+function isLikelyIGPU(gpu: ROCmGPUInfo, rawName: string | undefined): boolean {
+  // Check for iGPU-specific naming patterns in the raw name from rocminfo
+  if (rawName) {
+    const name = rawName.toLowerCase();
+    // Integrated GPUs often have these patterns
+    if (name.includes("radeon graphics")) return true;
+    if (name.includes("radeon 890")) return true;
+    if (name.includes("radeon 880")) return true;
+    if (name.includes("radeon 860")) return true;
+    if (name.includes("radeon 840")) return true;
+  }
+
+  // Heuristic: iGPUs typically have <= 16 CUs (some high-end iGPUs have up to 16)
+  // and lower max clock frequencies
+  if (gpu.computeUnits <= 16 && gpu.maxClockMHz > 0 && gpu.maxClockMHz < 3000) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Match GPU from rocminfo with GPU from rocm-smi using multiple criteria.
+ * Returns the matching GPU from rocm-smi, or undefined if no confident match.
+ */
+function matchGpuWithSmiData(
+  gpu: ROCmGPUInfo,
+  smiData: Map<number, Partial<ROCmGPUInfo>>
+): Partial<ROCmGPUInfo> | undefined {
+  // First, try index match - but validate it makes sense
+  const smiGpu = smiData.get(gpu.index);
+  if (smiGpu && smiGpu.deviceId) {
+    const deviceId = smiGpu.deviceId.toLowerCase();
+
+    // Check if this device ID matches the expected GPU type
+    // Based on compute units and clock, is this likely a discrete GPU?
+    const likelyDiscrete = gpu.computeUnits > 16 || gpu.maxClockMHz >= 2500;
+
+    // RDNA 3 discrete GPU device IDs
+    const isRdna3Discrete = deviceId === "0x744c" || deviceId === "0x7440" ||
+                            deviceId === "0x7450" || deviceId === "0x743f";
+
+    // Strix Point iGPU device IDs
+    const isStrixPoint = deviceId === "0x1502" || deviceId === "0x150f" || deviceId === "0x1586";
+
+    // If rocminfo shows a high-end GPU but smi shows a low-end one, indices don't match
+    if (likelyDiscrete && isStrixPoint) {
+      // Index mismatch - this is likely a different GPU
+      // Look for a better match
+      for (const [, candidate] of smiData) {
+        if (candidate.deviceId) {
+          const candidateId = candidate.deviceId.toLowerCase();
+          const candidateIsDiscrete = candidateId === "0x744c" || candidateId === "0x7440" ||
+                                      candidateId === "0x7450" || candidateId === "0x743f";
+          if (candidateIsDiscrete) {
+            return candidate;
+          }
+        }
+      }
+      // No discrete GPU found in smi, return undefined
+      return undefined;
+    }
+
+    // If it looks like a match, return it
+    if ((likelyDiscrete && isRdna3Discrete) || (!likelyDiscrete && isStrixPoint)) {
+      return smiGpu;
+    }
+
+    // When in doubt, prefer returning the data rather than nothing
+    // but log that there might be a mismatch
+    return smiGpu;
+  }
+
+  return undefined;
+}
+
+/**
  * Parse rocminfo output to extract GPU details
  */
 function parseRocmInfo(output: string): ROCmGPUInfo[] {
@@ -194,21 +307,25 @@ function parseRocmInfo(output: string): ROCmGPUInfo[] {
       const vendorMatch = block.match(/Vendor Name:\s*(.+)/);
       // Try to find gfx version - look for the most specific one (longer is usually more specific)
       const gfxVersionMatches = [...block.matchAll(/Name:\s*(gfx\d+[a-z]*)/g)];
-      const gfxVersionMatch = gfxVersionMatches.length > 0 
+      const gfxVersionMatch = gfxVersionMatches.length > 0
         ? gfxVersionMatches[gfxVersionMatches.length - 1]  // Take the last match (usually the most specific)
         : null;
       const computeUnitsMatch = block.match(/Compute Unit:\s*(\d+)/);
       const maxClockMatch = block.match(/Max Clock Freq\. \(MHz\):\s*(\d+)/);
 
+      const computeUnits = parseInt(computeUnitsMatch?.[1] || "0", 10);
+      const maxClockMHz = parseInt(maxClockMatch?.[1] || "0", 10);
+      const gfxVersion = gfxVersionMatch?.[1]?.trim() || "unknown";
+
       gpus.push({
         index: gpuIndex++,
         name: nameMatch?.[1]?.trim() || "Unknown GPU",
-        marketingName: marketingNameMatch?.[1]?.trim() || getMarketingName(gfxVersionMatch?.[1]),
+        marketingName: marketingNameMatch?.[1]?.trim() || getMarketingName(gfxVersion, { computeUnits, maxClockMHz }),
         vendor: vendorMatch?.[1]?.trim() || "AMD",
         deviceType: "GPU",
-        gfxVersion: gfxVersionMatch?.[1]?.trim() || "unknown",
-        computeUnits: parseInt(computeUnitsMatch?.[1] || "0", 10),
-        maxClockMHz: parseInt(maxClockMatch?.[1] || "0", 10),
+        gfxVersion,
+        computeUnits,
+        maxClockMHz,
       });
     }
   }
@@ -221,11 +338,11 @@ function parseRocmInfo(output: string): ROCmGPUInfo[] {
  */
 function parseRocmSmiAll(output: string): Map<number, Partial<ROCmGPUInfo>> {
   const gpuInfoMap = new Map<number, Partial<ROCmGPUInfo>>();
-  
+
   // Split output by GPU sections
   const lines = output.split('\n');
   let currentGpuIndex: number | null = null;
-  
+
   for (const line of lines) {
     // Check for GPU index
     const gpuMatch = line.match(/GPU\[(\d+)\]/);
@@ -235,55 +352,65 @@ function parseRocmSmiAll(output: string): Map<number, Partial<ROCmGPUInfo>> {
         gpuInfoMap.set(currentGpuIndex, { index: currentGpuIndex });
       }
     }
-    
+
     if (currentGpuIndex === null) continue;
-    
+
     const currentInfo = gpuInfoMap.get(currentGpuIndex) || {};
-    
+
     // Device ID
     const deviceIdMatch = line.match(/Device ID:\s*(0x[0-9a-fA-F]+)/);
     if (deviceIdMatch) {
       currentInfo.deviceId = deviceIdMatch[1];
     }
-    
+
+    // GFX Version from IP version (rocm-smi shows actual GFX, not generic family)
+    // Format: "GPU[0] : IP version: 11.5.0" -> gfx1150
+    const ipVersionMatch = line.match(/IP version:\s*(\d+)\.(\d+)\.(\d+)/);
+    if (ipVersionMatch) {
+      const major = ipVersionMatch[1];
+      const minor = ipVersionMatch[2];
+      // Convert IP version to gfx string: 11.5.0 -> gfx1150
+      currentInfo.gfxVersion = `gfx${major}${minor}`;
+    }
+
     // Device Revision
     const deviceRevMatch = line.match(/Device Rev:\s*(0x[0-9a-fA-F]+)/);
     if (deviceRevMatch) {
       currentInfo.deviceRev = deviceRevMatch[1];
     }
-    
+
     // Subsystem ID
     const subsysIdMatch = line.match(/Subsystem ID:\s*(-?0x[0-9a-fA-F]+)/);
     if (subsysIdMatch) {
       currentInfo.subsystemId = subsysIdMatch[1];
     }
-    
+
     // GUID
     const guidMatch = line.match(/GUID:\s*(\d+)/);
     if (guidMatch) {
       currentInfo.guid = guidMatch[1];
     }
-    
+
     // VBIOS version
     const vbiosMatch = line.match(/VBIOS version:\s*(.+)/);
     if (vbiosMatch) {
       currentInfo.vbiosVersion = vbiosMatch[1].trim();
     }
-    
+
     // PCI Bus
     const pciMatch = line.match(/PCI Bus:\s*(.+)/);
     if (pciMatch) {
       currentInfo.pciBus = pciMatch[1].trim();
     }
-    
+
     // Current clock frequency (from sclk clock level line)
-    // Output format: "sclk clock level: 1: (942Mhz)" — note capital H
+    // Output format: "sclk clock level: 1: (942Mhz)" - note capital H
     const clockMatch = line.match(/sclk clock level:\s*\d+:\s*\((\d+)Mhz\)/i);
     if (clockMatch) {
       currentInfo.currentClockMHz = parseInt(clockMatch[1], 10);
     }
-    
-    // Max clock frequency — find the highest supported sclk frequency (marked with *)
+
+    // Max clock frequency - find the highest supported sclk frequency (marked with *)
     // Format: "0: 600Mhz" / "1: 2900Mhz *" (asterisk = current max)
     const maxClockMatch = line.match(/^\s*(\d+):\s*(\d+)Mhz\s*\*\s*$/i);
     if (maxClockMatch) {
@@ -299,7 +426,7 @@ function parseRocmSmiAll(output: string): Map<number, Partial<ROCmGPUInfo>> {
 
     gpuInfoMap.set(currentGpuIndex, currentInfo);
   }
-  
+
   return gpuInfoMap;
 }
 
@@ -404,7 +531,7 @@ async function getGpuUsage(rocmSmiPath: string): Promise<
     const vramUsedMatches = vramOutput.matchAll(
       /GPU\[(\d+)\][\s\S]*?VRAM Total Used Memory \(B\):\s*(\d+)/g
     );
-    
+
     for (const match of vramTotalMatches) {
       const index = parseInt(match[1], 10);
       const totalBytes = parseInt(match[2], 10);
@@ -414,7 +541,7 @@ async function getGpuUsage(rocmSmiPath: string): Promise<
         memoryTotal: Math.round(totalBytes / (1024 * 1024 * 1024) * 100) / 100,
       });
     }
-    
+
     for (const match of vramUsedMatches) {
       const index = parseInt(match[1], 10);
       const usedBytes = parseInt(match[2], 10);
@@ -456,7 +583,7 @@ async function getComprehensiveGpuInfo(rocmSmiPath: string): Promise<{
  * runtime version (e.g. "1.18" for gfx1151) rather than the ROCm release version.
  */
 async function getRocmVersion(rocmInfoPath: string): Promise<string> {
-  // Try the ROCm version file first — this is the actual ROCm release version
+  // Try the ROCm version file first - this is the actual ROCm release version
   const versionFilePaths = [
     "/opt/rocm/.info/version-rocm",
     "/opt/rocm/.info/version",
@@ -466,7 +593,7 @@ async function getRocmVersion(rocmInfoPath: string): Promise<string> {
     try {
       const { stdout } = await execAsync(`cat ${versionFile} 2>/dev/null`);
       const trimmed = stdout.trim();
-      // version files are in format "7.2.1-81" — strip the package suffix
+      // version files are in format "7.2.1-81" - strip the package suffix
       const match = trimmed.match(/^(\d+\.\d+\.\d+)/);
       if (match) {
         return match[1];
@@ -479,7 +606,7 @@ async function getRocmVersion(rocmInfoPath: string): Promise<string> {
     }
   }
 
-  // Fallback: parse rocminfo output (less reliable — gives GFX runtime version)
+  // Fallback: parse rocminfo output (less reliable - gives GFX runtime version)
   try {
     const { stdout } = await execAsync(`${rocmInfoPath} 2>&1`);
     const versionMatch = stdout.match(/Runtime Version:\s*([\d.]+)/);
@@ -512,18 +639,18 @@ export async function detectROCm(): Promise<ROCmSystemInfo> {
     // Get comprehensive info from rocm-smi -a
     let driverVersion = "unknown";
     let comprehensiveInfo = new Map<number, Partial<ROCmGPUInfo>>();
-    
+
     if (rocmSmiPath) {
       const comprehensive = await getComprehensiveGpuInfo(rocmSmiPath);
       driverVersion = comprehensive.driverVersion;
       comprehensiveInfo = comprehensive.gpuInfo;
-      
+
       // Also get real-time metrics
       const usageData = await getGpuUsage(rocmSmiPath);
-      
+
       for (const gpu of gpus) {
-        // Merge comprehensive info
-        const extraInfo = comprehensiveInfo.get(gpu.index);
+        // Merge comprehensive info using intelligent matching
+        const extraInfo = matchGpuWithSmiData(gpu, comprehensiveInfo);
         if (extraInfo) {
           gpu.deviceId = extraInfo.deviceId;
           gpu.deviceRev = extraInfo.deviceRev;
@@ -532,10 +659,18 @@ export async function detectROCm(): Promise<ROCmSystemInfo> {
           gpu.vbiosVersion = extraInfo.vbiosVersion;
           gpu.pciBus = extraInfo.pciBus;
           gpu.currentClockMHz = extraInfo.currentClockMHz;
-          // Override gfxVersion with the device-ID-resolved value so the
-          // marketing name mapping produces the correct product name.
-          gpu.gfxVersion = resolveGfxVersion(gpu.deviceId, gpu.gfxVersion ?? "");
-          gpu.marketingName = getMarketingName(gpu.gfxVersion);
+          // Override gfxVersion with rocm-smi's IP version if available (most accurate)
+          // Otherwise fall back to device-ID-resolved value
+          if (extraInfo.gfxVersion) {
+            gpu.gfxVersion = extraInfo.gfxVersion;
+          } else {
+            gpu.gfxVersion = resolveGfxVersion(gpu.deviceId, gpu.gfxVersion ?? "");
+          }
+          gpu.marketingName = getMarketingName(gpu.gfxVersion, {
+            computeUnits: gpu.computeUnits,
+            maxClockMHz: gpu.maxClockMHz,
+            deviceId: gpu.deviceId
+          });
           // Override maxClockMHz with the actual supported max from rocm-smi
           if (extraInfo.maxClockMHz !== undefined) {
             gpu.maxClockMHz = extraInfo.maxClockMHz;
@@ -548,9 +683,9 @@ export async function detectROCm(): Promise<ROCmSystemInfo> {
 
         // Set driver version on each GPU
         gpu.driverVersion = driverVersion;
-        
-        // Merge real-time metrics
-        const metrics = usageData.get(gpu.index);
+
+        // Merge real-time metrics using index-based lookup (rocm-smi --showuse matches rocm-smi -a indices)
+        const metrics = usageData.get(extraInfo?.index ?? gpu.index);
         if (metrics) {
           gpu.usage = metrics.usage;
           gpu.temperature = metrics.temperature;
