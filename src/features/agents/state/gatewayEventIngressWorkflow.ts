@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { resolveExecApprovalEventEffects, type ExecApprovalEventEffects } from "@/features/agents/approvals/execApprovalLifecycleWorkflow";
 import type { AgentState } from "@/features/agents/state/store";
 import type { EventFrame } from "@/lib/gateway/gateway-frames";

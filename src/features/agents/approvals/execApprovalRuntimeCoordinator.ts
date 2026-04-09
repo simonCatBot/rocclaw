@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { ExecApprovalEventEffects } from "@/features/agents/approvals/execApprovalLifecycleWorkflow";
 import { shouldPauseRunForPendingExecApproval } from "@/features/agents/approvals/execApprovalPausePolicy";
 import type { PendingExecApproval } from "@/features/agents/approvals/types";

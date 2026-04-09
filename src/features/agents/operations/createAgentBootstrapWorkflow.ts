@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 type CreateBootstrapFacts = {
   completion: { agentId: string; agentName: string };
   createdAgent: { agentId: string; sessionKey: string } | null;

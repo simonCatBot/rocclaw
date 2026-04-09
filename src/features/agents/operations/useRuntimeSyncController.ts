@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { useCallback, useEffect, useRef } from "react";
 
 import { hydrateDomainHistoryWindow } from "@/features/agents/operations/domainHistoryHydration";

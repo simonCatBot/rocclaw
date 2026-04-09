@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { GatewayResponseError } from "@/lib/gateway/errors";
 
 export const isGatewayDisconnectLikeError = (err: unknown): boolean => {

@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { createRafBatcher } from "@/lib/dom";

@@ -1,10 +1,12 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import type { AgentState } from "@/features/agents/state/store";
 import {
   planRuntimeChatEvent,
   type RuntimeChatWorkflowCommand,
-  type RuntimeChatWorkflowInput,
 } from "@/features/agents/state/runtimeChatEventWorkflow";
 import type { RuntimePolicyIntent } from "@/features/agents/state/runtimeEventPolicy";
 import type { ChatEventPayload } from "@/features/agents/state/runtimeEventBridge";
@@ -13,6 +15,8 @@ import {
   createRuntimeTerminalState,
   type RuntimeTerminalState,
 } from "@/features/agents/state/runtimeTerminalWorkflow";
+
+type RuntimeChatWorkflowInput = Parameters<typeof planRuntimeChatEvent>[0];
 
 type InputOverrides = Partial<Omit<RuntimeChatWorkflowInput, "payload" | "agent">> & {
   payload?: ChatEventPayload;

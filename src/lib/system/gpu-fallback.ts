@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 /**
  * GPU Detection and Metrics Module (Fallback)
  * Detects GPU information using system tools when ROCm is not available
@@ -466,10 +469,3 @@ export async function detectBasicGPU(): Promise<BasicGPUInfo[]> {
   return gpus;
 }
 
-/**
- * Check if any GPU is detected in the system
- */
-export async function hasGPU(): Promise<boolean> {
-  const gpus = await detectBasicGPU();
-  return gpus.length > 0;
-}

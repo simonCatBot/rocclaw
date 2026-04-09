@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { TranscriptEntry } from "@/features/agents/state/transcript";
 
 const HISTORY_WINDOW_CACHE_DB = "openclaw-rocclaw-history";

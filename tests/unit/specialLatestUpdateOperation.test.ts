@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it, vi } from "vitest";
 
 import { buildLatestUpdatePatch } from "@/features/agents/operations/latestUpdateWorkflow";

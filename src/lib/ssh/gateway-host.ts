@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import * as childProcess from "node:child_process";
 
 const SSH_TARGET_ENV = "OPENCLAW_GATEWAY_SSH_TARGET";

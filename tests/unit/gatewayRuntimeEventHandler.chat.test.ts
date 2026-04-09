@@ -1,12 +1,21 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it, vi } from "vitest";
 
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 import {
   agentStoreReducer,
-  initialAgentStoreState,
   type AgentState,
   type AgentStoreSeed,
 } from "@/features/agents/state/store";
+
+const initialAgentStoreState = {
+  agents: [] as AgentState[],
+  selectedAgentId: null as string | null,
+  loading: false,
+  error: null as string | null,
+};
 import * as transcriptState from "@/features/agents/state/transcript";
 import type { EventFrame } from "@/lib/gateway/GatewayClient";
 

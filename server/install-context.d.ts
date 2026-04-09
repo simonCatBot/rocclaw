@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { ROCclawInstallContext } from "../src/lib/rocclaw/install-context";
 
 export type InstallContextCommandRunner = (

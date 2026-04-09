@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 const ENVELOPE_PREFIX = /^\[([^\]]+)\]\s*/;
 const ENVELOPE_CHANNELS = [
   "WebChat",
@@ -14,8 +17,6 @@ const ENVELOPE_CHANNELS = [
   "BlueBubbles",
 ];
 
-const textCache = new WeakMap<object, string | null>();
-const thinkingCache = new WeakMap<object, string | null>();
 
 const THINKING_TAG_RE = /<\s*\/?\s*(think(?:ing)?|analysis)\s*>/gi;
 const THINKING_OPEN_RE = /<\s*(think(?:ing)?|analysis)\s*>/i;
@@ -173,14 +174,6 @@ export const extractText = (message: unknown): string | null => {
   return null;
 };
 
-export const extractTextCached = (message: unknown): string | null => {
-  if (!message || typeof message !== "object") return extractText(message);
-  const obj = message as object;
-  if (textCache.has(obj)) return textCache.get(obj) ?? null;
-  const value = extractText(message);
-  textCache.set(obj, value);
-  return value;
-};
 
 export const extractThinking = (message: unknown): string | null => {
   if (!message || typeof message !== "object") return null;
@@ -269,7 +262,7 @@ export const extractThinking = (message: unknown): string | null => {
   return openTagged ? openTagged : null;
 };
 
-export function extractThinkingFromTaggedText(text: string): string {
+function extractThinkingFromTaggedText(text: string): string {
   if (!text) return "";
   let result = "";
   let lastIndex = 0;
@@ -305,14 +298,6 @@ export function extractThinkingFromTaggedStream(text: string): string {
   return text.slice(start).trim();
 }
 
-export const extractThinkingCached = (message: unknown): string | null => {
-  if (!message || typeof message !== "object") return extractThinking(message);
-  const obj = message as object;
-  if (thinkingCache.has(obj)) return thinkingCache.get(obj) ?? null;
-  const value = extractThinking(message);
-  thinkingCache.set(obj, value);
-  return value;
-};
 
 export const formatThinkingMarkdown = (text: string): string => {
   const trimmed = text.trim();
@@ -419,7 +404,7 @@ export const formatToolCallMarkdown = (call: ToolCallRecord): string => {
   return `${TOOL_CALL_PREFIX} ${name}${suffix}\n\`\`\`json\n${args}\n\`\`\``;
 };
 
-export const formatToolResultMarkdown = (result: ToolResultRecord): string => {
+const formatToolResultMarkdown = (result: ToolResultRecord): string => {
   const name = result.toolName?.trim() || "tool";
   const suffix = result.toolCallId ? ` (${result.toolCallId})` : "";
   const meta = formatToolResultMeta(result.details, result.isError);

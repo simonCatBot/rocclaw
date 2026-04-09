@@ -1,12 +1,21 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import {
   agentStoreReducer,
   buildNewSessionAgentPatch,
   getFilteredAgents,
-  initialAgentStoreState,
   type AgentStoreSeed,
 } from "@/features/agents/state/store";
+
+const initialAgentStoreState = {
+  agents: [] as ReturnType<typeof agentStoreReducer>["agents"],
+  selectedAgentId: null as string | null,
+  loading: false,
+  error: null as string | null,
+};
 
 describe("agent store", () => {
   it("hydrates agents with defaults and selection", () => {

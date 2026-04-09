@@ -1,11 +1,15 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it, vi } from "vitest";
 
 import type { AgentCreateModalSubmitPayload } from "@/features/agents/creation/types";
-import type { CreateAgentMutationLifecycleDeps } from "@/features/agents/operations/mutationLifecycleWorkflow";
 import {
   isCreateBlockTimedOut,
   runCreateAgentMutationLifecycle,
 } from "@/features/agents/operations/mutationLifecycleWorkflow";
+
+type CreateAgentMutationLifecycleDeps = Parameters<typeof runCreateAgentMutationLifecycle>[1];
 
 const createPayload = (
   overrides: Partial<AgentCreateModalSubmitPayload> = {}

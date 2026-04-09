@@ -1,9 +1,12 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { createElement } from "react";
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { EventFrame } from "@/lib/gateway/gateway-frames";
-import { useRuntimeEventStream, type RuntimeEventStreamSource } from "@/features/agents/state/useRuntimeEventStream";
+import { useRuntimeEventStream } from "@/features/agents/state/useRuntimeEventStream";
 
 type MockStreamEvent = {
   data?: unknown;
@@ -22,7 +25,7 @@ const createMockSource = () => {
         listeners[type].push(listener);
       },
       close: vi.fn(),
-    } satisfies RuntimeEventStreamSource,
+    },
     emit: (type: string, event: MockStreamEvent = {}) => {
       for (const listener of listeners[type] ?? []) {
         listener(event);

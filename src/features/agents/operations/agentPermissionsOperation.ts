@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { GatewayClient } from "@/lib/gateway/GatewayClient";
 import { syncGatewaySessionSettings } from "@/lib/gateway/session-settings-sync";
 import { readConfigAgentList, updateGatewayAgentOverrides } from "@/lib/gateway/agentConfig";
@@ -56,7 +59,7 @@ export const resolveRoleForCommandMode = (mode: CommandModeId): ExecutionRoleId 
   return "conservative";
 };
 
-export const resolveCommandModeFromRole = (role: ExecutionRoleId): CommandModeId => {
+const resolveCommandModeFromRole = (role: ExecutionRoleId): CommandModeId => {
   if (role === "autonomous") return "auto";
   if (role === "collaborative") return "ask";
   return "off";
@@ -78,18 +81,6 @@ export const resolvePresetDefaultsForRole = (role: ExecutionRoleId): AgentPermis
   };
 };
 
-export const isPermissionsCustom = (params: {
-  role: ExecutionRoleId;
-  draft: AgentPermissionsDraft;
-}): boolean => {
-  const defaults = resolvePresetDefaultsForRole(params.role);
-  return (
-    defaults.commandMode !== params.draft.commandMode ||
-    defaults.webAccess !== params.draft.webAccess ||
-    defaults.fileTools !== params.draft.fileTools
-  );
-};
-
 const resolveGroupState = (params: {
   group: "group:runtime" | "group:web" | "group:fs";
   allowed: Set<string>;
@@ -100,7 +91,7 @@ const resolveGroupState = (params: {
   return null;
 };
 
-export const resolveToolGroupStateFromConfigEntry = (existingTools: unknown): ToolGroupState => {
+const resolveToolGroupStateFromConfigEntry = (existingTools: unknown): ToolGroupState => {
   const tools = isRecord(existingTools) ? existingTools : null;
   const existingAllow = coerceStringArray(tools?.allow);
   const existingAlsoAllow = coerceStringArray(tools?.alsoAllow);

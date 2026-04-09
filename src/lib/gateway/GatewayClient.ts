@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { EventFrame } from "@/lib/gateway/gateway-frames";
 import type { GatewayGapInfo } from "@/lib/gateway/gateway-status";
 

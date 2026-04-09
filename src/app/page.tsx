@@ -1,18 +1,22 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AgentChatPanel } from "@/features/agents/components/AgentChatPanel";
 import { AgentCreateModal } from "@/features/agents/components/AgentCreateModal";
-import {
-  AgentBrainPanel,
-  AgentSettingsPanel,
-} from "@/features/agents/components/AgentInspectPanels";
 import { FleetSidebar } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { FooterBar } from "@/components/FooterBar";
 import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
+import { BootScreen } from "@/features/agents/components/BootScreen";
+import { LoadingScreen } from "@/features/agents/components/LoadingScreen";
+import { ConnectionSetupView } from "@/features/agents/components/ConnectionSetupView";
+import { SettingsRoutePanel } from "@/features/agents/components/SettingsRoutePanel";
+import { CreateAgentBlockModal, RestartingMutationBlockModal } from "@/features/agents/components/MutationBlockingModals";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
 import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
@@ -22,8 +26,6 @@ import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
 } from "@/lib/text/message-extract";
-import { useROCclawGatewaySettings } from "@/lib/rocclaw/useROCclawGatewaySettings";
-import { isGatewayConnected, type GatewayStatus } from "@/lib/gateway/gateway-status";
 import type { ControlPlaneOutboxEntry } from "@/lib/controlplane/contracts";
 import {
   type GatewayModelChoice,
@@ -37,7 +39,6 @@ import {
   type FocusFilter,
   useAgentStore,
 } from "@/features/agents/state/store";
-import type { AgentState } from "@/features/agents/state/store";
 import { createGatewayRuntimeEventHandler } from "@/features/agents/state/gatewayRuntimeEventHandler";
 import {
   type CronJobSummary,
@@ -46,10 +47,9 @@ import {
 } from "@/lib/cron/types";
 import {
   readConfigAgentList,
-  slugifyAgentName,
 } from "@/lib/gateway/agentConfig";
 import { randomUUID } from "@/lib/uuid";
-import { createROCclawSettingsCoordinator } from "@/lib/rocclaw/coordinator";
+import { useGatewayConnectionOrchestrator } from "@/features/agents/operations/useGatewayConnectionOrchestrator";
 import { applySessionSettingMutation } from "@/features/agents/state/sessionSettingsMutations";
 import type { AgentCreateModalSubmitPayload } from "@/features/agents/creation/types";
 import {
@@ -105,7 +105,6 @@ import {
   type CreateAgentBlockState,
 } from "@/features/agents/operations/mutationLifecycleWorkflow";
 import { useAgentSettingsMutationController } from "@/features/agents/operations/useAgentSettingsMutationController";
-import { createRuntimeWriteTransport } from "@/features/agents/operations/runtimeWriteTransport";
 import { useRuntimeSyncController } from "@/features/agents/operations/useRuntimeSyncController";
 import { useChatInteractionController } from "@/features/agents/operations/useChatInteractionController";
 import {
@@ -121,88 +120,12 @@ import {
   listDomainCronJobs,
 } from "@/lib/controlplane/domain-runtime-client";
 import { useRuntimeEventStream } from "@/features/agents/state/useRuntimeEventStream";
-const PENDING_EXEC_APPROVAL_PRUNE_GRACE_MS = 500;
-
-const RESERVED_MAIN_AGENT_ID = "main";
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value && typeof value === "object" && !Array.isArray(value));
-
-const normalizeControlUiBasePath = (basePath: string): string => {
-  let normalized = basePath.trim();
-  if (!normalized || normalized === "/") return "";
-  if (!normalized.startsWith("/")) {
-    normalized = `/${normalized}`;
-  }
-  if (normalized.endsWith("/")) {
-    normalized = normalized.slice(0, -1);
-  }
-  return normalized;
-};
-
-const resolveControlUiUrl = (params: {
-  gatewayUrl: string;
-  configSnapshot: GatewayModelPolicySnapshot | null;
-}): string | null => {
-  const rawGatewayUrl = params.gatewayUrl.trim();
-  if (!rawGatewayUrl) return null;
-
-  let controlUiEnabled = true;
-  let controlUiBasePath = "";
-
-  const config = params.configSnapshot?.config;
-  if (isRecord(config)) {
-    const configRecord = config as Record<string, unknown>;
-    const gateway = isRecord(configRecord["gateway"])
-      ? (configRecord["gateway"] as Record<string, unknown>)
-      : null;
-    const controlUi = gateway && isRecord(gateway.controlUi) ? gateway.controlUi : null;
-    if (controlUi && typeof controlUi.enabled === "boolean") {
-      controlUiEnabled = controlUi.enabled;
-    }
-    if (typeof controlUi?.basePath === "string") {
-      controlUiBasePath = normalizeControlUiBasePath(controlUi.basePath);
-    }
-  }
-
-  if (!controlUiEnabled) return null;
-
-  try {
-    const url = new URL(rawGatewayUrl);
-    if (url.protocol === "ws:") {
-      url.protocol = "http:";
-    } else if (url.protocol === "wss:") {
-      url.protocol = "https:";
-    }
-    url.pathname = controlUiBasePath ? `${controlUiBasePath}/` : "/";
-    url.search = "";
-    url.hash = "";
-    return url.toString();
-  } catch {
-    return null;
-  }
-};
-
-const resolveNextNewAgentName = (agents: AgentState[]) => {
-  const baseName = "New Agent";
-  const existingNames = new Set(
-    agents.map((agent) => agent.name.trim().toLowerCase()).filter((name) => name.length > 0)
-  );
-  const existingIds = new Set(
-    agents
-      .map((agent) => agent.agentId.trim().toLowerCase())
-      .filter((agentId) => agentId.length > 0)
-  );
-  const baseLower = baseName.toLowerCase();
-  if (!existingNames.has(baseLower) && !existingIds.has(slugifyAgentName(baseName))) return baseName;
-  for (let index = 2; index < 10000; index += 1) {
-    const candidate = `${baseName} ${index}`;
-    if (existingNames.has(candidate.toLowerCase())) continue;
-    if (existingIds.has(slugifyAgentName(candidate))) continue;
-    return candidate;
-  }
-  throw new Error("Unable to allocate a unique agent name.");
-};
+import {
+  PENDING_EXEC_APPROVAL_PRUNE_GRACE_MS,
+  RESERVED_MAIN_AGENT_ID,
+  resolveControlUiUrl,
+  resolveNextNewAgentName,
+} from "@/features/agents/operations/pageUtilities";
 
 const AgentROCclawPage = () => {
   const router = useRouter();
@@ -216,10 +139,9 @@ const AgentROCclawPage = () => {
     [pathname, searchParams]
   );
   const settingsRouteActive = settingsRouteAgentId !== null;
-  const [settingsCoordinator] = useState(() => createROCclawSettingsCoordinator());
   const {
+    settingsCoordinator,
     client,
-    status,
     gatewayUrl,
     draftGatewayUrl,
     token,
@@ -229,11 +151,11 @@ const AgentROCclawPage = () => {
     hasUnsavedChanges,
     installContext,
     statusReason,
-    error: gatewayError,
+    gatewayError,
     testResult,
-    saving: gatewaySaving,
-    testing: gatewayTesting,
-    disconnecting: gatewayDisconnecting,
+    gatewaySaving,
+    gatewayTesting,
+    gatewayDisconnecting,
     saveSettings,
     testConnection,
     disconnect,
@@ -241,29 +163,14 @@ const AgentROCclawPage = () => {
     setGatewayUrl,
     setToken,
     applyRuntimeStatusEvent,
-  } = useROCclawGatewaySettings(settingsCoordinator);
-  const gatewayStatus: GatewayStatus = status;
-  const gatewayConnected = isGatewayConnected(gatewayStatus);
-  const gatewayConnectionStatus: "disconnected" | "connecting" | "connected" = gatewayConnected
-    ? "connected"
-    : gatewayStatus === "connecting" || gatewayStatus === "reconnecting"
-      ? "connecting"
-      : "disconnected";
-  const coreConnected = gatewayConnected;
-  const coreStatus = gatewayConnectionStatus;
-  const runtimeStreamResumeKey = useMemo(() => {
-    const normalizedGatewayUrl = gatewayUrl.trim();
-    if (!normalizedGatewayUrl) return null;
-    return `domain:${normalizedGatewayUrl}`;
-  }, [gatewayUrl]);
-  const runtimeWriteTransport = useMemo(
-    () =>
-      createRuntimeWriteTransport({
-        client,
-        useDomainIntents: true,
-      }),
-    [client]
-  );
+    gatewayStatus,
+    gatewayConnected,
+    gatewayConnectionStatus,
+    coreConnected,
+    coreStatus,
+    runtimeStreamResumeKey,
+    runtimeWriteTransport,
+  } = useGatewayConnectionOrchestrator();
 
   const { state, dispatch, hydrateAgents, setError, setLoading } = useAgentStore();
   const [showConnectionPanel, setShowConnectionPanel] = useState(false);
@@ -607,22 +514,6 @@ const AgentROCclawPage = () => {
     });
   }, [gatewayUrl, settingsCoordinator]);
 
-  useEffect(() => {
-    const flushPending = () => {
-      void settingsCoordinator.flushPending();
-    };
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "hidden") return;
-      flushPending();
-    };
-    window.addEventListener("pagehide", flushPending);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      window.removeEventListener("pagehide", flushPending);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      flushPending();
-    };
-  }, [settingsCoordinator]);
 
   useEffect(() => {
     const commands = runROCclawFocusFilterPersistenceOperation({
@@ -1324,21 +1215,6 @@ const AgentROCclawPage = () => {
       : null,
     status: gatewayStatus,
   });
-  const restartingMutationModalTestId = restartingMutationBlock
-    ? restartingMutationBlock.kind === "delete-agent"
-      ? "agent-delete-restart-modal"
-      : "agent-rename-restart-modal"
-    : null;
-  const restartingMutationAriaLabel = restartingMutationBlock
-    ? restartingMutationBlock.kind === "delete-agent"
-      ? "Deleting agent and restarting gateway"
-      : "Renaming agent and restarting gateway"
-    : null;
-  const restartingMutationHeading = restartingMutationBlock
-    ? restartingMutationBlock.kind === "delete-agent"
-      ? "Agent delete in progress"
-      : "Agent rename in progress"
-    : null;
 
   useEffect(() => {
     if (gatewayStatus === "connecting" || gatewayStatus === "reconnecting") {
@@ -1374,89 +1250,47 @@ const AgentROCclawPage = () => {
     (!didAttemptGatewayConnect || gatewayConnecting)
   ) {
     return (
-      <div className="relative min-h-dvh w-screen overflow-hidden bg-background">
-        <div className="flex min-h-dvh items-center justify-center px-6">
-          <div className="glass-panel ui-panel flex w-full max-w-md flex-col items-center px-6 py-6 text-center">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              rocCLAW
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              {gatewayConnecting ? "Connecting to gateway…" : "Booting…"}
-            </div>
-            <button
-              type="button"
-              className="ui-btn-secondary mt-4 px-4 py-2 text-xs font-semibold tracking-[0.05em] text-foreground"
-              onClick={() => setShowConnectSetup(true)}
-            >
-              Edit connection settings
-            </button>
-          </div>
-        </div>
-      </div>
+      <BootScreen
+        connecting={gatewayConnecting}
+        onEditSettings={() => setShowConnectSetup(true)}
+      />
     );
   }
 
   if (!coreConnected && !agentsLoadedOnce && (didAttemptGatewayConnect || showConnectSetup)) {
     return (
-      <div className="relative min-h-dvh w-screen overflow-y-auto bg-background">
-        <div className="relative z-10 flex min-h-dvh flex-col">
-          <HeaderBar />
-          <div className="flex flex-1 flex-col gap-4 px-3 pb-6 pt-3 sm:px-4 sm:pb-6 sm:pt-4 md:px-6 md:pt-4">
-            {settingsRouteActive ? (
-              <div className="w-full">
-                <button
-                  type="button"
-                  className="ui-btn-secondary px-3 py-1.5 font-mono text-[10px] font-semibold tracking-[0.06em]"
-                  onClick={handleBackToChat}
-                >
-                  Back to chat
-                </button>
-              </div>
-            ) : null}
-            <ConnectionPage
-              savedGatewayUrl={gatewayUrl}
-              draftGatewayUrl={draftGatewayUrl}
-              token={token}
-              localGatewayDefaults={localGatewayDefaults}
-              localGatewayDefaultsHasToken={localGatewayDefaultsHasToken}
-              hasStoredToken={hasStoredToken}
-              hasUnsavedChanges={hasUnsavedChanges}
-              installContext={installContext}
-              status={gatewayStatus}
-              statusReason={statusReason}
-              saving={gatewaySaving}
-              testing={gatewayTesting}
-              disconnecting={gatewayDisconnecting}
-              onGatewayUrlChange={setGatewayUrl}
-              onTokenChange={setToken}
-              onUseLocalDefaults={useLocalGatewayDefaults}
-              onSaveSettings={() => void saveSettings()}
-              onTestConnection={() => void testConnection()}
-              onDisconnect={() => void disconnect()}
-              onConnect={() => {
-                setShowConnectSetup(false);
-                void saveSettings();
-              }}
-            />
-          </div>
-        </div>
-      </div>
+      <ConnectionSetupView
+        settingsRouteActive={settingsRouteActive}
+        onBackToChat={handleBackToChat}
+        savedGatewayUrl={gatewayUrl}
+        draftGatewayUrl={draftGatewayUrl}
+        token={token}
+        localGatewayDefaults={localGatewayDefaults}
+        localGatewayDefaultsHasToken={localGatewayDefaultsHasToken}
+        hasStoredToken={hasStoredToken}
+        hasUnsavedChanges={hasUnsavedChanges}
+        installContext={installContext}
+        status={gatewayStatus}
+        statusReason={statusReason}
+        saving={gatewaySaving}
+        testing={gatewayTesting}
+        disconnecting={gatewayDisconnecting}
+        onGatewayUrlChange={setGatewayUrl}
+        onTokenChange={setToken}
+        onUseLocalDefaults={useLocalGatewayDefaults}
+        onSaveSettings={() => void saveSettings()}
+        onTestConnection={() => void testConnection()}
+        onDisconnect={() => void disconnect()}
+        onConnect={() => {
+          setShowConnectSetup(false);
+          void saveSettings();
+        }}
+      />
     );
   }
 
   if (coreConnected && !agentsLoadedOnce) {
-    return (
-      <div className="relative min-h-dvh w-screen overflow-hidden bg-background">
-        <div className="flex min-h-dvh items-center justify-center px-6">
-          <div className="glass-panel ui-panel w-full max-w-md px-6 py-6 text-center">
-            <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              rocCLAW
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">Loading agents…</div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -1553,146 +1387,60 @@ const AgentROCclawPage = () => {
           ) : null}
 
           {settingsRouteActive ? (
-            <div
-              className="ui-panel ui-depth-workspace flex min-h-0 flex-1 overflow-hidden"
-              data-testid="agent-settings-route-panel"
-            >
-              <aside className="w-[240px] shrink-0 border-r border-border/60">
-                <div className="border-b border-border/60 px-4 py-3">
-                  <button
-                    type="button"
-                    className="ui-btn-secondary w-full px-3 py-1.5 font-mono text-[10px] font-semibold tracking-[0.06em]"
-                    onClick={handleBackToChat}
-                  >
-                    Back to chat
-                  </button>
-                </div>
-                <nav className="py-3">
-                  {(
-                    [
-                      { id: "personality", label: "Behavior" },
-                      { id: "capabilities", label: "Capabilities" },
-                      { id: "automations", label: "Automations" },
-                      { id: "advanced", label: "Advanced" },
-                    ] as const
-                  ).map((entry) => {
-                    const active = effectiveSettingsTab === entry.id;
-                    return (
-                      <button
-                        key={entry.id}
-                        type="button"
-                        className={`relative w-full px-5 py-3 text-left text-sm transition ${
-                          active
-                            ? "bg-surface-2/55 font-medium text-foreground"
-                            : "font-normal text-muted-foreground hover:bg-surface-2/35 hover:text-foreground"
-                        }`}
-                        onClick={() => {
-                          handleSettingsRouteTabChange(entry.id);
-                        }}
-                      >
-                        {active ? (
-                          <span
-                            className="absolute inset-y-2 left-0 w-0.5 rounded-r bg-primary"
-                            aria-hidden="true"
-                          />
-                        ) : null}
-                        {entry.label}
-                      </button>
-                    );
-                  })}
-                </nav>
-              </aside>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <div className="flex items-start justify-between border-b border-border/60 px-6 py-4">
-                  <div>
-                    <div className="text-lg font-semibold text-foreground">
-                      {inspectSidebarAgent?.name ?? settingsRouteAgentId ?? "Agent settings"}
-                    </div>
-                    <div className="mt-1 font-mono text-[11px] text-muted-foreground">
-                      Model: {settingsHeaderModel}{" "}
-                      <span className="mx-2 text-border">|</span>
-                      Thinking: {settingsHeaderThinking}
-                    </div>
-                  </div>
-                  <div className="rounded-md border border-border/70 bg-surface-1 px-3 py-1 font-mono text-[11px] text-muted-foreground">
-                    [{personalityHasUnsavedChanges ? "Unsaved" : "Saved ✓"}]
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1 overflow-hidden">
-                  {inspectSidebarAgent ? (
-                    effectiveSettingsTab === "personality" ? (
-                      <AgentBrainPanel
-                        gatewayStatus={gatewayStatus}
-                        agents={agents}
-                        selectedAgentId={inspectSidebarAgent.agentId}
-                        onUnsavedChangesChange={setPersonalityHasUnsavedChanges}
-                        onAvatarChange={(agentId, value) => {
-                          settingsMutationController.handleUpdateAgentAvatar(
-                            agentId,
-                            value.avatarSource,
-                            value.avatarSeed,
-                            value.defaultAvatarIndex,
-                            value.avatarUrl
-                          );
-                        }}
-                      />
-                    ) : (
-                      <div className="h-full overflow-y-auto px-6 py-6">
-                        <div className="mx-auto w-full max-w-[920px]">
-                          <AgentSettingsPanel
-                            key={`${inspectSidebarAgent.agentId}:${effectiveSettingsTab}`}
-                            mode={
-                              effectiveSettingsTab === "automations"
-                                ? "automations"
-                                : effectiveSettingsTab === "advanced"
-                                  ? "advanced"
-                                  : "capabilities"
-                            }
-                            showHeader={false}
-                            agent={inspectSidebarAgent}
-                            onClose={handleBackToChat}
-                            permissionsDraft={settingsAgentPermissionsDraft ?? undefined}
-                            onUpdateAgentPermissions={(draft) =>
-                              settingsMutationController.handleUpdateAgentPermissions(
-                                inspectSidebarAgent.agentId,
-                                draft
-                              )
-                            }
-                            onDelete={() =>
-                              settingsMutationController.handleDeleteAgent(inspectSidebarAgent.agentId)
-                            }
-                            canDelete={inspectSidebarAgent.agentId !== RESERVED_MAIN_AGENT_ID}
-                            cronJobs={settingsMutationController.settingsCronJobs}
-                            cronLoading={settingsMutationController.settingsCronLoading}
-                            cronError={settingsMutationController.settingsCronError}
-                            cronCreateBusy={settingsMutationController.cronCreateBusy}
-                            cronRunBusyJobId={settingsMutationController.cronRunBusyJobId}
-                            cronDeleteBusyJobId={settingsMutationController.cronDeleteBusyJobId}
-                            onCreateCronJob={(draft) =>
-                              settingsMutationController.handleCreateCronJob(inspectSidebarAgent.agentId, draft)
-                            }
-                            onRunCronJob={(jobId) =>
-                              settingsMutationController.handleRunCronJob(inspectSidebarAgent.agentId, jobId)
-                            }
-                            onDeleteCronJob={(jobId) =>
-                              settingsMutationController.handleDeleteCronJob(inspectSidebarAgent.agentId, jobId)
-                            }
-                            controlUiUrl={controlUiUrl}
-                          />
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <EmptyStatePanel
-                      title="Agent not found."
-                      description="Back to chat and select an available agent."
-                      fillHeight
-                      className="items-center p-6 text-center text-sm"
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
+            <SettingsRoutePanel
+              agents={agents}
+              inspectAgent={inspectSidebarAgent}
+              activeTab={effectiveSettingsTab}
+              settingsRouteAgentId={settingsRouteAgentId}
+              personalityHasUnsavedChanges={personalityHasUnsavedChanges}
+              settingsHeaderModel={settingsHeaderModel}
+              settingsHeaderThinking={settingsHeaderThinking}
+              gatewayStatus={gatewayStatus}
+              permissionsDraft={settingsAgentPermissionsDraft ?? undefined}
+              canDelete={inspectSidebarAgent?.agentId !== RESERVED_MAIN_AGENT_ID}
+              controlUiUrl={controlUiUrl}
+              cronJobs={settingsMutationController.settingsCronJobs}
+              cronLoading={settingsMutationController.settingsCronLoading}
+              cronError={settingsMutationController.settingsCronError}
+              cronCreateBusy={settingsMutationController.cronCreateBusy}
+              cronRunBusyJobId={settingsMutationController.cronRunBusyJobId}
+              cronDeleteBusyJobId={settingsMutationController.cronDeleteBusyJobId}
+              onBackToChat={handleBackToChat}
+              onTabChange={handleSettingsRouteTabChange}
+              onUnsavedChangesChange={setPersonalityHasUnsavedChanges}
+              onAvatarChange={(agentId, value) => {
+                settingsMutationController.handleUpdateAgentAvatar(
+                  agentId,
+                  value.avatarSource,
+                  value.avatarSeed,
+                  value.defaultAvatarIndex,
+                  value.avatarUrl
+                );
+              }}
+              onUpdatePermissions={(draft) => {
+                if (!inspectSidebarAgent) return;
+                settingsMutationController.handleUpdateAgentPermissions(
+                  inspectSidebarAgent.agentId,
+                  draft
+                );
+              }}
+              onDelete={() => {
+                if (!inspectSidebarAgent) return;
+                settingsMutationController.handleDeleteAgent(inspectSidebarAgent.agentId);
+              }}
+              onCreateCronJob={(draft) => {
+                if (!inspectSidebarAgent) return;
+                settingsMutationController.handleCreateCronJob(inspectSidebarAgent.agentId, draft);
+              }}
+              onRunCronJob={(jobId) => {
+                if (!inspectSidebarAgent) return;
+                settingsMutationController.handleRunCronJob(inspectSidebarAgent.agentId, jobId);
+              }}
+              onDeleteCronJob={(jobId) => {
+                if (!inspectSidebarAgent) return;
+                settingsMutationController.handleDeleteCronJob(inspectSidebarAgent.agentId, jobId);
+              }}
+            />
           ) : (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex min-h-0 flex-1 flex-row gap-4">
@@ -1869,57 +1617,15 @@ const AgentROCclawPage = () => {
           }}
         />
       ) : null}
-      {createAgentBlock && createAgentBlock.phase !== "queued" ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80"
-          data-testid="agent-create-restart-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Creating agent"
-        >
-          <div className="ui-panel w-full max-w-md p-6">
-            <div className="font-mono text-[10px] font-semibold tracking-[0.06em] text-muted-foreground">
-              Agent create in progress
-            </div>
-            <div className="mt-2 text-base font-semibold text-foreground">
-              {createAgentBlock.agentName}
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              ROCclaw is temporarily locked until creation finishes.
-            </div>
-            {createBlockStatusLine ? (
-              <div className="ui-card mt-4 px-3 py-2 font-mono text-[11px] tracking-[0.06em] text-foreground">
-                {createBlockStatusLine}
-              </div>
-            ) : null}
-          </div>
-        </div>
+      {createAgentBlock ? (
+        <CreateAgentBlockModal block={createAgentBlock} statusLine={createBlockStatusLine} />
       ) : null}
       {restartingMutationBlock && restartingMutationBlock.phase !== "queued" ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80"
-          data-testid={restartingMutationModalTestId ?? undefined}
-          role="dialog"
-          aria-modal="true"
-          aria-label={restartingMutationAriaLabel ?? undefined}
-        >
-          <div className="ui-panel w-full max-w-md p-6">
-            <div className="font-mono text-[10px] font-semibold tracking-[0.06em] text-muted-foreground">
-              {restartingMutationHeading}
-            </div>
-            <div className="mt-2 text-base font-semibold text-foreground">
-              {restartingMutationBlock.agentName}
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              ROCclaw is temporarily locked until the gateway restarts.
-            </div>
-            {restartingMutationStatusLine ? (
-              <div className="ui-card mt-4 px-3 py-2 font-mono text-[11px] tracking-[0.06em] text-foreground">
-                {restartingMutationStatusLine}
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <RestartingMutationBlockModal
+          kind={restartingMutationBlock.kind}
+          agentName={restartingMutationBlock.agentName}
+          statusLine={restartingMutationStatusLine}
+        />
       ) : null}
     </div>
   );

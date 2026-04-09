@@ -1,12 +1,14 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import {
-  boundChatItemsBySemanticTurns,
   buildAgentChatRenderBlocks,
   buildFinalAgentChatItems,
   summarizeToolLabel,
 } from "@/features/agents/components/chatItems";
-import { formatMetaMarkdown, formatThinkingMarkdown, formatToolCallMarkdown, formatToolResultMarkdown } from "@/lib/text/message-extract";
+import { formatMetaMarkdown, formatThinkingMarkdown, formatToolCallMarkdown } from "@/lib/text/message-extract";
 
 describe("buildFinalAgentChatItems", () => {
   it("does not include live thinking or live assistant items", () => {
@@ -103,53 +105,6 @@ describe("buildFinalAgentChatItems", () => {
     expect(items[0]?.text).toContain("- first item");
   });
 
-  it("classifies tool markdown as tool items when tool calling is enabled", () => {
-    const callLine = formatToolCallMarkdown({
-      id: "call_123",
-      name: "exec",
-      arguments: { command: "pwd" },
-    });
-    const toolLine = formatToolResultMarkdown({
-      toolCallId: "call_123",
-      toolName: "exec",
-      details: { status: "completed", exitCode: 0 },
-      text: "pwd",
-      isError: false,
-    });
-    const items = buildFinalAgentChatItems({
-      outputLines: [callLine, toolLine],
-      showThinkingTraces: true,
-      toolCallingEnabled: true,
-    });
-
-    expect(items).toEqual([
-      {
-        kind: "tool",
-        text: callLine,
-      },
-      {
-        kind: "tool",
-        text: toolLine,
-      },
-    ]);
-  });
-
-  it("hides tool results when tool calling is disabled", () => {
-    const toolLine = formatToolResultMarkdown({
-      toolCallId: "call_456",
-      toolName: "exec",
-      details: { status: "completed", exitCode: 0 },
-      text: "pwd",
-      isError: false,
-    });
-    const items = buildFinalAgentChatItems({
-      outputLines: [toolLine],
-      showThinkingTraces: true,
-      toolCallingEnabled: false,
-    });
-
-    expect(items).toEqual([]);
-  });
 });
 
 describe("summarizeToolLabel", () => {
@@ -163,19 +118,6 @@ describe("summarizeToolLabel", () => {
     const { summaryText: callSummary } = summarizeToolLabel(toolCallLine);
     expect(callSummary).toContain("gh auth status");
     expect(callSummary).not.toContain("call_");
-
-    const toolResultLine = formatToolResultMarkdown({
-      toolCallId: "call_ABC123|fc_456",
-      toolName: "functions.exec",
-      details: { status: "completed", exitCode: 0, durationMs: 168 },
-      isError: false,
-      text: "ok",
-    });
-
-    const { summaryText: resultSummary } = summarizeToolLabel(toolResultLine);
-    expect(resultSummary).toContain("completed");
-    expect(resultSummary).toContain("exit 0");
-    expect(resultSummary).not.toContain("call_");
   });
 
   it("renders read file calls as inline path labels without JSON body", () => {
@@ -195,43 +137,6 @@ describe("summarizeToolLabel", () => {
 });
 
 describe("buildAgentChatRenderBlocks", () => {
-  it("groups thinking and tool events into one assistant block in original order", () => {
-    const toolCallLine = formatToolCallMarkdown({
-      id: "call_1",
-      name: "exec",
-      arguments: { command: "pwd" },
-    });
-    const toolResultLine = formatToolResultMarkdown({
-      toolCallId: "call_1",
-      toolName: "exec",
-      details: { status: "completed", exitCode: 0 },
-      text: "/repo",
-      isError: false,
-    });
-
-    const blocks = buildAgentChatRenderBlocks([
-      { kind: "thinking", text: "_plan before tool_", timestampMs: 100 },
-      { kind: "tool", text: toolCallLine, timestampMs: 101 },
-      { kind: "thinking", text: "_plan after tool_", timestampMs: 102 },
-      { kind: "tool", text: toolResultLine, timestampMs: 103 },
-      { kind: "assistant", text: "done", timestampMs: 104 },
-    ]);
-
-    expect(blocks).toEqual([
-      {
-        kind: "assistant",
-        text: "done",
-        timestampMs: 100,
-        traceEvents: [
-          { kind: "thinking", text: "_plan before tool_" },
-          { kind: "tool", text: toolCallLine },
-          { kind: "thinking", text: "_plan after tool_" },
-          { kind: "tool", text: toolResultLine },
-        ],
-      },
-    ]);
-  });
-
   it("starts a new assistant block after a user turn", () => {
     const blocks = buildAgentChatRenderBlocks([
       { kind: "thinking", text: "_first plan_", timestampMs: 10 },
@@ -262,39 +167,3 @@ describe("buildAgentChatRenderBlocks", () => {
   });
 });
 
-describe("boundChatItemsBySemanticTurns", () => {
-  it("keeps recent semantic turns while preserving attached tool/thinking items", () => {
-    const items = boundChatItemsBySemanticTurns({
-      items: [
-        { kind: "user", text: "q1" },
-        { kind: "assistant", text: "a1" },
-        { kind: "user", text: "q2" },
-        { kind: "thinking", text: "_plan_" },
-        { kind: "tool", text: "tool-result" },
-        { kind: "assistant", text: "a2" },
-      ],
-      turnLimit: 2,
-    });
-
-    expect(items).toEqual([
-      { kind: "user", text: "q2" },
-      { kind: "thinking", text: "_plan_" },
-      { kind: "tool", text: "tool-result" },
-      { kind: "assistant", text: "a2" },
-    ]);
-  });
-
-  it("returns full list when semantic turns are within limit", () => {
-    const original = [
-      { kind: "user", text: "q1" } as const,
-      { kind: "assistant", text: "a1" } as const,
-      { kind: "tool", text: "tool-result" } as const,
-    ];
-    const items = boundChatItemsBySemanticTurns({
-      items: original,
-      turnLimit: 10,
-    });
-
-    expect(items).toEqual(original);
-  });
-});

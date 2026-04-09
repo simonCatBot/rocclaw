@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 "use client";
 
 import Image from "next/image";
@@ -162,9 +165,17 @@ function ProminentCard({
   );
 }
 
+const formatGB = (gb: number) => `${gb.toFixed(1)} GB`;
+const formatTemp = (temp: number | null) => temp !== null ? `${temp}°C` : "N/A";
+const formatSpeed = (kbps: number) => kbps > 1024 ? `${(kbps/1024).toFixed(1)} MB/s` : `${kbps} KB/s`;
+const formatMHz = (mhz: number | null | undefined) => {
+  if (mhz === null || mhz === undefined) return "N/A";
+  if (mhz >= 1000) return `${(mhz / 1000).toFixed(2)} GHz`;
+  return `${mhz} MHz`;
+};
+
 export function SystemMetricsDashboard() {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [, setMetricsSource] = useState<"local" | "gateway" | "unavailable" | null>(null);
   const [connectionMode, setConnectionMode] = useState<string | null>(null);
   const [gatewayHostname, setGatewayHostname] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -178,7 +189,6 @@ export function SystemMetricsDashboard() {
       
       if (result.success && result.data) {
         setMetrics(result.data);
-        setMetricsSource(result.source as "local" | "gateway");
         setConnectionMode(result.connectionMode || "local");
         setGatewayHostname(result.hostname || null);
         setError(null);
@@ -222,15 +232,6 @@ export function SystemMetricsDashboard() {
   }
 
   if (!metrics) return null;
-
-  const formatGB = (gb: number) => `${gb.toFixed(1)} GB`;
-  const formatTemp = (temp: number | null) => temp !== null ? `${temp}°C` : "N/A";
-  const formatSpeed = (kbps: number) => kbps > 1024 ? `${(kbps/1024).toFixed(1)} MB/s` : `${kbps} KB/s`;
-  const formatMHz = (mhz: number | null | undefined) => {
-    if (mhz === null || mhz === undefined) return "N/A";
-    if (mhz >= 1000) return `${(mhz / 1000).toFixed(2)} GHz`;
-    return `${mhz} MHz`;
-  };
 
   // Extract processor company + product line (e.g. "AMD Ryzen", "Intel Core", "Intel Xeon")
   const getProcessorLabel = (name: string) => {

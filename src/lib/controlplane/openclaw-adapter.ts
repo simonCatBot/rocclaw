@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { randomUUID } from "node:crypto";
 
 import { WebSocket } from "ws";
@@ -75,14 +78,14 @@ export class ControlPlaneGatewayError extends Error {
   }
 }
 
-export type SerializedControlPlaneGatewayConnectFailure = {
+type SerializedControlPlaneGatewayConnectFailure = {
   code: string;
   message: string;
   profileId: GatewayConnectProfileId;
   details?: unknown;
 };
 
-export class ControlPlaneGatewayConnectError extends Error {
+class ControlPlaneGatewayConnectError extends Error {
   readonly code: string;
   readonly profileId: GatewayConnectProfileId;
   readonly details?: unknown;

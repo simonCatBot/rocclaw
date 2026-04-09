@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AgentState } from "@/features/agents/state/store";
 import type { TranscriptAppendMeta } from "@/features/agents/state/transcript";
 import {
@@ -338,7 +341,7 @@ export function pruneRuntimeEventCoordinatorState(params: {
   };
 }
 
-export function reduceRuntimePolicyIntents(params: {
+function reduceRuntimePolicyIntents(params: {
   state: RuntimeEventCoordinatorState;
   intents: RuntimePolicyIntent[];
   nowMs: number;

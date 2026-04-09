@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 export type GatewayConnectProfileId = "backend-local" | "legacy-control-ui";
 
 export type GatewaySocketOptions = {

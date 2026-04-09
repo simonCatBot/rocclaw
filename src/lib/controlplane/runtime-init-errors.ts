@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 type RuntimeInitFailureCode =
   | "CONTROLPLANE_RUNTIME_INIT_FAILED"
   | "NATIVE_MODULE_MISMATCH";

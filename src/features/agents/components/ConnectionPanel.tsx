@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import { X, Wifi, WifiOff, Loader, CheckCircle, XCircle } from "lucide-react";
 import { resolveGatewayStatusBadgeClass, resolveGatewayStatusLabel } from "./colorSemantics";

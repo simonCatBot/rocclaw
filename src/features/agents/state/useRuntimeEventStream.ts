@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { useEffect, useRef } from "react";
 
 import type { EventFrame } from "@/lib/gateway/gateway-frames";
@@ -10,7 +13,7 @@ type RuntimeEventStreamMessageEvent = {
 
 type RuntimeEventStreamListener = (event: RuntimeEventStreamMessageEvent) => void;
 
-export type RuntimeEventStreamSource = {
+type RuntimeEventStreamSource = {
   addEventListener: (type: string, listener: RuntimeEventStreamListener) => void;
   close: () => void;
   onerror: ((event: unknown) => void) | null;
@@ -18,7 +21,7 @@ export type RuntimeEventStreamSource = {
 
 type RuntimeEventStreamFactory = (url: string) => RuntimeEventStreamSource;
 
-export type RuntimeStatusStreamEvent = {
+type RuntimeStatusStreamEvent = {
   status?: unknown;
   reason?: unknown;
   asOf?: unknown;

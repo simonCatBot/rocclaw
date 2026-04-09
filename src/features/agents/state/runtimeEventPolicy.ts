@@ -1,7 +1,8 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AgentState } from "@/features/agents/state/store";
 import type { ChatEventPayload } from "@/features/agents/state/runtimeEventBridge";
-
-type ConnectionStatus = "disconnected" | "connecting" | "connected";
 
 export type RuntimePolicyIntent =
   | { kind: "ignore"; reason: string }
@@ -44,11 +45,6 @@ type RuntimeAgentPolicyInput = {
   activeRunId: string | null;
   agentStatus: AgentState["status"];
   isClosedRun: boolean;
-};
-
-type RuntimeSummaryPolicyInput = {
-  event: string;
-  status: ConnectionStatus;
 };
 
 const isLifecycleStart = (stream: string, phase: string): boolean =>
@@ -190,9 +186,3 @@ export const decideRuntimeAgentEvent = (
   return [];
 };
 
-export const decideSummaryRefreshEvent = (
-  input: RuntimeSummaryPolicyInput
-): RuntimePolicyIntent[] => {
-  void input;
-  return [];
-};

@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 "use client";
 
 import {
@@ -518,7 +521,6 @@ const reducer = (state: AgentStoreState, action: Action): AgentStoreState => {
 };
 
 export const agentStoreReducer = reducer;
-export const initialAgentStoreState = initialState;
 
 type AgentStoreContextValue = {
   state: AgentStoreState;

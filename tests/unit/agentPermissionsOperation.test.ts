@@ -1,24 +1,20 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import {
-  isPermissionsCustom,
   resolveAgentPermissionsDraft,
-  resolveCommandModeFromRole,
   resolvePresetDefaultsForRole,
   resolveRoleForCommandMode,
   resolveToolGroupOverrides,
-  resolveToolGroupStateFromConfigEntry,
 } from "@/features/agents/operations/agentPermissionsOperation";
 
 describe("agentPermissionsOperation", () => {
-  it("maps command mode and preset role in both directions", () => {
+  it("maps command mode to preset role", () => {
     expect(resolveRoleForCommandMode("off")).toBe("conservative");
     expect(resolveRoleForCommandMode("ask")).toBe("collaborative");
     expect(resolveRoleForCommandMode("auto")).toBe("autonomous");
-
-    expect(resolveCommandModeFromRole("conservative")).toBe("off");
-    expect(resolveCommandModeFromRole("collaborative")).toBe("ask");
-    expect(resolveCommandModeFromRole("autonomous")).toBe("auto");
   });
 
   it("resolves autonomous preset defaults to permissive capabilities", () => {
@@ -27,18 +23,6 @@ describe("agentPermissionsOperation", () => {
       webAccess: true,
       fileTools: true,
     });
-  });
-
-  it("derives tool-group state from allow and deny with deny precedence", () => {
-    const state = resolveToolGroupStateFromConfigEntry({
-      allow: ["group:web", "group:runtime"],
-      deny: ["group:web"],
-    });
-
-    expect(state.usesAllow).toBe(true);
-    expect(state.runtime).toBe(true);
-    expect(state.web).toBe(false);
-    expect(state.fs).toBeNull();
   });
 
   it("merges group toggles while preserving allow mode", () => {
@@ -99,16 +83,4 @@ describe("agentPermissionsOperation", () => {
     });
   });
 
-  it("flags custom draft when advanced values diverge from preset baseline", () => {
-    expect(
-      isPermissionsCustom({
-        role: "autonomous",
-        draft: {
-          commandMode: "auto",
-          webAccess: false,
-          fileTools: true,
-        },
-      })
-    ).toBe(true);
-  });
 });

@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { Page, Route, Request } from "@playwright/test";
 import type { ROCclawInstallContext } from "@/lib/rocclaw/install-context";
 

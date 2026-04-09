@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 type CryptoLike = {
   randomUUID?: (() => string) | undefined;
   getRandomValues?: ((array: Uint8Array) => Uint8Array) | undefined;

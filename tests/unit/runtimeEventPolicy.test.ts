@@ -1,9 +1,11 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import {
   decideRuntimeAgentEvent,
   decideRuntimeChatEvent,
-  decideSummaryRefreshEvent,
   type RuntimePolicyIntent,
 } from "@/features/agents/state/runtimeEventPolicy";
 
@@ -244,22 +246,4 @@ describe("runtime event policy", () => {
     expect(stale).toEqual([{ kind: "clearRunTracking", runId: "run-1" }]);
   });
 
-  it("returns_no_summary_refresh_intent_for_presence_and_heartbeat", () => {
-    const presence = decideSummaryRefreshEvent({
-      event: "presence",
-      status: "connected",
-    });
-    const heartbeat = decideSummaryRefreshEvent({
-      event: "heartbeat",
-      status: "connected",
-    });
-    const disconnected = decideSummaryRefreshEvent({
-      event: "presence",
-      status: "disconnected",
-    });
-
-    expect(presence).toEqual([]);
-    expect(heartbeat).toEqual([]);
-    expect(disconnected).toEqual([]);
-  });
 });

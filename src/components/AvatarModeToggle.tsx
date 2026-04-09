@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";

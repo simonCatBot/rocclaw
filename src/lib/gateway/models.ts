@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 export type GatewayModelChoice = {
   id: string;
   name: string;
@@ -43,7 +46,7 @@ export const resolveConfiguredModelKey = (
   return `anthropic/${trimmed}`;
 };
 
-export const buildAllowedModelKeys = (snapshot: GatewayModelPolicySnapshot | null) => {
+const buildAllowedModelKeys = (snapshot: GatewayModelPolicySnapshot | null) => {
   const allowedList: string[] = [];
   const allowedSet = new Set<string>();
   const defaults = snapshot?.config?.agents?.defaults;

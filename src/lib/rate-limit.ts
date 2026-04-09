@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 /**
  * Simple in-process rate limiter for intent routes.
  *
@@ -10,21 +13,13 @@
  * backed implementation using a consistent keying scheme.
  */
 
-/** Sliding window entry keyed by timestamp in milliseconds.
- * @deprecated Currently unused; kept for documentation purposes.
- */
-export type WindowEntry = {
-  count: number;
-  resetAt: number;
-};
-
 type RateLimitKey = string;
 
 /** Sliding window state for a given key. */
 type SlidingWindow = Map<number, number>;
 
 const DEFAULT_WINDOW_MS = 1_000; // 1 second
-export const DEFAULT_MAX_REQUESTS = 60; // 60 req/s per key (matches typical SSE keep-alive)
+const DEFAULT_MAX_REQUESTS = 60; // 60 req/s per key (matches typical SSE keep-alive)
 
 const globalState = new Map<RateLimitKey, SlidingWindow>();
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
@@ -119,9 +114,4 @@ export const rateLimitRemaining = (
   }
 
   return Math.max(0, limit - total);
-};
-
-/** Resets the rate limit state for a given key. Primarily for testing. */
-export const resetRateLimit = (key: RateLimitKey): void => {
-  globalState.delete(key);
 };

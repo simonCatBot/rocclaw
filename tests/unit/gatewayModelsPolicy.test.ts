@@ -1,7 +1,9 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import {
-  buildAllowedModelKeys,
   buildGatewayModelChoices,
   resolveConfiguredModelKey,
   type GatewayModelPolicySnapshot,
@@ -23,32 +25,6 @@ describe("gateway model policy helpers", () => {
     );
     expect(resolveConfiguredModelKey("openai/o3", modelAliases)).toBe("openai/o3");
     expect(resolveConfiguredModelKey("   ", modelAliases)).toBeNull();
-  });
-
-  it("builds deduped allowlist keys from defaults and aliases", () => {
-    const snapshot: GatewayModelPolicySnapshot = {
-      config: {
-        agents: {
-          defaults: {
-            model: {
-              primary: "sonnet",
-              fallbacks: ["omni", "anthropic/claude-sonnet-4-5", ""],
-            },
-            models: {
-              "anthropic/claude-sonnet-4-5": { alias: "sonnet" },
-              "openai/gpt-4o": { alias: "omni" },
-              "openai/o3": {},
-            },
-          },
-        },
-      },
-    };
-
-    expect(buildAllowedModelKeys(snapshot)).toEqual([
-      "anthropic/claude-sonnet-4-5",
-      "openai/gpt-4o",
-      "openai/o3",
-    ]);
   });
 
   it("filters model catalog and appends configured extras", () => {

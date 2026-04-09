@@ -1,0 +1,126 @@
+/* MIT License - Copyright (c) 2026 SimonCatBot */
+/* See LICENSE file for details. */
+
+/* ── Color Schemes ──────────────────────────────────────────────────────── */
+
+/* Coral — coral red, warm and bold */
+:root[data-color-scheme="coral"] {
+  --primary: #FF4D4D;
+  --accent: #FF4D4D;
+  --ring: #FF4D4D;
+  --surface-selected: transparent;
+  --surface-selected-border: #FF4D4D;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #FF4D4D;
+  --chat-user-header-bg: #FF4D4D;
+  --action-bg: #FF4D4D;
+  --action-bg-hover: #ff8080;
+  --action-border: #ff8080;
+  --status-running-bg: #2d1a1a;
+  --status-running-border: #FF4D4D;
+  --status-running-fg: #FF4D4D;
+  --status-connected-bg: #2d1a1a;
+  --status-connected-border: #FF4D4D;
+  --status-connected-fg: #FF4D4D;
+  --chart-1: #FF4D4D;
+  --chart-2: #ff8080;
+}
+
+/* Nord — cool blue-gray, inspired by Arctic landscapes */
+:root[data-color-scheme="nord"] {
+  --primary: #81a1c1;
+  --accent: #88c0d0;
+  --ring: #81a1c1;
+  --surface-selected: transparent;
+  --surface-selected-border: #88c0d0;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #81a1c1;
+  --chat-user-header-bg: #81a1c1;
+  --action-bg: #81a1c1;
+  --action-bg-hover: #88c0d0;
+  --action-border: #a3be8c;
+  --status-running-bg: #2e3440;
+  --status-running-border: #88c0d0;
+  --status-running-fg: #88c0d0;
+  --status-connected-bg: #2e3440;
+  --status-connected-border: #88c0d0;
+  --status-connected-fg: #88c0d0;
+  --chart-1: #81a1c1;
+  --chart-2: #88c0d0;
+}
+
+/* Dracula — vivid purple/pink, classic dark theme */
+:root[data-color-scheme="dracula"] {
+  --primary: #bd93f9;
+  --accent: #ff79c6;
+  --ring: #bd93f9;
+  --surface-selected: transparent;
+  --surface-selected-border: #ff79c6;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #bd93f9;
+  --chat-user-header-bg: #bd93f9;
+  --action-bg: #bd93f9;
+  --action-bg-hover: #ff79c6;
+  --action-border: #ff79c6;
+  --status-running-bg: #282a36;
+  --status-running-border: #50fa7b;
+  --status-running-fg: #50fa7b;
+  --status-connected-bg: #282a36;
+  --status-connected-border: #50fa7b;
+  --status-connected-fg: #50fa7b;
+  --chart-1: #bd93f9;
+  --chart-2: #ff79c6;
+}
+
+/* Solarized — warm cream/yellow/gold, one of the most beloved terminal themes ever */
+:root[data-color-scheme="solarized"] {
+  --primary: #268bd2;
+  --accent: #2aa198;
+  --ring: #268bd2;
+  --surface-selected: transparent;
+  --surface-selected-border: #2aa198;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #268bd2;
+  --chat-user-header-bg: #268bd2;
+  --action-bg: #268bd2;
+  --action-bg-hover: #2aa198;
+  --action-border: #2aa198;
+  --status-running-bg: #002b36;
+  --status-running-border: #2aa198;
+  --status-running-fg: #2aa198;
+  --status-connected-bg: #002b36;
+  --status-connected-border: #2aa198;
+  --status-connected-fg: #2aa198;
+  --chart-1: #268bd2;
+  --chart-2: #2aa198;
+}
+
+/* Gruvbox — warm earthy reds/greens, hugely popular in the rice community */
+:root[data-color-scheme="gruvbox"] {
+  --primary: #fb4934;
+  --accent: #fabd2f;
+  --ring: #fb4934;
+  --surface-selected: transparent;
+  --surface-selected-border: #fabd2f;
+  --chat-user-bg: #d1d5db;
+  --chat-user-border: #fb4934;
+  --chat-user-header-bg: #fb4934;
+  --action-bg: #fb4934;
+  --action-bg-hover: #fabd2f;
+  --action-border: #fabd2f;
+  --status-running-bg: #282828;
+  --status-running-border: #fabd2f;
+  --status-running-fg: #b8bb26;
+  --status-connected-bg: #282828;
+  --status-connected-border: #fabd2f;
+  --status-connected-fg: #b8bb26;
+  --chart-1: #fb4934;
+  --chart-2: #fabd2f;
+}
+
+/* ── Running badge — always green regardless of color scheme ──────────────── */
+.ui-badge-status-running {
+  border-color: #16a34a !important;
+  background: #16a34a !important;
+  color: #000000 !important;
+}

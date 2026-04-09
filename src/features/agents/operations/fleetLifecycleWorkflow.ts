@@ -1,55 +1,9 @@
-import type { AgentState } from "@/features/agents/state/store";
-
-type SummarySnapshotSeed = Pick<AgentState, "sessionCreated" | "sessionKey">;
-
-type SummarySnapshotIntent =
-  | { kind: "skip" }
-  | {
-      kind: "fetch";
-      keys: string[];
-      limit: number;
-      maxChars: number;
-    };
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
 
 type ReconcileEligibility = {
   shouldCheck: boolean;
   reason: "ok" | "not-running" | "missing-run-id" | "not-session-created";
-};
-
-const SUMMARY_PREVIEW_LIMIT = 8;
-const SUMMARY_PREVIEW_MAX_CHARS = 240;
-
-const resolveSummarySnapshotKeys = (params: {
-  agents: Array<{ sessionCreated: boolean; sessionKey: string }>;
-  maxKeys: number;
-}): string[] => {
-  return Array.from(
-    new Set(
-      params.agents
-        .filter((agent) => agent.sessionCreated)
-        .map((agent) => agent.sessionKey)
-        .filter((key): key is string => typeof key === "string" && key.trim().length > 0)
-    )
-  ).slice(0, params.maxKeys);
-};
-
-export const resolveSummarySnapshotIntent = (params: {
-  agents: SummarySnapshotSeed[];
-  maxKeys: number;
-}): SummarySnapshotIntent => {
-  const keys = resolveSummarySnapshotKeys({
-    agents: params.agents,
-    maxKeys: params.maxKeys,
-  });
-  if (keys.length === 0) {
-    return { kind: "skip" };
-  }
-  return {
-    kind: "fetch",
-    keys,
-    limit: SUMMARY_PREVIEW_LIMIT,
-    maxChars: SUMMARY_PREVIEW_MAX_CHARS,
-  };
 };
 
 export const resolveReconcileEligibility = (params: {

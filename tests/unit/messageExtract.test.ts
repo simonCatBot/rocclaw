@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import { normalizeAssistantDisplayText } from "@/lib/text/assistantText";
@@ -5,9 +8,6 @@ import {
   buildAgentInstruction,
   EXEC_APPROVAL_AUTO_RESUME_MARKER,
   extractText,
-  extractTextCached,
-  extractThinking,
-  extractThinkingCached,
   extractToolLines,
   isUiMetadataPrefix,
   stripUiMetadata,
@@ -36,25 +36,6 @@ describe("message-extract", () => {
   it("strips assistant control prefixes in single- and double-bracket forms", () => {
     expect(extractText({ role: "assistant", content: "[reply_to_current] hello" })).toBe("hello");
     expect(extractText({ role: "assistant", content: "[[reply_to_current]] hello" })).toBe("hello");
-  });
-
-  it("extractTextCached matches extractText and is consistent", () => {
-    const message = { role: "user", content: "plain text" };
-
-    expect(extractTextCached(message)).toBe(extractText(message));
-    expect(extractTextCached(message)).toBe("plain text");
-    expect(extractTextCached(message)).toBe("plain text");
-  });
-
-  it("extractThinkingCached matches extractThinking and is consistent", () => {
-    const message = {
-      role: "assistant",
-      content: [{ type: "thinking", thinking: "Plan A" }],
-    };
-
-    expect(extractThinkingCached(message)).toBe(extractThinking(message));
-    expect(extractThinkingCached(message)).toBe("Plan A");
-    expect(extractThinkingCached(message)).toBe("Plan A");
   });
 
   it("formats tool call + tool result lines", () => {

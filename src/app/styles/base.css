@@ -1,0 +1,121 @@
+/* MIT License - Copyright (c) 2026 SimonCatBot */
+/* See LICENSE file for details. */
+
+@layer base {
+  html {
+    font-size: 112%;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    letter-spacing: var(--tracking-normal);
+    font-family: var(--font-sans), sans-serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -30%;
+    z-index: -2;
+    background:
+      radial-gradient(circle at 16% 18%, color-mix(in oklch, var(--border) 24%, transparent), transparent 42%),
+      radial-gradient(circle at 84% 8%, color-mix(in oklch, var(--muted) 58%, transparent), transparent 34%),
+      linear-gradient(148deg, color-mix(in oklch, var(--background) 94%, white) 0%, var(--background) 62%, color-mix(in oklch, var(--background) 90%, black) 100%);
+    transform: rotate(-2deg) scale(1.04);
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(transparent 95%, color-mix(in oklch, var(--border) 58%, transparent) 96%),
+      linear-gradient(90deg, transparent 95%, color-mix(in oklch, var(--border) 52%, transparent) 96%);
+    background-size: 30px 30px;
+    opacity: 0.14;
+    pointer-events: none;
+  }
+
+  .dark body::before {
+    inset: 0;
+    transform: none;
+    background: var(--background);
+  }
+
+  .dark body::after {
+    background-image: none;
+    opacity: 0;
+  }
+}
+
+button:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+summary,
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--foreground) 11%, var(--border)) transparent;
+}
+
+.dark * {
+  scrollbar-color: color-mix(in oklch, var(--foreground) 34%, var(--border)) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--foreground) 11%, var(--border));
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--foreground) 17%, var(--border));
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--foreground) 36%, var(--border));
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--foreground) 46%, var(--border));
+}
+
+textarea {
+  scrollbar-gutter: auto;
+}
+
+textarea::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+textarea:hover::-webkit-scrollbar,
+textarea:focus-visible::-webkit-scrollbar,
+textarea:focus::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}

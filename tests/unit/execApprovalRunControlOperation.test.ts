@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { PendingExecApproval } from "@/features/agents/approvals/types";

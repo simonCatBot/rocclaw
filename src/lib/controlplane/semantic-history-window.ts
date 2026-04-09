@@ -1,8 +1,11 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 export type SemanticHistoryMessage = Record<string, unknown>;
 
 type SemanticTurnRole = "user" | "assistant";
 
-export type SemanticMessageWindowResult = {
+type SemanticMessageWindowResult = {
   messages: SemanticHistoryMessage[];
   semanticTurnsIncluded: number;
   windowTruncated: boolean;

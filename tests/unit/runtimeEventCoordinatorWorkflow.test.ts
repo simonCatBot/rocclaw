@@ -1,13 +1,14 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import type { AgentState } from "@/features/agents/state/store";
 import {
   createRuntimeEventCoordinatorState,
-  markChatRunSeen,
   reduceLifecycleFallbackFired,
   reduceMarkActivityThrottled,
   reduceRuntimeAgentWorkflowCommands,
-  reduceRuntimePolicyIntents,
 } from "@/features/agents/state/runtimeEventCoordinatorWorkflow";
 import {
   applyTerminalCommit,
@@ -61,50 +62,6 @@ const createAgentPayload = (overrides?: Partial<AgentEventPayload>): AgentEventP
 });
 
 describe("runtimeEventCoordinatorWorkflow", () => {
-  it("reduces runtime policy intents into effects and run cleanup", () => {
-    let state = createRuntimeEventCoordinatorState();
-    state = markChatRunSeen(state, "run-1");
-    state.thinkingStartedAtByRun.set("run-1", 900);
-
-    const reduced = reduceRuntimePolicyIntents({
-      state,
-      nowMs: 1000,
-      intents: [
-        { kind: "queueLivePatch", agentId: "agent-1", patch: { streamText: "stream" } },
-        {
-          kind: "dispatchUpdateAgent",
-          agentId: "agent-1",
-          patch: { status: "running", runId: "run-1" },
-        },
-        { kind: "clearRunTracking", runId: "run-1" },
-      ],
-    });
-
-    expect(reduced.effects).toEqual(
-      expect.arrayContaining([
-        {
-          kind: "queueLivePatch",
-          agentId: "agent-1",
-          patch: { streamText: "stream" },
-        },
-        {
-          kind: "dispatch",
-          action: {
-            type: "updateAgent",
-            agentId: "agent-1",
-            patch: { status: "running", runId: "run-1" },
-          },
-        },
-        {
-          kind: "cancelLifecycleFallback",
-          runId: "run-1",
-        },
-      ])
-    );
-    expect(reduced.state.chatRunSeen.has("run-1")).toBe(false);
-    expect(reduced.state.thinkingStartedAtByRun.has("run-1")).toBe(false);
-  });
-
   it("reduces lifecycle decision into fallback scheduling/cancellation effects", () => {
     const initial = createRuntimeEventCoordinatorState();
     const scheduleDecision = deriveLifecycleTerminalDecision({

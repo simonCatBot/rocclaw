@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 export const buildAgentMainSessionKey = (agentId: string, mainKey: string) => {
   const trimmedAgent = agentId.trim();
   const trimmedKey = mainKey.trim() || "main";

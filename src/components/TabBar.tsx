@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 "use client";
 
 import { 
@@ -73,4 +76,4 @@ export function getDefaultActiveTabs(): TabId[] {
     .map(tab => tab.id);
 }
 
-export { AVAILABLE_TABS };
+

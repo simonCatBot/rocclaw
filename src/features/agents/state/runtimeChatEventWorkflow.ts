@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AgentState } from "@/features/agents/state/store";
 import type { TranscriptAppendMeta } from "@/features/agents/state/transcript";
 import type { ChatEventPayload } from "@/features/agents/state/runtimeEventBridge";
@@ -24,7 +27,7 @@ export type RuntimeChatWorkflowCommand =
   | { kind: "markThinkingDebugSession"; sessionKey: string }
   | { kind: "logWarn"; message: string; meta?: unknown };
 
-export type RuntimeChatWorkflowInput = {
+type RuntimeChatWorkflowInput = {
   payload: ChatEventPayload;
   agentId: string;
   agent: AgentState | undefined;

@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { GatewayStatus } from "@/features/agents/operations/gatewayRestartPolicy";
 import type { AgentCreateModalSubmitPayload } from "@/features/agents/creation/types";
 import type { ConfigMutationKind } from "@/features/agents/operations/useConfigMutationQueue";
@@ -59,18 +62,11 @@ export const buildQueuedMutationBlock = (params: {
   };
 };
 
-export const buildMutatingMutationBlock = (block: MutationBlockState): MutationBlockState => {
-  return {
-    ...block,
-    phase: "mutating",
-  };
-};
-
 type MutationPostRunIntent =
   | { kind: "clear" }
   | { kind: "awaiting-restart"; patch: { phase: "awaiting-restart"; sawDisconnect: boolean } };
 
-export const resolveMutationPostRunIntent = (params: {
+const resolveMutationPostRunIntent = (params: {
   disposition: "completed" | "awaiting-restart";
 }): MutationPostRunIntent => {
   if (params.disposition === "awaiting-restart") {
@@ -91,7 +87,7 @@ type MutationSideEffectCommand =
   | { kind: "set-mobile-pane"; pane: "chat" }
   | { kind: "patch-mutation-block"; patch: { phase: "awaiting-restart"; sawDisconnect: boolean } };
 
-export const buildMutationSideEffectCommands = (params: {
+const buildMutationSideEffectCommands = (params: {
   disposition: "completed" | "awaiting-restart";
 }): MutationSideEffectCommand[] => {
   const postRunIntent = resolveMutationPostRunIntent({
@@ -123,7 +119,7 @@ const resolveTimeoutReason = (
   return "delete-timeout";
 };
 
-export const resolveMutationTimeoutIntent = (params: {
+const resolveMutationTimeoutIntent = (params: {
   block: MutationBlockState | null;
   nowMs: number;
   maxWaitMs: number;
@@ -145,17 +141,6 @@ export type MutationWorkflowKind = "rename-agent" | "delete-agent";
 
 type MutationWorkflowResult = {
   disposition: "completed" | "awaiting-restart";
-};
-
-type AwaitingRestartPatch = {
-  phase: "awaiting-restart";
-  sawDisconnect: boolean;
-};
-
-type MutationWorkflowPostRunEffects = {
-  shouldReloadAgents: boolean;
-  shouldClearBlock: boolean;
-  awaitingRestartPatch: AwaitingRestartPatch | null;
 };
 
 type MutationWorkflowDeps = {
@@ -194,7 +179,7 @@ type CreateAgentLifecycleCompletion = {
   agentName: string;
 };
 
-export type CreateAgentMutationLifecycleDeps = {
+type CreateAgentMutationLifecycleDeps = {
   enqueueConfigMutation: (params: {
     kind: ConfigMutationKind;
     label: string;
@@ -237,7 +222,7 @@ const assertMutationKind = (kind: string): MutationWorkflowKind => {
   throw new Error(`Unknown config mutation kind: ${kind}`);
 };
 
-export const runConfigMutationWorkflow = async (
+const runConfigMutationWorkflow = async (
   params: { kind: MutationWorkflowKind; isLocalGateway: boolean },
   deps: MutationWorkflowDeps
 ): Promise<MutationWorkflowResult> => {
@@ -393,7 +378,7 @@ export const isCreateBlockTimedOut = (params: {
   return timeoutIntent.kind === "timeout" && timeoutIntent.reason === "create-timeout";
 };
 
-export const buildConfigMutationFailureMessage = (params: {
+const buildConfigMutationFailureMessage = (params: {
   kind: MutationWorkflowKind;
   error: unknown;
 }): string => {
@@ -423,33 +408,4 @@ export const resolveConfigMutationStatusLine = (params: {
   return status === "connected"
     ? "Gateway is back online, syncing agents"
     : "Gateway restart in progress";
-};
-
-export const resolveConfigMutationPostRunEffects = (
-  result: MutationWorkflowResult
-): MutationWorkflowPostRunEffects => {
-  const commands = buildMutationSideEffectCommands({
-    disposition: result.disposition,
-  });
-  let shouldReloadAgents = false;
-  let shouldClearBlock = false;
-  let awaitingRestartPatch: AwaitingRestartPatch | null = null;
-  for (const command of commands) {
-    if (command.kind === "reload-agents") {
-      shouldReloadAgents = true;
-      continue;
-    }
-    if (command.kind === "clear-mutation-block") {
-      shouldClearBlock = true;
-      continue;
-    }
-    if (command.kind === "patch-mutation-block") {
-      awaitingRestartPatch = command.patch;
-    }
-  }
-  return {
-    shouldReloadAgents,
-    shouldClearBlock,
-    awaitingRestartPatch,
-  };
 };

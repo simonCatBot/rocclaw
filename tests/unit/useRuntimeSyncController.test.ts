@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { createElement, useEffect } from "react";
 import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,7 +9,6 @@ import { useRuntimeSyncController } from "@/features/agents/operations/useRuntim
 import type { AgentState } from "@/features/agents/state/store";
 import type {
   DomainAgentHistoryResult,
-  DomainSessionPreviewResult,
 } from "@/lib/controlplane/domain-runtime-client";
 
 import { hydrateDomainHistoryWindow } from "@/features/agents/operations/domainHistoryHydration";
@@ -155,7 +157,7 @@ const createHistoryResult = (): DomainAgentHistoryResult => ({
   gatewayCapped: false,
 });
 
-const createPreviewResult = (): DomainSessionPreviewResult => ({
+const createPreviewResult = () => ({
   enabled: true,
   agentId: "agent-1",
   sessionKey: "agent:agent-1:main",

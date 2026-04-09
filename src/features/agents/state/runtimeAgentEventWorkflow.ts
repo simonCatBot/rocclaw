@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AgentState } from "@/features/agents/state/store";
 import {
   getAgentSummaryPatch,
@@ -44,7 +47,7 @@ export type RuntimeAgentWorkflowCommand =
       shouldClearPendingLivePatch: boolean;
     };
 
-export type RuntimeAgentWorkflowInput = {
+type RuntimeAgentWorkflowInput = {
   payload: AgentEventPayload;
   agent: AgentState;
   activeRunId: string | null;

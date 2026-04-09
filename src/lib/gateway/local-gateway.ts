@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 const parseHostname = (gatewayUrl: string): string | null => {
   const trimmed = gatewayUrl.trim();
   if (!trimmed) return null;

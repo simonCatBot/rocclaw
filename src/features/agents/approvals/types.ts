@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 export type ExecApprovalDecision = "allow-once" | "allow-always" | "deny";
 
 export type PendingExecApproval = {

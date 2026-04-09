@@ -1,9 +1,8 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 import {
-  AGENT_STATUS_BADGE_CLASS,
-  AGENT_STATUS_LABEL,
-  GATEWAY_STATUS_BADGE_CLASS,
-  GATEWAY_STATUS_LABEL,
   NEEDS_APPROVAL_BADGE_CLASS,
   resolveAgentStatusBadgeClass,
   resolveAgentStatusLabel,
@@ -13,29 +12,23 @@ import {
 
 describe("colorSemantics", () => {
   it("maps agent statuses to semantic badge classes and labels", () => {
-    expect(AGENT_STATUS_LABEL.idle).toBe("Idle");
-    expect(AGENT_STATUS_LABEL.running).toBe("Running");
-    expect(AGENT_STATUS_LABEL.error).toBe("Error");
-
-    expect(AGENT_STATUS_BADGE_CLASS.idle).toBe("ui-badge-status-idle");
-    expect(AGENT_STATUS_BADGE_CLASS.running).toBe("ui-badge-status-running");
-    expect(AGENT_STATUS_BADGE_CLASS.error).toBe("ui-badge-status-error");
-
     expect(resolveAgentStatusLabel("idle")).toBe("Idle");
+    expect(resolveAgentStatusLabel("running")).toBe("Running");
+    expect(resolveAgentStatusLabel("error")).toBe("Error");
+
+    expect(resolveAgentStatusBadgeClass("idle")).toBe("ui-badge-status-idle");
     expect(resolveAgentStatusBadgeClass("running")).toBe("ui-badge-status-running");
+    expect(resolveAgentStatusBadgeClass("error")).toBe("ui-badge-status-error");
   });
 
   it("maps gateway statuses to semantic badge classes and labels", () => {
-    expect(GATEWAY_STATUS_LABEL.disconnected).toBe("Disconnected");
-    expect(GATEWAY_STATUS_LABEL.connecting).toBe("Connecting");
-    expect(GATEWAY_STATUS_LABEL.connected).toBe("Connected");
-
-    expect(GATEWAY_STATUS_BADGE_CLASS.disconnected).toBe("ui-badge-status-disconnected");
-    expect(GATEWAY_STATUS_BADGE_CLASS.connecting).toBe("ui-badge-status-connecting");
-    expect(GATEWAY_STATUS_BADGE_CLASS.connected).toBe("ui-badge-status-connected");
-
+    expect(resolveGatewayStatusLabel("disconnected")).toBe("Disconnected");
+    expect(resolveGatewayStatusLabel("connecting")).toBe("Connecting");
     expect(resolveGatewayStatusLabel("connected")).toBe("Connected");
+
     expect(resolveGatewayStatusBadgeClass("disconnected")).toBe("ui-badge-status-disconnected");
+    expect(resolveGatewayStatusBadgeClass("connecting")).toBe("ui-badge-status-connecting");
+    expect(resolveGatewayStatusBadgeClass("connected")).toBe("ui-badge-status-connected");
   });
 
   it("keeps approval state on its own semantic class", () => {

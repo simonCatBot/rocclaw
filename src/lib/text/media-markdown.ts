@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 const MEDIA_LINE_RE = /^\s*MEDIA:\s*(.+?)\s*$/;
 const MEDIA_ONLY_RE = /^\s*MEDIA:\s*$/;
 

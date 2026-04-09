@@ -1,6 +1,9 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import multiavatar from "@multiavatar/multiavatar/esm";
 
-export const buildAvatarSvg = (seed: string): string => {
+const buildAvatarSvg = (seed: string): string => {
   const trimmed = seed.trim();
   if (!trimmed) {
     throw new Error("Avatar seed is required.");

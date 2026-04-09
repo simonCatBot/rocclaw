@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 export const normalizeAssistantDisplayText = (value: string): string => {
   const lines = value.replace(/\r\n?/g, "\n").split("\n");
   const normalized: string[] = [];

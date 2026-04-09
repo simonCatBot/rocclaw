@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { buildAgentMainSessionKey } from "@/lib/gateway/session-keys";
 import { type GatewayModelPolicySnapshot } from "@/lib/gateway/models";
 import { type ROCclawSettings } from "@/lib/rocclaw/settings";

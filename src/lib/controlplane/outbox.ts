@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { ControlPlaneDomainEvent } from "@/lib/controlplane/contracts";
 
 const safeString = (value: unknown): string => (typeof value === "string" ? value : "");

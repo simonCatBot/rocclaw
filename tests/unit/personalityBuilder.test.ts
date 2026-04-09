@@ -1,10 +1,12 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import { createAgentFilesState } from "@/lib/agents/agentFiles";
 import {
   parsePersonalityFiles,
   serializePersonalityFiles,
-  type PersonalityBuilderDraft,
 } from "@/lib/agents/personalityBuilder";
 
 const createFiles = () => createAgentFilesState();
@@ -97,7 +99,7 @@ describe("personalityBuilder", () => {
   });
 
   it("serializePersonalityFiles_emits_stable_markdown_for_identity_user_soul", () => {
-    const draft: PersonalityBuilderDraft = {
+    const draft = {
       identity: {
         name: "Nova",
         creature: "fox spirit",

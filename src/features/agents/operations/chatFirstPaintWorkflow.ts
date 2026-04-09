@@ -1,6 +1,9 @@
-export type ChatFirstPaintSource = "transcript" | "provisional" | "none";
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
 
-export type ResolveChatFirstPaintParams = {
+type ChatFirstPaintSource = "transcript" | "provisional" | "none";
+
+type ResolveChatFirstPaintParams = {
   transcriptItemCount: number;
   lastUserMessage?: string | null;
   latestPreview?: string | null;
@@ -11,7 +14,7 @@ export type ResolveChatFirstPaintParams = {
   nowMs?: number;
 };
 
-export type ChatFirstPaintResolution = {
+type ChatFirstPaintResolution = {
   cycleKey: string;
   source: ChatFirstPaintSource;
   elapsedMs: number | null;

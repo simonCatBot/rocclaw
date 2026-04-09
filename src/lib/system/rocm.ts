@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 /**
  * ROCm GPU Detection and Metrics Module
  * Detects rocminfo/rocm-smi and provides GPU information
@@ -35,7 +38,7 @@ export interface ROCmGPUInfo {
   currentClockMHz?: number;
 }
 
-export interface ROCmSystemInfo {
+interface ROCmSystemInfo {
   runtimeVersion: string;
   gpus: ROCmGPUInfo[];
   detected: boolean;
@@ -579,10 +582,3 @@ export async function detectROCm(): Promise<ROCmSystemInfo> {
   }
 }
 
-/**
- * Get real-time GPU metrics (for polling)
- */
-export async function getROCmMetrics(): Promise<ROCmGPUInfo[]> {
-  const rocmInfo = await detectROCm();
-  return rocmInfo.gpus;
-}

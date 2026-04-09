@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { postROCclawIntent } from "@/lib/controlplane/intents-client";

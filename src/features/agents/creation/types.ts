@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AvatarSource } from "@/features/agents/state/store";
 
 export type AgentCreateModalSubmitPayload = {

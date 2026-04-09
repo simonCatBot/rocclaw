@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -18,7 +21,7 @@ const resolveDefaultHomeDir = (homedir: () => string = os.homedir): string => {
   return os.tmpdir();
 };
 
-export const resolveUserPath = (
+const resolveUserPath = (
   input: string,
   homedir: () => string = os.homedir
 ): string => {

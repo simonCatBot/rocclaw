@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { useCallback, useEffect, useRef } from "react";
 
 import {
@@ -13,7 +16,7 @@ import {
   type SettingsRouteTab,
 } from "@/features/agents/operations/settingsRouteWorkflow";
 
-export type UseSettingsRouteControllerParams = {
+type UseSettingsRouteControllerParams = {
   settingsRouteActive: boolean;
   settingsRouteAgentId: string | null;
   status: "disconnected" | "connecting" | "connected";

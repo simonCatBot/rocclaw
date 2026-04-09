@@ -1,6 +1,9 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AgentFileName } from "@/lib/agents/agentFiles";
 
-export type PersonalityBuilderDraft = {
+type PersonalityBuilderDraft = {
   identity: {
     name: string;
     creature: string;

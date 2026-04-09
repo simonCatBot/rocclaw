@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AgentState } from "./store";
 import {
   extractText,
@@ -6,9 +9,6 @@ import {
   formatMetaMarkdown,
   formatThinkingMarkdown,
   isHeartbeatPrompt,
-  isMetaMarkdown,
-  isToolMarkdown,
-  isTraceMarkdown,
   isUiMetadataPrefix,
   stripUiMetadata,
 } from "@/lib/text/message-extract";
@@ -136,14 +136,6 @@ type HistoryLinesResult = {
   lastRole: string | null;
   lastUser: string | null;
   lastUserAt: number | null;
-};
-
-type HistorySyncPatchInput = {
-  messages: ChatHistoryMessage[];
-  currentLines: string[];
-  loadedAt: number;
-  status: AgentState["status"];
-  runId: string | null;
 };
 
 type GatewayEventKind =
@@ -358,134 +350,6 @@ export const resolveHistoryRunStatePatch = (params: {
     streamText: null,
     thinkingTrace: null,
   };
-};
-
-export const mergeHistoryWithPending = (
-  historyLines: string[],
-  currentLines: string[]
-): string[] => {
-  const normalizeUserLine = (line: string): string | null => {
-    const trimmed = line.trim();
-    if (!trimmed.startsWith(">")) return null;
-    const text = trimmed.replace(/^>\s?/, "");
-    const normalized = text.replace(/\s+/g, " ").trim();
-    return normalized || null;
-  };
-
-  const isPlainAssistantLine = (line: string): boolean => {
-    const trimmed = line.trim();
-    if (!trimmed) return false;
-    if (trimmed.startsWith(">")) return false;
-    if (isMetaMarkdown(trimmed)) return false;
-    if (isTraceMarkdown(trimmed)) return false;
-    if (isToolMarkdown(trimmed)) return false;
-    return true;
-  };
-
-  const countLines = (lines: string[]) => {
-    const counts = new Map<string, number>();
-    for (const line of lines) {
-      counts.set(line, (counts.get(line) ?? 0) + 1);
-    }
-    return counts;
-  };
-
-  if (currentLines.length === 0) return historyLines;
-  if (historyLines.length === 0) return historyLines;
-  const historyCounts = countLines(historyLines);
-  const currentCounts = countLines(currentLines);
-  const merged = [...historyLines];
-  let cursor = 0;
-  for (const line of currentLines) {
-    let foundIndex = -1;
-    for (let i = cursor; i < merged.length; i += 1) {
-      if (merged[i] === line) {
-        foundIndex = i;
-        break;
-      }
-    }
-    if (foundIndex !== -1) {
-      cursor = foundIndex + 1;
-      continue;
-    }
-    const normalizedUserLine = normalizeUserLine(line);
-    if (normalizedUserLine) {
-      for (let i = cursor; i < merged.length; i += 1) {
-        const normalizedMergedLine = normalizeUserLine(merged[i] ?? "");
-        if (!normalizedMergedLine) continue;
-        if (normalizedMergedLine !== normalizedUserLine) continue;
-        foundIndex = i;
-        break;
-      }
-      if (foundIndex !== -1) {
-        cursor = foundIndex + 1;
-        continue;
-      }
-    }
-    merged.splice(cursor, 0, line);
-    cursor += 1;
-  }
-  const assistantLineCount = new Map<string, number>();
-  const bounded: string[] = [];
-  for (const line of merged) {
-    if (!isPlainAssistantLine(line)) {
-      bounded.push(line);
-      continue;
-    }
-    const nextCount = (assistantLineCount.get(line) ?? 0) + 1;
-    const historyCount = historyCounts.get(line) ?? 0;
-    const currentCount = currentCounts.get(line) ?? 0;
-    const hasOverlap = historyCount > 0 && currentCount > 0;
-    if (hasOverlap && nextCount > historyCount) {
-      continue;
-    }
-    assistantLineCount.set(line, nextCount);
-    bounded.push(line);
-  }
-  return bounded;
-};
-
-export const buildHistorySyncPatch = ({
-  messages,
-  currentLines,
-  loadedAt,
-  status,
-  runId,
-}: HistorySyncPatchInput): Partial<AgentState> => {
-  const { lines, lastAssistant, lastAssistantAt, lastRole, lastUser, lastUserAt } =
-    buildHistoryLines(messages);
-  const runStatePatch = resolveHistoryRunStatePatch({
-    status,
-    runId,
-    lastRole,
-    lastUserAt,
-    loadedAt,
-  });
-  if (lines.length === 0) return { historyLoadedAt: loadedAt };
-  const mergedLines = mergeHistoryWithPending(lines, currentLines);
-  const isSame =
-    mergedLines.length === currentLines.length &&
-    mergedLines.every((line, index) => line === currentLines[index]);
-  if (isSame) {
-    const patch: Partial<AgentState> = {
-      historyLoadedAt: loadedAt,
-      ...(runStatePatch ?? {}),
-    };
-    if (typeof lastAssistantAt === "number") {
-      patch.lastAssistantMessageAt = lastAssistantAt;
-    }
-    return patch;
-  }
-  const patch: Partial<AgentState> = {
-    outputLines: mergedLines,
-    lastResult: lastAssistant ?? null,
-    ...(lastAssistant ? { latestPreview: lastAssistant } : {}),
-    ...(typeof lastAssistantAt === "number" ? { lastAssistantMessageAt: lastAssistantAt } : {}),
-    ...(lastUser ? { lastUserMessage: lastUser } : {}),
-    historyLoadedAt: loadedAt,
-    ...(runStatePatch ?? {}),
-  };
-  return patch;
 };
 
 export const buildSummarySnapshotPatches = ({

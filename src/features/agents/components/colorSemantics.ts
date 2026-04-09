@@ -1,19 +1,22 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AgentStatus } from "@/features/agents/state/store";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 
-export const AGENT_STATUS_LABEL: Record<AgentStatus, string> = {
+const AGENT_STATUS_LABEL: Record<AgentStatus, string> = {
   idle: "Idle",
   running: "Running",
   error: "Error",
 };
 
-export const AGENT_STATUS_BADGE_CLASS: Record<AgentStatus, string> = {
+const AGENT_STATUS_BADGE_CLASS: Record<AgentStatus, string> = {
   idle: "ui-badge-status-idle",
   running: "ui-badge-status-running",
   error: "ui-badge-status-error",
 };
 
-export const GATEWAY_STATUS_LABEL: Record<GatewayStatus, string> = {
+const GATEWAY_STATUS_LABEL: Record<GatewayStatus, string> = {
   disconnected: "Disconnected",
   connecting: "Connecting",
   connected: "Connected",
@@ -21,7 +24,7 @@ export const GATEWAY_STATUS_LABEL: Record<GatewayStatus, string> = {
   error: "Error",
 };
 
-export const GATEWAY_STATUS_BADGE_CLASS: Record<GatewayStatus, string> = {
+const GATEWAY_STATUS_BADGE_CLASS: Record<GatewayStatus, string> = {
   disconnected: "ui-badge-status-disconnected",
   connecting: "ui-badge-status-connecting",
   connected: "ui-badge-status-connected",

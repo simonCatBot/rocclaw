@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 export const fetchJson = async <T>(
   input: RequestInfo | URL,
   init?: RequestInit

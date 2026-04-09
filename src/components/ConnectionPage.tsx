@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -18,6 +21,7 @@ import {
 } from "lucide-react";
 import type { GatewayStatus } from "@/lib/gateway/gateway-status";
 import {
+  resolveDefaultSetupScenario,
   resolveGatewayConnectionWarnings,
   type ROCclawConnectionWarning,
   type ROCclawInstallContext,
@@ -33,7 +37,7 @@ const CONNECTION_TABS: { id: ConnectionTab; label: string; icon: typeof Monitor 
   { id: "remote", label: "Remote", icon: Globe },
 ];
 
-interface ConnectionPageProps {
+export interface ConnectionPageProps {
   savedGatewayUrl: string;
   draftGatewayUrl: string;
   token: string;
@@ -87,7 +91,17 @@ export function ConnectionPage({
   onDisconnect,
   onConnect,
 }: ConnectionPageProps) {
-  const [activeTab, setActiveTab] = useState<ConnectionTab>("local");
+  const inferredTab = useMemo((): ConnectionTab => {
+    const scenario = resolveDefaultSetupScenario({
+      installContext,
+      gatewayUrl: draftGatewayUrl || savedGatewayUrl,
+    });
+    if (scenario === "remote-gateway") return "remote";
+    if (scenario === "same-cloud-host") return "cloud";
+    return "local";
+  }, [installContext, draftGatewayUrl, savedGatewayUrl]);
+
+  const [activeTab, setActiveTab] = useState<ConnectionTab>(inferredTab);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const [showToken, setShowToken] = useState(false);
 
@@ -462,6 +476,20 @@ export function ConnectionPage({
 
               {/* Tab-specific content */}
               {currentTab.content}
+
+              {/* CLI update warning */}
+              {installContext.rocclawCli.installed && installContext.rocclawCli.updateAvailable && (
+                <div className="ui-alert-danger rounded-md px-4 py-2 text-sm">
+                  openclaw-rocclaw CLI {installContext.rocclawCli.currentVersion?.trim() || "current"} is installed, but {installContext.rocclawCli.latestVersion?.trim() || "a newer version"} is available. Run <code className="font-mono">npx -y openclaw-rocclaw@latest</code> to update.
+                </div>
+              )}
+
+              {/* Public host security warning */}
+              {installContext.rocclawHost.publicHosts.length > 0 && (
+                <div className="ui-alert-danger rounded-md px-4 py-2 text-sm">
+                  This rocCLAW is bound beyond loopback. <code className="font-mono">ROCCLAW_ACCESS_TOKEN</code> is required and each browser must visit <code className="font-mono">/?access_token=...</code> once.
+                </div>
+              )}
 
               {/* Warnings */}
               {warnings.length > 0 && (

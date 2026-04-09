@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { parseAgentIdFromSessionKey } from "@/lib/gateway/session-keys";
 
 type LatestUpdateKind = "heartbeat" | "cron" | null;
@@ -18,7 +21,7 @@ const SPECIAL_UPDATE_CRON_RE = /\bcron\b/i;
 const HEARTBEAT_SESSION_LIMIT = 48;
 const HEARTBEAT_HISTORY_LIMIT = 200;
 
-export const resolveLatestUpdateKind = (message: string): LatestUpdateKind => {
+const resolveLatestUpdateKind = (message: string): LatestUpdateKind => {
   const lowered = message.toLowerCase();
   const heartbeatIndex = lowered.search(SPECIAL_UPDATE_HEARTBEAT_RE);
   const cronIndex = lowered.search(SPECIAL_UPDATE_CRON_RE);

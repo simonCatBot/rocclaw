@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { runSshJson } from "@/lib/ssh/gateway-host";
 
 type GatewayAgentStateMove = { from: string; to: string };

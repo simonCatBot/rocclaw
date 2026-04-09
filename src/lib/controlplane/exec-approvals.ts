@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { ControlPlaneRuntime } from "@/lib/controlplane/runtime";
 import { ControlPlaneGatewayError } from "@/lib/controlplane/openclaw-adapter";
 

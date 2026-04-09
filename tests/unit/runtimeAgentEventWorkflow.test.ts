@@ -1,10 +1,12 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import type { AgentState } from "@/features/agents/state/store";
 import {
   planRuntimeAgentEvent,
   type RuntimeAgentWorkflowCommand,
-  type RuntimeAgentWorkflowInput,
 } from "@/features/agents/state/runtimeAgentEventWorkflow";
 import type { RuntimePolicyIntent } from "@/features/agents/state/runtimeEventPolicy";
 import type { AgentEventPayload } from "@/features/agents/state/runtimeEventBridge";
@@ -14,6 +16,8 @@ import {
   type RuntimeTerminalCommand,
   type RuntimeTerminalState,
 } from "@/features/agents/state/runtimeTerminalWorkflow";
+
+type RuntimeAgentWorkflowInput = Parameters<typeof planRuntimeAgentEvent>[0];
 
 type InputOverrides = Partial<Omit<RuntimeAgentWorkflowInput, "payload" | "agent">> & {
   payload?: AgentEventPayload;

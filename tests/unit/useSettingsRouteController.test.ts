@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { createElement, useEffect } from "react";
 import { act, render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -5,7 +8,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   useSettingsRouteController,
   type SettingsRouteController,
-  type UseSettingsRouteControllerParams,
 } from "@/features/agents/operations/useSettingsRouteController";
 import type {
   InspectSidebarState,
@@ -14,7 +16,7 @@ import type {
 
 type OverrideParams = Partial<
   Omit<
-    UseSettingsRouteControllerParams,
+    Parameters<typeof useSettingsRouteController>[0],
     | "flushPendingDraft"
     | "dispatchSelectAgent"
     | "setInspectSidebar"
@@ -49,7 +51,7 @@ const renderController = (
   overrides?: OverrideParams,
   callbackOverrides?: Partial<
     Pick<
-      UseSettingsRouteControllerParams,
+      Parameters<typeof useSettingsRouteController>[0],
       | "flushPendingDraft"
       | "dispatchSelectAgent"
       | "setInspectSidebar"
@@ -82,7 +84,7 @@ const renderController = (
   const replace = vi.fn<(href: string) => void>(callbackOverrides?.replace ?? (() => undefined));
   const confirmDiscard = vi.fn<() => boolean>(callbackOverrides?.confirmDiscard ?? (() => true));
 
-  let currentParams: UseSettingsRouteControllerParams = {
+  let currentParams: Parameters<typeof useSettingsRouteController>[0] = {
     settingsRouteActive: false,
     settingsRouteAgentId: null,
     status: "connected",
@@ -111,7 +113,7 @@ const renderController = (
     params,
     onValue,
   }: {
-    params: UseSettingsRouteControllerParams;
+    params: Parameters<typeof useSettingsRouteController>[0];
     onValue: (value: SettingsRouteController) => void;
   }) => {
     const value = useSettingsRouteController(params);

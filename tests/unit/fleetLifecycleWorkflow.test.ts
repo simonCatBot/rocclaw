@@ -1,45 +1,15 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import {
   buildReconcileTerminalPatch,
   resolveReconcileEligibility,
   resolveReconcileWaitOutcome,
-  resolveSummarySnapshotIntent,
 } from "@/features/agents/operations/fleetLifecycleWorkflow";
 
 describe("fleetLifecycleWorkflow", () => {
-  it("returns summary snapshot skip when no valid session keys exist", () => {
-    expect(
-      resolveSummarySnapshotIntent({
-        agents: [
-          { sessionCreated: false, sessionKey: "agent:agent-1:main" },
-          { sessionCreated: true, sessionKey: "" },
-          { sessionCreated: true, sessionKey: "   " },
-        ],
-        maxKeys: 64,
-      })
-    ).toEqual({ kind: "skip" });
-  });
-
-  it("returns summary snapshot fetch intent when session keys are present", () => {
-    expect(
-      resolveSummarySnapshotIntent({
-        agents: [
-          { sessionCreated: true, sessionKey: "agent:agent-1:main" },
-          { sessionCreated: true, sessionKey: "agent:agent-1:main" },
-          { sessionCreated: true, sessionKey: "agent:agent-2:main" },
-          { sessionCreated: true, sessionKey: "agent:agent-3:main" },
-        ],
-        maxKeys: 2,
-      })
-    ).toEqual({
-      kind: "fetch",
-      keys: ["agent:agent-1:main", "agent:agent-2:main"],
-      limit: 8,
-      maxChars: 240,
-    });
-  });
-
   it("maps reconcile wait result ok/error to idle/error terminal patch", () => {
     expect(resolveReconcileWaitOutcome("ok")).toBe("ok");
     expect(resolveReconcileWaitOutcome("error")).toBe("error");

@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 "use client";
 
 import { forwardRef, useCallback, useImperativeHandle, useState } from "react";
@@ -24,7 +27,7 @@ const DEFAULT_AVATAR_COUNT = 6;
 const AVATAR_TABS = ["auto", "default", "custom"] as const;
 type Tab = (typeof AVATAR_TABS)[number];
 
-export type AvatarSelectorProps = {
+type AvatarSelectorProps = {
   name: string;
   value: AvatarSelectorValue;
   onChange: (value: AvatarSelectorValue) => void;
@@ -203,7 +206,7 @@ export const AvatarSelector = forwardRef<AvatarSelectorHandle, AvatarSelectorPro
 
 AvatarSelector.displayName = "AvatarSelector";
 
-export const UNSET_AVATAR_INDEX = -1;
+const UNSET_AVATAR_INDEX = -1;
 
 export const buildDefaultAvatarSelectorValue = (seed?: string): AvatarSelectorValue => ({
   avatarSource: "auto",

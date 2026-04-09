@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -5,7 +8,7 @@ import { Palette, Moon, Sun } from "lucide-react";
 
 const SCHEME_KEY = "rocclaw-color-scheme";
 
-export type ColorSchemeId = "coral" | "nord" | "dracula" | "solarized" | "gruvbox";
+type ColorSchemeId = "coral" | "nord" | "dracula" | "solarized" | "gruvbox";
 
 interface ColorScheme {
   id: ColorSchemeId;

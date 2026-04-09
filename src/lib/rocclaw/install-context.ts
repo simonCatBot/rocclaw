@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { isLocalGatewayUrl } from "@/lib/gateway/local-gateway";
 
 export type ROCclawInstallContext = {
@@ -40,7 +43,7 @@ export type ROCclawSetupScenario =
   | "remote-gateway"
   | "same-cloud-host";
 
-export type ROCclawConnectionWarningTone = "info" | "warn";
+type ROCclawConnectionWarningTone = "info" | "warn";
 
 export type ROCclawConnectionWarning = {
   id: string;

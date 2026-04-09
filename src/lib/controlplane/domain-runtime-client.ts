@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { AgentFileName } from "@/lib/agents/agentFiles";
 import type { GatewayModelChoice, GatewayModelPolicySnapshot } from "@/lib/gateway/models";
 import { fetchJson } from "@/lib/http";
@@ -33,13 +36,13 @@ export type DomainAgentHistoryResult = {
   error?: string;
 };
 
-export type DomainSessionPreviewItem = {
+type DomainSessionPreviewItem = {
   role: "user" | "assistant";
   text: string;
   timestamp?: number | string;
 };
 
-export type DomainSessionPreviewResult = {
+type DomainSessionPreviewResult = {
   enabled: boolean;
   agentId: string;
   sessionKey: string;

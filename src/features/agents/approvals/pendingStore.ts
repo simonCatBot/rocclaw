@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import type { PendingExecApproval } from "@/features/agents/approvals/types";
 
 export const upsertPendingApproval = (

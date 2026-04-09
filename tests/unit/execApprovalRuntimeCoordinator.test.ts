@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { describe, expect, it } from "vitest";
 
 import type { ExecApprovalEventEffects } from "@/features/agents/approvals/execApprovalLifecycleWorkflow";

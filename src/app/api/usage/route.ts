@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import { NextResponse } from "next/server";
 
 import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstrap";

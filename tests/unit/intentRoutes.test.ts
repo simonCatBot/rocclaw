@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 // @vitest-environment node
 
 import { afterEach, describe, expect, it, vi } from "vitest";

@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 export type GatewayStatus =
   | "disconnected"
   | "connecting"
@@ -6,9 +9,6 @@ export type GatewayStatus =
   | "error";
 
 export const isGatewayConnected = (status: GatewayStatus): boolean => status === "connected";
-
-export const isGatewayTransitioning = (status: GatewayStatus): boolean =>
-  status === "connecting" || status === "reconnecting";
 
 export type GatewayGapInfo = {
   expected: number;

@@ -1,115 +1,84 @@
 <div align="center">
 
-# ⚠️ rocCLAW — Alpha Preview
+<img src="public/logo.png" alt="rocCLAW" width="280" />
 
-> **This is early, unstable software (v0.9.0-alpha).** Expect rough edges, breaking changes, and incomplete features. Do not use in production environments. Feedback welcome!
+# rocCLAW
 
-**Your focused operator studio for OpenClaw AI agents**
+**Operator dashboard for managing OpenClaw AI agents**
 
-<p align="center">
-  <a href="https://discord.gg/EFkFHbZw"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-20.9%2B-339933?logo=nodedotjs&logoColor=white" alt="Node.js"></a>
-  <a href="https://github.com/simoncatbot/rocclaw/releases"><img src="https://img.shields.io/github/v/release/simoncatbot/rocclaw?include_prereleases&logo=github&color=red" alt="GitHub Release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/version-0.9.0--alpha-red" alt="Version">
-</p>
+[![Node.js](https://img.shields.io/badge/Node.js-20.9%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![GitHub Release](https://img.shields.io/github/v/release/simoncatbot/rocclaw?include_prereleases&logo=github)](https://github.com/simoncatbot/rocclaw/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-green)](https://github.com/simoncatbot/rocclaw)
 
 </div>
 
-## ✨ What is rocCLAW?
-
-rocCLAW is a sleek, modern dashboard that puts you in control of your OpenClaw AI agents. Instead of juggling command lines and config files, you get an intuitive web interface to:
-
-- 🤖 **Manage agents** — Create, configure, and organize your AI assistants
-- 💬 **Chat in real-time** — Interactive conversations with streaming responses
-- 📊 **Monitor systems** — Live CPU, memory, GPU, disk, and network metrics
-- ⏰ **Schedule tasks** — Cron jobs that run your agents on autopilot
-- 🔒 **Control execution** — Approve or deny commands inline
-
 ---
 
-## 🚀 Quick Start
+## About
 
-> **Prerequisites:** Node.js 20.9+ and OpenClaw running on your gateway
+rocCLAW is a web-based dashboard for managing [OpenClaw](https://github.com/openclaw/openclaw) AI agents. It acts as a secure proxy between your browser and the OpenClaw gateway, so you can connect from any client machine -- a laptop, a workstation, or a remote desktop -- to an OpenClaw instance running anywhere on your network. No need to SSH into the gateway host or work from the terminal. Just point rocCLAW at your gateway (locally, over Tailscale, or through an SSH tunnel) and manage everything from the browser.
 
-### Step 1: Install
+**Key capabilities:**
+
+- **Remote access** -- Connect to any OpenClaw gateway from any machine on your network, via LAN, Tailscale, or SSH tunnel
+- **Agent management** -- Create, configure, and organize AI agents with personality files
+- **Real-time chat** -- Interactive conversations with streaming responses, tool call visibility, and thinking traces
+- **System monitoring** -- Live CPU, memory, GPU, disk, and network metrics
+- **Task scheduling** -- Cron jobs that run agents on autopilot
+- **Exec approvals** -- Approve or deny agent commands inline with allow-once, allow-always, and deny options
+- **Permissions & sandboxing** -- Per-agent sandbox modes, workspace access controls, and tool policies
+
+## Architecture
+
+```
+Browser (React)  <--HTTP/SSE-->  rocCLAW Server (Next.js + SQLite)  <--WebSocket-->  OpenClaw Gateway
+```
+
+The server mediates all communication. It handles authentication, rate limiting, event persistence (SQLite outbox), and SSE replay on reconnect. The gateway token never reaches the browser.
+
+## Quick Start
+
+**Prerequisites:** Node.js 20.9+ and a running OpenClaw gateway.
 
 ```bash
 git clone https://github.com/simonCatBot/rocclaw.git
 cd rocclaw
 npm install
-```
-
-### Step 2: Configure
-
-**For same-machine setup** (OpenClaw + rocCLAW on one computer):
-
-```bash
-# Allow gateway to accept connections
-openclaw config set gateway.bind lan
-openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
-openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
-openclaw gateway restart
-
-# Get your token
-openclaw config get gateway.auth.token
-# → copy this token for the next step
-```
-
-**Create environment file:**
-
-```bash
-cat > .env << 'EOF'
-# Point to your OpenClaw state directory
-OPENCLAW_STATE_DIR=/home/$USER/.openclaw
-
-# Gateway URL (MUST use localhost/127.0.0.1)
-NEXT_PUBLIC_GATEWAY_URL=ws://127.0.0.1:18789
-EOF
-```
-
-### Step 3: Launch
-
-```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and paste your gateway token. Click **Test Connection**, then **Save Settings**.
+Open [http://localhost:3000](http://localhost:3000), enter your gateway URL (`ws://127.0.0.1:18789`), paste your token, and click **Save Settings**.
 
-🎉 You're in!
+To get your gateway token:
 
----
-
-## 📦 Installation Options
-
-### Option 1: Pre-built Package (Fastest)
-
-Download ready-to-run packages from [GitHub Releases](https://github.com/simoncatbot/rocclaw/releases):
-
-**Linux/macOS:**
 ```bash
-# Download and extract the latest release
-curl -L -o rocclaw.tar.gz https://github.com/simoncatbot/rocclaw/releases/latest/download/rocclaw-linux-x64.tar.gz
-tar -xzf rocclaw.tar.gz
-cd rocclaw
-
-# Start the application
-./start.sh
+openclaw config get gateway.auth.token
 ```
 
-**Windows:**
-1. Download `rocclaw-windows-x64.zip` from [GitHub Releases](https://github.com/simoncatbot/rocclaw/releases/latest)
-2. Extract the zip file
-3. Run `start.bat`
+## Installation
 
-### Option 2: npm (Global Install)
+### Pre-built Package
+
+Download from [GitHub Releases](https://github.com/simoncatbot/rocclaw/releases):
+
+```bash
+# Linux/macOS
+curl -L -o rocclaw.tar.gz https://github.com/simoncatbot/rocclaw/releases/latest/download/rocclaw-linux-x64.tar.gz
+tar -xzf rocclaw.tar.gz && cd rocclaw
+npm ci --include=dev && node server/index.js
+
+# Windows: download rocclaw-windows-x64.zip, extract, run the same commands
+```
+
+### npm
 
 ```bash
 npm install -g @simoncatbot/rocclaw
 rocclaw
 ```
 
-### Option 3: From Source
+### From Source
 
 ```bash
 git clone https://github.com/simoncatbot/rocclaw.git
@@ -118,306 +87,135 @@ npm install
 npm run dev
 ```
 
----
-
-## 📖 Documentation
-
-| Guide | What you'll learn |
-|-------|-------------------|
-| [📚 Setup & Configuration](README.md#setup-guides) | Detailed installation for different scenarios |
-| [🖥️ UI Guide](docs/ui-guide.md) | How to use each feature in the interface |
-| [🔐 Permissions & Sandboxing](docs/permissions-sandboxing.md) | Security settings explained |
-| [🏗️ Architecture](ARCHITECTURE.md) | Technical deep-dive for developers |
-| [🤝 Contributing](CONTRIBUTING.md) | Development setup and contribution guide |
-
----
-
-## 🏗️ Architecture Overview
-
-```
-┌──────────────┐      HTTP/SSE       ┌──────────────┐     WebSocket      ┌──────────────┐
-│   Browser    │ ◄──────────────────► │  rocCLAW     │ ◄────────────────► │  OpenClaw    │
-│   (React)    │    Events/UI       │   Server     │    Commands        │   Gateway    │
-└──────────────┘                     │   (SQLite)   │                     │              │
-                                     │  • Outbox    │                     │ • AI Runtime │
-                                     │  • Replay    │                     │ • Config     │
-                                     └──────────────┘                     └──────────────┘
-```
-
-**Key design:** The browser never connects directly to the gateway. rocCLAW acts as a secure proxy, managing authentication, event replay, and rate limiting.
-
----
-
-## 📋 Setup Guides
+## Setup Guides
 
 <details>
-<summary><b>🏠 Same-Machine Setup (Recommended for Beginners)</b></summary>
+<summary><strong>Same-Machine Setup</strong></summary>
 
-Running OpenClaw and rocCLAW on the same machine? Follow these steps:
-
-**1. Configure OpenClaw Gateway**
+For running OpenClaw and rocCLAW on the same machine:
 
 ```bash
-# Allow connections from LAN (not just localhost)
+# Configure the gateway
 openclaw config set gateway.bind lan
-
-# Allow control-ui to connect without strict HTTPS checks
 openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
 openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
-
-# Restart the gateway
 openclaw gateway restart
-```
 
-> ⚠️ **Security:** These settings relax security checks. Only use on trusted local networks.
-
-**2. Create rocCLAW Environment File**
-
-```bash
-cat > .env << 'EOF'
-# Point to your OpenClaw state directory
-OPENCLAW_STATE_DIR=/home/$(whoami)/.openclaw
-
-# Gateway URL - MUST use localhost for browser security
-NEXT_PUBLIC_GATEWAY_URL=ws://127.0.0.1:18789
-EOF
-```
-
-**3. Get Your Gateway Token**
-
-```bash
+# Get your token
 openclaw config get gateway.auth.token
-# Example output: eyJhbGciOiJIUzI1NiIs...
 ```
 
-**4. Start and Connect**
+Start with `npm run dev`, open [http://localhost:3000](http://localhost:3000), enter the URL and token, then click **Save Settings**. No `.env` file is needed — the gateway URL defaults to `ws://localhost:18789` and all settings are configurable through the UI.
 
-```bash
-npm run dev
-```
-
-1. Open [http://localhost:3000](http://localhost:3000) (must use `localhost`, not IP)
-2. Enter URL: `ws://127.0.0.1:18789`
-3. Paste the token from step 3
-4. Click **Test Connection** → should show ✅ "Connection test succeeded"
-5. Click **Save Settings**
+> **Note:** The `dangerously*` flags relax security checks. Only use on trusted local networks.
 
 </details>
 
 <details>
-<summary><b>🌐 Remote Gateway via Tailscale</b></summary>
+<summary><strong>Remote Gateway via Tailscale</strong></summary>
 
-**On the gateway machine:**
+On the gateway machine:
 
 ```bash
-# Find your Tailscale IP
-ip addr show tailscale0 | grep inet
-# → 100.x.x.x
-
+ip addr show tailscale0 | grep inet  # Find your Tailscale IP (100.x.x.x)
 openclaw config set gateway.bind 100.x.x.x
 openclaw gateway restart
 ```
 
-**On your local machine:**
-
-```bash
-cat > .env << 'EOF'
-NEXT_PUBLIC_GATEWAY_URL=wss://my-gateway.ts.net
-EOF
-```
-
-Use `wss://` (WebSocket Secure) when connecting via Tailscale.
+On your local machine, start rocCLAW and enter `wss://my-gateway.ts.net` as the gateway URL in the connection settings. Use `wss://` (WebSocket Secure) when connecting via Tailscale.
 
 </details>
 
 <details>
-<summary><b>🔒 Remote Gateway via SSH Tunnel</b></summary>
-
-Create an SSH tunnel to forward the gateway port:
+<summary><strong>Remote Gateway via SSH Tunnel</strong></summary>
 
 ```bash
 ssh -L 18789:127.0.0.1:18789 user@gateway-host
 ```
 
-Keep this terminal open, then connect rocCLAW to `ws://localhost:18789`.
+Keep the terminal open, then connect rocCLAW to `ws://localhost:18789`.
 
 </details>
 
----
+## Agent Configuration
 
-## 🎯 Core Features
+Each agent has personality files that define its behavior:
 
-### 🤖 Agent Management
+| File | Purpose |
+|------|---------|
+| `SOUL.md` | Core identity and principles |
+| `AGENTS.md` | Operating rules and workflows |
+| `USER.md` | Context about the human operator |
+| `IDENTITY.md` | Agent metadata (name, emoji, avatar) |
 
-Create and manage AI agents with personality files:
-
-| File | Purpose | Example Content |
-|------|---------|-----------------|
-| `SOUL.md` | Agent's core identity | "I am a helpful coding assistant..." |
-| `AGENTS.md` | Operating rules | "Always ask before running commands..." |
-| `USER.md` | Human context | "My name is Alex, I prefer TypeScript..." |
-| `IDENTITY.md` | Agent metadata | Name, emoji, avatar settings |
-
-**Quick tip:** After creating an agent, rocCLAW automatically applies permissive defaults (auto commands, web access, file tools).
-
-### 💬 Real-Time Chat
-
-The chat interface includes powerful controls:
-
-- **New session** — Clear conversation context (agent forgets previous messages)
-- **Model** — Override the default model for this session
-- **Thinking** — `off` / `low` / `medium` / `high` (how much reasoning to show)
-- **Tool calls** — Toggle visibility of tool usage in the transcript
-- **Thinking traces** — Show the model's internal reasoning
-- **Stop run** — Emergency brake for long-running operations
-
-**Example workflow:**
-1. Send a message → Agent starts "thinking"
-2. Agent uses tools (visible if "Tool calls" enabled)
-3. Response streams in real-time
-4. Click "New session" to start fresh
-
-### 📊 System Metrics
-
-Live monitoring of:
-
-- **CPU** — Per-core and average usage
-- **Memory** — RAM utilization
-- **GPU** — Graphics card load (if available)
-- **Disk** — Storage usage
-- **Network** — I/O statistics
-
-*Data comes from the machine running rocCLAW (via `systeminformation` package).*
-
-### ⏰ Cron Jobs
-
-Schedule automated agent runs:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Template: "Daily Standup"                               │
-│  Task: "Summarize yesterday's commits and today's plan" │
-│  Schedule: 0 9 * * 1-5  (9 AM weekdays)                │
-└─────────────────────────────────────────────────────────┘
-```
-
-- Schedules survive gateway restarts
-- Run immediately or on the timer
-- Each agent can have multiple cron jobs
-
-### 🔒 Exec Approvals
-
-When an agent tries to run a command that needs approval:
-
-```
-┌────────────────────────────────────────────────────────┐
-│  ⚠️ Command needs approval                              │
-│  > rm -rf /important/data                              │
-│                                                        │
-│  [ Allow once ]  [ Allow always ]  [ Deny ]          │
-└────────────────────────────────────────────────────────┘
-```
-
-- **Allow once** — Approve just this time
-- **Allow always** — Add to permanent allowlist
-- **Deny** — Block this attempt
-
-*Approvals are enforced by the gateway — they work even if rocCLAW is offline.*
-
----
-
-## ⚙️ Permission Settings
-
-Control what each agent can do:
+## Permissions
 
 | Setting | Options | Description |
 |---------|---------|-------------|
-| **Command Mode** | `Off` / `Ask` / `Auto` | Whether commands need approval |
-| **Sandbox Mode** | `Off` / `Non-main` / `All` | Container isolation for sessions |
-| **Workspace Access** | `None` / `Read-only` / `Read-write` | Filesystem visibility |
-| **Tools Profile** | `Minimal` / `Coding` / `Messaging` / `Full` | Available tool groups |
+| Command Mode | `Off` / `Ask` / `Auto` | Whether commands need approval |
+| Sandbox Mode | `Off` / `Non-main` / `All` | Container isolation for sessions |
+| Workspace Access | `None` / `Read-only` / `Read-write` | Filesystem visibility in sandbox |
+| Tools Profile | `Minimal` / `Coding` / `Messaging` / `Full` | Available tool groups |
 
-> ⚠️ **Note:** `Read-only` workspace access **disables** `write`, `edit`, and `apply_patch` tools in sandboxed sessions, even if the tools profile allows them.
+See [Permissions & Sandboxing](docs/permissions-sandboxing.md) for details.
 
----
+## Tech Stack
 
-## 🐛 Troubleshooting
+| Component | Technology |
+|-----------|------------|
+| Framework | Next.js 16, React 19, TypeScript 5 (strict) |
+| Styling | Tailwind CSS v4, shadcn/ui |
+| Database | SQLite via better-sqlite3 (WAL mode) |
+| Gateway Communication | WebSocket (`ws`) |
+| State Management | React Context + `useReducer` |
+| Server | Custom Node.js entry point (`server/index.js`) |
 
-### Connection Issues
-
-<table>
-<tr><th>Problem</th><th>Solution</th></tr>
-<tr>
-<td><code>Control ui requires device identity</code></td>
-<td>
-
-```bash
-openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true
-openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true
-openclaw gateway restart
-```
-
-</td>
-</tr>
-<tr>
-<td><code>Connection test succeeded</code> but dashboard won't load</td>
-<td>
-Ensure `NEXT_PUBLIC_GATEWAY_URL` uses <code>127.0.0.1</code> or <code>localhost</code>, not a LAN IP. Restart rocCLAW after editing <code>.env</code>.
-
-</td>
-</tr>
-<tr>
-<td><code>npm install</code> fails with git error</td>
-<td>
+## Development
 
 ```bash
-git pull origin main
-npm install
+npm run dev          # Dev server with hot reload
+npm run build        # Production build
+npm run typecheck    # TypeScript strict checking
+npm run lint         # ESLint
+npm run test         # Unit tests (Vitest)
+npm run e2e          # E2E tests (Playwright)
 ```
 
-</td>
-</tr>
-<tr>
-<td>SQLite errors on startup</td>
-<td>
+Run all checks before submitting:
 
 ```bash
-npm run verify:native-runtime:repair
+npm run typecheck && npm run lint && npm run test && npm run build
 ```
 
-</td>
-</tr>
-</table>
+See [Contributing](docs/CONTRIBUTING.md) for full development setup.
 
-### Runtime Issues
+## Troubleshooting
 
-| Symptom | Check |
-|---------|-------|
-| Agent won't respond | Sidebar shows ○ (offline)? Try "New session" |
-| Gateway keeps disconnecting | Check gateway machine memory/GPU pressure |
+| Problem | Solution |
+|---------|----------|
+| `Control ui requires device identity` | Run `openclaw config set gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback true && openclaw config set gateway.controlUi.dangerouslyDisableDeviceAuth true && openclaw gateway restart` |
+| Connection test passes but dashboard won't load | Use `127.0.0.1` or `localhost` in `NEXT_PUBLIC_GATEWAY_URL`, not a LAN IP |
+| SQLite errors on startup | Run `npm run verify:native-runtime:repair` |
+| Agent won't respond (shows as offline) | Try "New Session" in the chat header |
 | 401 errors | Regenerate token: `openclaw config get gateway.auth.token` |
-| Agent ignores commands | Check "Command Mode" setting — is it `Off`? |
 
----
+## Documentation
 
-## 🤝 Contributing
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | Technical deep-dive: data flow, API routes, durability model |
+| [Contributing](docs/CONTRIBUTING.md) | Development setup, testing, commit conventions |
+| [Permissions & Sandboxing](docs/permissions-sandboxing.md) | Security model and sandbox configuration |
+| [Changelog](docs/CHANGELOG.md) | Release history |
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+## License
 
-- Development environment setup
-- Testing procedures
-- PR guidelines
-
----
-
-## 📜 License
-
-[MIT License](LICENSE) © simonCatBot
+[MIT](LICENSE)
 
 ---
 
 <div align="center">
 
-**[Documentation](docs/) · [Issues](../../issues) · [Discussions](../../discussions)**
+[Documentation](docs/) &middot; [Issues](../../issues) &middot; [Discord](https://discord.gg/EFkFHbZw)
 
 </div>

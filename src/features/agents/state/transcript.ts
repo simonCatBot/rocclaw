@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 import {
   isMetaMarkdown,
   isToolMarkdown,
@@ -15,7 +18,7 @@ export const TRANSCRIPT_V2_ENABLED = readBooleanFlag(
   process.env.NEXT_PUBLIC_ROCCLAW_TRANSCRIPT_V2
 );
 
-export const TRANSCRIPT_DEBUG_ENABLED = readBooleanFlag(
+const TRANSCRIPT_DEBUG_ENABLED = readBooleanFlag(
   process.env.NEXT_PUBLIC_ROCCLAW_TRANSCRIPT_DEBUG
 );
 
@@ -28,11 +31,11 @@ export const logTranscriptDebugMetric = (metric: string, meta?: unknown) => {
   console.debug(`[transcript] ${metric}`, meta);
 };
 
-export type TranscriptEntryKind = "meta" | "user" | "assistant" | "thinking" | "tool";
+type TranscriptEntryKind = "meta" | "user" | "assistant" | "thinking" | "tool";
 
-export type TranscriptEntryRole = "user" | "assistant" | "tool" | "system" | "other";
+type TranscriptEntryRole = "user" | "assistant" | "tool" | "system" | "other";
 
-export type TranscriptEntrySource =
+type TranscriptEntrySource =
   | "local-send"
   | "runtime-chat"
   | "runtime-agent"
@@ -64,7 +67,7 @@ export type TranscriptAppendMeta = {
   confirmed?: boolean;
 };
 
-export type BuildTranscriptEntriesFromLinesParams = {
+type BuildTranscriptEntriesFromLinesParams = {
   lines: string[];
   sessionKey: string;
   source: TranscriptEntrySource;
@@ -75,7 +78,7 @@ export type BuildTranscriptEntriesFromLinesParams = {
   entryIdPrefix?: string;
 };
 
-export type MergeTranscriptEntriesResult = {
+type MergeTranscriptEntriesResult = {
   entries: TranscriptEntry[];
   mergedCount: number;
   confirmedCount: number;

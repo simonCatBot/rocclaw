@@ -1,3 +1,6 @@
+// MIT License - Copyright (c) 2026 SimonCatBot
+// See LICENSE file for details.
+
 const os = require("node:os");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
