@@ -117,7 +117,7 @@ function getMarketingName(
     // RDNA 3.5 (gfx115x) - Strix Point / Strix Halo
     // gfx1151 can be 8060S (40 CUs) or 8050S (32 CUs) - differentiated by CU count
     "gfx1151": "AMD Radeon 8060S", // Full Strix Halo - 40 CUs (2560 SPs)
-    "gfx1150": "AMD Radeon 890M",  // Strix Point iGPU - 16 CUs
+    "gfx1150": "AMD Radeon 890M",  // Strix Point iGPU - default to 890M
     // RDNA 3 (Radeon RX 7000 series)
     "gfx1100": "AMD Radeon RX 7900 XTX",
     "gfx1101": "AMD Radeon RX 7900 XT",
@@ -150,6 +150,17 @@ function getMarketingName(
     } else {
       // 8060S has full 40 CUs
       marketingName = "AMD Radeon 8060S"; // 40 CUs (2560 SPs)
+    }
+  }
+
+  // Special handling for gfx1150: differentiate 890M (16 CUs) vs 880M (12 CUs)
+  if (gfxVersion === "gfx1150" && gpu?.computeUnits) {
+    if (gpu.computeUnits <= 14) {
+      // 880M is scaled-down to 12 CUs (allow some margin for detection errors)
+      marketingName = "AMD Radeon 880M"; // 12 CUs
+    } else {
+      // 890M has full 16 CUs
+      marketingName = "AMD Radeon 890M"; // 16 CUs (flagship)
     }
   }
 
