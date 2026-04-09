@@ -115,8 +115,9 @@ function getMarketingName(
 
   const gfxMap: Record<string, string> = {
     // RDNA 3.5 (gfx115x) - Strix Point / Strix Halo
-    "gfx1151": "AMD Radeon AI MAX+ Pro 395",
-    "gfx1150": "AMD Radeon 890M",
+    // gfx1151 can be 8060S (40 CUs) or 8050S (32 CUs) - differentiated by CU count
+    "gfx1151": "AMD Radeon 8060S", // Full Strix Halo - 40 CUs (2560 SPs)
+    "gfx1150": "AMD Radeon 890M",  // Strix Point iGPU - 16 CUs
     // RDNA 3 (Radeon RX 7000 series)
     "gfx1100": "AMD Radeon RX 7900 XTX",
     "gfx1101": "AMD Radeon RX 7900 XT",
@@ -139,7 +140,18 @@ function getMarketingName(
     "gfx942": "AMD Instinct MI300",
   };
 
-  const marketingName = gfxMap[gfxVersion];
+  let marketingName = gfxMap[gfxVersion];
+
+  // Special handling for gfx1151: differentiate 8060S (40 CUs) vs 8050S (32 CUs)
+  if (gfxVersion === "gfx1151" && gpu?.computeUnits) {
+    if (gpu.computeUnits <= 34) {
+      // 8050S is cut-down to 32 CUs (allow some margin for detection errors)
+      marketingName = "AMD Radeon 8050S"; // 32 CUs (2048 SPs)
+    } else {
+      // 8060S has full 40 CUs
+      marketingName = "AMD Radeon 8060S"; // 40 CUs (2560 SPs)
+    }
+  }
 
   // If we have a known marketing name, return it without specs
   if (marketingName) {
