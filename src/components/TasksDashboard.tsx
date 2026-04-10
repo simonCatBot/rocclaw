@@ -1070,6 +1070,7 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
 function TaskDetailPanel({
   job,
   agentName,
+  agentAvatarSeed,
   footerMode,
   onClose,
   onRun,
@@ -1080,6 +1081,7 @@ function TaskDetailPanel({
 }: {
   job: CronJobSummary;
   agentName: string;
+  agentAvatarSeed?: string | null;
   footerMode: AvatarDisplayMode;
   onClose: () => void;
   onRun: (id: string) => void;
