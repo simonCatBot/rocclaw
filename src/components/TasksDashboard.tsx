@@ -1980,6 +1980,7 @@ export function TasksDashboard() {
           <TaskDetailPanel
             job={expandedTask}
             agentName={agent?.name ?? expandedTask.agentId ?? "Unknown"}
+            agentAvatarSeed={agent?.avatarSeed}
             footerMode={footerMode}
             onClose={() => setExpandedTask(null)}
             onRun={handleRun}

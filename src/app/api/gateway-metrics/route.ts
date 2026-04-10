@@ -27,7 +27,8 @@ export interface SystemMetrics {
   cpu: {
     name: string;
     usage: number;
-    cores: number;
+    physicalCores: number;
+    logicalCores: number;
     temperature: number | null;
     speed: number;
     currentSpeedMHz: number;
@@ -220,7 +221,8 @@ async function getLocalMetrics(): Promise<SystemMetrics> {
     cpu: {
       name: cpuName,
       usage: cpuUsage,
-      cores: cpuData.cpus?.length ?? 0,
+      physicalCores: cpuInfo.physicalCores ?? 0,
+      logicalCores: cpuInfo.cores ?? 0,
       temperature: cpuTemp.main !== null ? Math.round(cpuTemp.main) : null,
       speed: Math.round((cpuInfo.speed ?? 0) * 1000),
       currentSpeedMHz: Math.round((cpuCurrentSpeed.avg ?? 0) * 1000),
