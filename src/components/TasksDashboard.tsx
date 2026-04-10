@@ -1070,6 +1070,7 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
 function TaskDetailPanel({
   job,
   agentName,
+  agentAvatarSeed,
   footerMode,
   onClose,
   onRun,
@@ -1080,6 +1081,7 @@ function TaskDetailPanel({
 }: {
   job: CronJobSummary;
   agentName: string;
+  agentAvatarSeed?: string | null;
   footerMode: AvatarDisplayMode;
   onClose: () => void;
   onRun: (id: string) => void;
@@ -1099,7 +1101,7 @@ function TaskDetailPanel({
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-3">
             <Image
-              src={agentAvatarSrc(job.agentId ?? agentName, undefined, footerMode)}
+              src={agentAvatarSrc(job.agentId ?? agentName, agentAvatarSeed, footerMode)}
               alt={agentName}
               width={40}
               height={40}
@@ -1980,6 +1982,7 @@ export function TasksDashboard() {
           <TaskDetailPanel
             job={expandedTask}
             agentName={agent?.name ?? expandedTask.agentId ?? "Unknown"}
+            agentAvatarSeed={agent?.avatarSeed}
             footerMode={footerMode}
             onClose={() => setExpandedTask(null)}
             onRun={handleRun}

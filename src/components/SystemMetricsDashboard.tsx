@@ -26,7 +26,8 @@ interface SystemMetrics {
   cpu: {
     name: string;
     usage: number;
-    cores: number;
+    physicalCores: number;
+    logicalCores: number;
     temperature: number | null;
     speed: number;
     currentSpeedMHz: number;
@@ -295,7 +296,7 @@ export function SystemMetricsDashboard() {
           <>
             <span>{getProcessorLabel(metrics.cpu.name)}</span>
             <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
-            <span>{metrics.cpu.cores} Cores</span>
+            <span>{metrics.cpu.physicalCores} cores, {metrics.cpu.logicalCores} threads</span>
             {metrics.cpu.speed > 0 && (
               <>
                 <span className="w-1 h-1 bg-muted-foreground rounded-full"></span>
