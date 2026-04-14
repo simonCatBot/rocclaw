@@ -42,12 +42,6 @@ const ED25519_SPKI_PREFIX = Buffer.from("302a300506032b6570032100", "hex");
 const base64UrlEncode = (buf: Buffer): string =>
   buf.toString("base64").replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/g, "");
 
-const base64UrlDecode = (input: string): Buffer => {
-  const normalized = input.replaceAll("-", "+").replaceAll("_", "/");
-  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-  return Buffer.from(padded, "base64");
-};
-
 // ─── Key utilities ────────────────────────────────────────────────────────────
 
 /**
