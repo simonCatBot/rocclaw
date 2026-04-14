@@ -309,7 +309,13 @@ async function isLocalConnection(): Promise<boolean> {
   if (!gatewayUrl) return true; // Default to local if unknown
   
   const normalized = gatewayUrl.toLowerCase().trim();
-  return normalized.includes("localhost") || normalized.includes("127.0.0.1");
+  // Check for various localhost patterns including IPv6
+  return (
+    normalized.includes("localhost") ||
+    normalized.includes("127.0.0.1") ||
+    normalized.includes("::1") ||
+    normalized.includes("0.0.0.0")
+  );
 }
 
 async function getMetricsFromGateway(
@@ -365,10 +371,14 @@ export async function GET(): Promise<NextResponse> {
 
   try {
     // Determine if we're connected to local or remote gateway by URL
-    const isLocal = await isLocalConnection();
     const presence = await getGatewayPresence(controlPlane);
-    void presence; // presence.mode kept for future use
     const gatewayHostname = presence?.host;
+    
+    // Use URL-based detection, but presence.mode can override to indicate remote
+    // If presence reports non-local mode, trust it over URL (settings may be stale)
+    const isLocalUrl = await isLocalConnection();
+    const isRemotePresence = presence?.mode && presence.mode !== "local";
+    const isLocal = isLocalUrl && !isRemotePresence;
 
     // Get local metrics
     const localMetrics = await getLocalMetrics();
