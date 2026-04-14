@@ -374,10 +374,11 @@ export async function GET(): Promise<NextResponse> {
     const presence = await getGatewayPresence(controlPlane);
     const gatewayHostname = presence?.host;
     
-    // Use URL-based detection first, fall back to presence.mode
+    // Use URL-based detection, but presence.mode can override to indicate remote
+    // If presence reports non-local mode, trust it over URL (settings may be stale)
     const isLocalUrl = await isLocalConnection();
-    const isLocalPresence = presence?.mode === "local";
-    const isLocal = isLocalUrl || isLocalPresence;
+    const isRemotePresence = presence?.mode && presence.mode !== "local";
+    const isLocal = isLocalUrl && !isRemotePresence;
 
     // Get local metrics
     const localMetrics = await getLocalMetrics();
