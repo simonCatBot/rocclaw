@@ -19,6 +19,12 @@ import {
   type GatewaySocketOptions,
   shouldFallbackToLegacyControlUi,
 } from "@/lib/controlplane/gateway-connect-profile";
+import {
+  loadOrCreateDeviceIdentity,
+  signConnectChallenge,
+  type DeviceIdentity,
+  type DeviceConnectParams,
+} from "@/lib/controlplane/device-identity";
 import { loadROCclawSettings } from "@/lib/rocclaw/settings-store";
 
 const CONNECT_TIMEOUT_MS = 8_000;
@@ -215,6 +221,8 @@ export class OpenClawGatewayAdapter {
   private connectProfileId: GatewayConnectProfileId = "backend-local";
   private legacyProfileSwitchPromise: Promise<void> | null = null;
   private preserveConnectProfileOnStop = false;
+  private deviceIdentity: DeviceIdentity | null = null;
+  private challengeNonce: string | null = null;
 
   constructor(options?: OpenClawAdapterOptions) {
     this.loadSettings = options?.loadSettings ?? loadGatewaySettings;
@@ -235,6 +243,12 @@ export class OpenClawGatewayAdapter {
     if (this.status === "connected") return;
     if (this.startPromise) return this.startPromise;
     this.stopping = false;
+    // Load or create device identity for connect handshake
+    try {
+      this.deviceIdentity = loadOrCreateDeviceIdentity();
+    } catch {
+      this.deviceIdentity = null;
+    }
     this.startPromise = this.connect().finally(() => {
       this.startPromise = null;
     });
@@ -267,6 +281,7 @@ export class OpenClawGatewayAdapter {
     if (!this.preserveConnectProfileOnStop) {
       this.connectProfileId = "backend-local";
     }
+    this.challengeNonce = null;
     this.updateStatus("stopped", null);
   }
 
@@ -337,6 +352,7 @@ export class OpenClawGatewayAdapter {
     const ws = this.createWebSocket(settings.url, profile.socketOptions);
     this.ws = ws;
     this.connectRequestId = null;
+    this.challengeNonce = null;
     this.updateStatus(this.reconnectAttempt > 0 ? "reconnecting" : "connecting", null);
 
     await new Promise<void>((resolve, reject) => {
@@ -371,6 +387,9 @@ export class OpenClawGatewayAdapter {
         if (!parsed) return;
         if (parsed.type === "event") {
           if (parsed.event === "connect.challenge") {
+            // Capture the challenge nonce for device auth signing
+            const payload = isObject(parsed.payload) ? parsed.payload : {};
+            this.challengeNonce = typeof payload.nonce === "string" ? payload.nonce : null;
             this.sendConnectRequest(profile);
             return;
           }
@@ -478,13 +497,39 @@ export class OpenClawGatewayAdapter {
     if (!ws || ws.readyState !== WebSocket.OPEN || this.connectRequestId) return;
     const id = String(this.nextRequestNumber++);
     this.connectRequestId = id;
+
+    // Build device auth params if we have identity and a challenge nonce
+    let device: DeviceConnectParams | undefined;
+    if (this.deviceIdentity && this.challengeNonce) {
+      try {
+        device = signConnectChallenge(this.deviceIdentity, {
+          nonce: this.challengeNonce,
+          platform: profile.connectParams.client.platform,
+          deviceFamily: profile.connectParams.client.deviceFamily,
+          role: profile.connectParams.role,
+          scopes: profile.connectParams.scopes,
+          client: {
+            id: profile.connectParams.client.id,
+            version: profile.connectParams.client.version,
+            mode: profile.connectParams.client.mode,
+          },
+          token: profile.connectParams.auth.token,
+        });
+      } catch (err) {
+        console.error("Failed to sign device challenge, connecting without device identity.", err);
+      }
+    }
+
     try {
       ws.send(
         JSON.stringify({
           type: "req",
           id,
           method: "connect",
-          params: profile.connectParams,
+          params: {
+            ...profile.connectParams,
+            ...(device ? { device } : {}),
+          },
         })
       );
     } catch (err) {

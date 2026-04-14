@@ -18,6 +18,7 @@ export type GatewayConnectProfile = {
       version: string;
       platform: string;
       mode: string;
+      deviceFamily: string;
     };
     role: "operator";
     scopes: string[];
@@ -29,6 +30,7 @@ export type GatewayConnectProfile = {
 const CONNECT_CLIENT_ID_BACKEND = "gateway-client";
 const CONNECT_CLIENT_MODE_BACKEND = "backend";
 const CONNECT_CLIENT_PLATFORM_BACKEND = "node";
+const CONNECT_CLIENT_DEVICE_FAMILY = "rocclaw";
 const CONNECT_CLIENT_ID_LEGACY = "openclaw-control-ui";
 const CONNECT_CLIENT_MODE_LEGACY = "webchat";
 const CONNECT_CLIENT_PLATFORM_LEGACY = "web";
@@ -98,6 +100,7 @@ export function buildGatewayConnectProfile(args: {
           version: "dev",
           platform: CONNECT_CLIENT_PLATFORM_LEGACY,
           mode: CONNECT_CLIENT_MODE_LEGACY,
+          deviceFamily: CONNECT_CLIENT_DEVICE_FAMILY,
         },
       },
     };
@@ -113,6 +116,7 @@ export function buildGatewayConnectProfile(args: {
         version: "dev",
         platform: CONNECT_CLIENT_PLATFORM_BACKEND,
         mode: CONNECT_CLIENT_MODE_BACKEND,
+        deviceFamily: CONNECT_CLIENT_DEVICE_FAMILY,
       },
     },
   };
