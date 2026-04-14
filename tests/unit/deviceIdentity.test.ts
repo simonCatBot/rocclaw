@@ -13,7 +13,6 @@ import {
   loadOrCreateDeviceIdentity,
   publicKeyRawBase64UrlFromPem,
   signConnectChallenge,
-  type DeviceIdentity,
 } from "@/lib/controlplane/device-identity";
 
 const makeTempDir = (name: string) => fs.mkdtempSync(path.join(os.tmpdir(), `${name}-`));
@@ -119,6 +118,11 @@ describe("device-identity", () => {
       const identity = loadOrCreateDeviceIdentity(identityPath);
 
       const rawBase64Url = publicKeyRawBase64UrlFromPem(identity.publicKeyPem);
+
+      // Verify rawBase64Url is a valid base64url string (no +, /, =)
+      expect(rawBase64Url).not.toContain("+");
+      expect(rawBase64Url).not.toContain("/");
+      expect(rawBase64Url).not.toContain("=");
 
       // Verify we can reconstruct the key
       const key = crypto.createPublicKey(identity.publicKeyPem);

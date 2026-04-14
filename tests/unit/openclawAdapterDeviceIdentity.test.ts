@@ -11,10 +11,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  buildGatewayConnectProfile,
-  type GatewayConnectProfile,
-} from "@/lib/controlplane/gateway-connect-profile";
+import { buildGatewayConnectProfile } from "@/lib/controlplane/gateway-connect-profile";
 import {
   loadOrCreateDeviceIdentity,
   signConnectChallenge,
