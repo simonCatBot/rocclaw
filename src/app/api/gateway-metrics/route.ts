@@ -370,19 +370,30 @@ export async function GET(): Promise<NextResponse> {
   const controlPlane = bootstrap.runtime;
 
   try {
-    // Determine if we're connected to local or remote gateway by URL
+    // Determine if we're connected to local or remote gateway
     const presence = await getGatewayPresence(controlPlane);
     const gatewayHostname = presence?.host;
     
-    // Use URL-based detection, but presence.mode can override to indicate remote
-    // If presence reports non-local mode, trust it over URL (settings may be stale)
-    const isLocalUrl = await isLocalConnection();
-    const isRemotePresence = presence?.mode && presence.mode !== "local";
-    const isLocal = isLocalUrl && !isRemotePresence;
-
-    // Get local metrics
+    // Get local metrics early — we need the hostname to compare with gateway
     const localMetrics = await getLocalMetrics();
     const localHostname = localMetrics.hostname;
+
+    // Three-signal detection for local vs remote:
+    // 1. URL check: is the gateway URL pointing at localhost?
+    // 2. Hostname match: does the gateway's reported hostname match our local hostname?
+    // 3. Presence mode override: gateway explicitly says it's remote (e.g., cloud)
+    const isLocalUrl = await isLocalConnection();
+    const isSameHost = !!(
+      gatewayHostname &&
+      localHostname &&
+      gatewayHostname.toLowerCase() === localHostname.toLowerCase()
+    );
+
+    // Local = URL is localhost OR gateway hostname matches local hostname,
+    // UNLESS presence explicitly reports a non-local mode like "cloud" AND hostnames differ
+    // (a remote cloud gateway would have a different hostname)
+    const isCloudPresence = presence?.mode === "cloud";
+    const isLocal = (isLocalUrl || isSameHost) && !isCloudPresence;
 
     if (isLocal) {
       // Local mode: always use local systeminformation directly
