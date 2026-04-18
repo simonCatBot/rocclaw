@@ -1,7 +1,7 @@
 // MIT License - Copyright (c) 2026 SimonCatBot
 // See LICENSE file for details.
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 
 /**
  * Unit tests for gateway-metrics route local/remote detection logic.
