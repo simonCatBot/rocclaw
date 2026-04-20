@@ -378,22 +378,25 @@ export async function GET(): Promise<NextResponse> {
     const localMetrics = await getLocalMetrics();
     const localHostname = localMetrics.hostname;
 
-    // Three-signal detection for local vs remote:
-    // 1. URL check: is the gateway URL pointing at localhost?
-    // 2. Hostname match: does the gateway's reported hostname match our local hostname?
-    // 3. Presence mode override: gateway explicitly says it's remote (e.g., cloud)
+    // Hostname-match detection for local vs remote:
+    // The strongest signal is whether the gateway's reported hostname matches our own.
+    // - Same hostname = we're on the same machine as the gateway (local)
+    // - Different hostname = we're on a different machine (client/remote)
+    //   This correctly handles SSH tunnels where the URL is ws://localhost:18789
+    //   but the gateway is actually on a remote machine.
+    // - Cloud presence always overrides to remote.
+    // - If we can't determine the gateway hostname (no presence data), fall back to URL check.
     const isLocalUrl = await isLocalConnection();
     const isSameHost = !!(
       gatewayHostname &&
       localHostname &&
       gatewayHostname.toLowerCase() === localHostname.toLowerCase()
     );
-
-    // Local = URL is localhost OR gateway hostname matches local hostname,
-    // UNLESS presence explicitly reports a non-local mode like "cloud" AND hostnames differ
-    // (a remote cloud gateway would have a different hostname)
     const isCloudPresence = presence?.mode === "cloud";
-    const isLocal = (isLocalUrl || isSameHost) && !isCloudPresence;
+
+    // Local when: hostnames match (strong signal of same machine), OR
+    // we have no hostname data AND the URL looks local (best-guess fallback)
+    const isLocal = !isCloudPresence && (isSameHost || (!gatewayHostname && isLocalUrl));
 
     if (isLocal) {
       // Local mode: always use local systeminformation directly

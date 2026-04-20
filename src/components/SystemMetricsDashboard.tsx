@@ -201,14 +201,41 @@ export function SystemMetricsDashboard() {
     }
   }, []);
 
+  // Determine if the browser is accessing this page locally or remotely.
+  // This handles the case where rocclaw and gateway are on the same machine
+  // but the browser is remote (e.g., accessing rocclaw via LAN IP from a laptop).
+  // We must use useEffect (not useMemo) because window is undefined during SSR —
+  // useMemo would cache the SSR value (true) and never re-evaluate on the client.
+  const [isBrowserLocal, setIsBrowserLocal] = useState(true);
+  const [remoteDisplayHostname, setRemoteDisplayHostname] = useState<string | null>(null);
+
+  useEffect(() => {
+    const hostname = window.location.hostname.toLowerCase();
+    const local =
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      hostname === "0.0.0.0" ||
+      hostname === "[::1]";
+    setIsBrowserLocal(local);
+    if (!local) {
+      setRemoteDisplayHostname(window.location.hostname);
+    } else {
+      setRemoteDisplayHostname(null);
+    }
+  }, []);
+
+  // A connection is "remote" from the user's perspective if either:
+  // 1. The server reports connectionMode "client" (rocclaw is remote from gateway), OR
+  // 2. The browser is accessing the page remotely (even though rocclaw and gateway are local to each other)
+  // We wait for connectionMode to be set (non-null) before showing Remote to avoid flashing.
+  const isRemoteMetrics = connectionMode !== null && (connectionMode !== "local" || !isBrowserLocal);
+
   useEffect(() => {
     fetchMetrics();
     const interval = setInterval(fetchMetrics, 5000);
     return () => clearInterval(interval);
   }, [fetchMetrics]);
-
-  // Determine if metrics are from local or remote
-  const isRemoteMetrics = connectionMode && connectionMode !== "local";
 
   if (!metrics && !error) {
     return (
@@ -271,9 +298,9 @@ export function SystemMetricsDashboard() {
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50">
         <Server className="w-4 h-4 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">System Metrics</h2>
-        {isRemoteMetrics && gatewayHostname && (
+        {isRemoteMetrics && (
           <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-blue-500/20 text-blue-500 border border-blue-500/30">
-            Remote: {gatewayHostname}
+            Remote: {gatewayHostname || remoteDisplayHostname || "unknown"}
           </span>
         )}
         {!isRemoteMetrics && (

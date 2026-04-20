@@ -34,15 +34,19 @@ function detectConnectionMode(params: {
   // 3. Cloud presence override
   const isCloudPresence = presenceMode === "cloud";
 
-  const isLocal = (isLocalUrl || isSameHost) && !isCloudPresence;
+  // Local when: hostnames match (strong signal of same machine), OR
+  // we have no hostname data AND the URL looks local (best-guess fallback)
+  const isLocal = !isCloudPresence && (isSameHost || (!gatewayHostname && isLocalUrl));
 
   let reason: string;
   if (isCloudPresence) {
     reason = "cloud-presence-override";
-  } else if (isLocalUrl) {
-    reason = "local-url";
   } else if (isSameHost) {
     reason = "hostname-match";
+  } else if (!gatewayHostname && isLocalUrl) {
+    reason = "no-presence-local-url-fallback";
+  } else if (isLocalUrl) {
+    reason = "local-url-but-different-host";
   } else {
     reason = "remote-url-and-host";
   }
@@ -102,11 +106,11 @@ describe("gateway-metrics: connection mode detection", () => {
         presenceMode: "server",
       });
       expect(result.isLocal).toBe(true);
-      expect(result.reason).toBe("local-url");
+      expect(result.reason).toBe("hostname-match");
     });
 
     it("detects local when URL is localhost and gateway mode is 'server' (not 'local')", () => {
-      // This is the BUG we're fixing — presence.mode="server" was incorrectly treated as remote
+      // presence.mode="server" should not prevent local detection when hostnames match
       const result = detectConnectionMode({
         gatewayUrl: "http://localhost:3000",
         gatewayHostname: "my-machine",
@@ -124,6 +128,18 @@ describe("gateway-metrics: connection mode detection", () => {
         presenceMode: undefined,
       });
       expect(result.isLocal).toBe(true);
+    });
+
+    it("detects remote when URL is localhost but hostnames differ (SSH tunnel)", () => {
+      // SSH tunnel makes the URL localhost, but the gateway is on a different machine
+      const result = detectConnectionMode({
+        gatewayUrl: "http://localhost:3000",
+        gatewayHostname: "remote-server",
+        localHostname: "my-laptop",
+        presenceMode: "server",
+      });
+      expect(result.isLocal).toBe(false);
+      expect(result.reason).toBe("local-url-but-different-host");
     });
 
     it("detects local via hostname match even with remote-looking URL", () => {
@@ -227,18 +243,53 @@ describe("gateway-metrics: connection mode detection", () => {
     });
 
     it("detects remote when URL is null and hostnames differ", () => {
-      // No settings, but gateway is on a different host
+      // No settings URL (null), but gateway hostname differs from local — remote connection
       const result = detectConnectionMode({
         gatewayUrl: null,
         gatewayHostname: "remote-server",
         localHostname: "my-laptop",
         presenceMode: "server",
       });
-      // URL null → isLocalUrl=true, hostnames differ → isSameHost=false
-      // Not cloud → isLocal = true (URL defaults to local)
-      // This is a limitation — without URL we can't know, default to local
+      // With hostname data available, different hostnames = remote
+      expect(result.isLocal).toBe(false);
+      expect(result.reason).toBe("local-url-but-different-host");
+    });
+
+    it("defaults to local when URL is null and no presence hostname (no data)", () => {
+      // No URL, no presence data — assume local as best guess
+      const result = detectConnectionMode({
+        gatewayUrl: null,
+        gatewayHostname: undefined,
+        localHostname: "my-machine",
+        presenceMode: undefined,
+      });
       expect(result.isLocal).toBe(true);
-      expect(result.reason).toBe("local-url");
+      expect(result.reason).toBe("no-presence-local-url-fallback");
+    });
+
+    it("detects remote when URL is localhost but hostnames differ (SSH tunnel with direct URL)", () => {
+      // Direct localhost URL (not tunnel) but gateway reports different hostname
+      // This can happen with SSH port forwarding: ws://localhost:18789 → remote server
+      const result = detectConnectionMode({
+        gatewayUrl: "ws://localhost:18789",
+        gatewayHostname: "kapu-home",
+        localHostname: "kiriti-laptop",
+        presenceMode: "server",
+      });
+      expect(result.isLocal).toBe(false);
+      expect(result.reason).toBe("local-url-but-different-host");
+    });
+
+    it("detects local when URL is localhost and hostnames match regardless of URL", () => {
+      // Even if URL is localhost, hostname match means same machine
+      const result = detectConnectionMode({
+        gatewayUrl: "ws://localhost:18789",
+        gatewayHostname: "kapu-home",
+        localHostname: "kapu-home",
+        presenceMode: "server",
+      });
+      expect(result.isLocal).toBe(true);
+      expect(result.reason).toBe("hostname-match");
     });
   });
 });
