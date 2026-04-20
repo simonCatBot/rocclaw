@@ -4,7 +4,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { 
   Cpu, 
   MemoryStick, 
@@ -182,7 +182,6 @@ export function SystemMetricsDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [showPerCore, setShowPerCore] = useState(false);
   const [showGpuHardware, setShowGpuHardware] = useState(false);
-  const [remoteDisplayHostname, setRemoteDisplayHostname] = useState<string | null>(null);
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -205,35 +204,32 @@ export function SystemMetricsDashboard() {
   // Determine if the browser is accessing this page locally or remotely.
   // The server-side connectionMode tells us about the rocclaw→gateway relationship,
   // but the user's perspective depends on whether their browser is local or remote.
-  const isBrowserLocal = useMemo(() => {
-    if (typeof window === "undefined") return true;
+  // We must use useEffect (not useMemo) because window is undefined during SSR —
+  // useMemo would cache the SSR value (true) and never re-evaluate on the client.
+  const [isBrowserLocal, setIsBrowserLocal] = useState(true);
+  const [remoteDisplayHostname, setRemoteDisplayHostname] = useState<string | null>(null);
+
+  useEffect(() => {
     const hostname = window.location.hostname.toLowerCase();
-    return (
+    const local =
       hostname === "localhost" ||
       hostname === "127.0.0.1" ||
       hostname === "::1" ||
       hostname === "0.0.0.0" ||
-      hostname === "[::1]"
-    );
-  }, []);
-
-  // Detect browser's remote hostname (for remote client display)
-  useEffect(() => {
-    if (!isBrowserLocal && typeof window !== "undefined") {
+      hostname === "[::1]";
+    setIsBrowserLocal(local);
+    if (!local) {
       setRemoteDisplayHostname(window.location.hostname);
     } else {
       setRemoteDisplayHostname(null);
     }
-  }, [isBrowserLocal]);
+  }, []);
 
   // A connection is "remote" from the user's perspective if either:
   // 1. The server reports connectionMode "client" (rocclaw is remote from gateway), OR
   // 2. The browser is accessing the page remotely (even though rocclaw and gateway are local to each other)
-  const isRemoteMetrics = useMemo(() => {
-    if (connectionMode && connectionMode !== "local") return true;
-    if (!isBrowserLocal) return true;
-    return false;
-  }, [connectionMode, isBrowserLocal]);
+  // Note: we check connectionMode explicitly to avoid flashing "Remote" during initial load (null state)
+  const isRemoteMetrics = (connectionMode !== null && connectionMode !== "local") || (!isBrowserLocal && connectionMode !== null);
 
   useEffect(() => {
     fetchMetrics();
