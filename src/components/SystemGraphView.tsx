@@ -12,6 +12,10 @@ import {
   Video,
   Wifi,
   Activity,
+  Thermometer,
+  Gauge,
+  Zap,
+  TrendingUp,
 } from "lucide-react";
 import {
   LineChart,
@@ -21,7 +25,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -36,69 +39,172 @@ interface MetricsSample {
   gpuTemp: number | null;
   gpuVram: number | null;
   gpuPower: number | null;
-  netRxSec: number;
-  netTxSec: number;
+  netRxKBps: number;
+  netTxKBps: number;
 }
 
-interface SystemMetrics {
-  cpu: {
-    usage: number;
-    temperature: number | null;
-    currentSpeedMHz: number;
-  };
-  memory: {
-    usage: number;
-  };
-  gpu: {
-    usage: number | null;
-    temperature: number | null;
-    memory: { used: number | null; total: number | null };
-    power?: number;
-  }[];
-  network: {
-    rxSec: number;
-    txSec: number;
-  };
-}
+type TimeRange = "5m" | "10m" | "30m";
 
-type MetricChannel = "cpu" | "memory" | "gpu" | "gpuTemp" | "gpuVram" | "network" | "cpuTemp";
-
-interface ChannelConfig {
-  id: MetricChannel;
-  label: string;
-  unit: string;
-  color: string;
-  icon: typeof Cpu;
-  dataKey: string;
-  maxValue: number;
-}
-
-const CHANNELS: ChannelConfig[] = [
-  { id: "cpu", label: "CPU Usage", unit: "%", color: "#3b82f6", icon: Cpu, dataKey: "cpu", maxValue: 100 },
-  { id: "cpuTemp", label: "CPU Temp", unit: "°C", color: "#f59e0b", icon: Activity, dataKey: "cpuTemp", maxValue: 120 },
-  { id: "memory", label: "Memory", unit: "%", color: "#8b5cf6", icon: MemoryStick, dataKey: "memory", maxValue: 100 },
-  { id: "gpu", label: "GPU Usage", unit: "%", color: "#ef4444", icon: Video, dataKey: "gpu", maxValue: 100 },
-  { id: "gpuTemp", label: "GPU Temp", unit: "°C", color: "#f97316", icon: Activity, dataKey: "gpuTemp", maxValue: 120 },
-  { id: "gpuVram", label: "GPU VRAM", unit: "%", color: "#ec4899", icon: Video, dataKey: "gpuVram", maxValue: 100 },
-  { id: "network", label: "Network", unit: "KB/s", color: "#10b981", icon: Wifi, dataKey: "netRxSec", maxValue: 0 },
-];
+const TIME_RANGE_SAMPLES: Record<TimeRange, number> = {
+  "5m": 60,
+  "10m": 120,
+  "30m": 360,
+};
 
 const MAX_SAMPLES = 360; // 30 min at 5s intervals
 const POLL_INTERVAL_MS = 5000;
 
-// ─── Component ───────────────────────────────────────────────────────
+// ─── Metric Card ─────────────────────────────────────────────────────
+
+interface MetricCardProps {
+  title: string;
+  icon: typeof Cpu;
+  color: string;
+  current: string;
+  subtitle?: string;
+  history: MetricsSample[];
+  dataKey: string;
+  dataKey2?: string;
+  dataKey2Label?: string;
+  dataKey2Color?: string;
+  dataKey2Dash?: boolean;
+  unit: string;
+  maxValue: number;
+  connectNulls?: boolean;
+  timeRange: TimeRange;
+}
+
+function MetricCard({
+  title,
+  icon: Icon,
+  color,
+  current,
+  subtitle,
+  history,
+  dataKey,
+  dataKey2,
+  dataKey2Label,
+  dataKey2Color,
+  dataKey2Dash,
+  unit,
+  maxValue,
+  connectNulls = true,
+  timeRange,
+}: MetricCardProps) {
+  const sampleCount = TIME_RANGE_SAMPLES[timeRange];
+  const visibleData = history.slice(-sampleCount);
+
+  const formatTime = (ts: number) => {
+    const d = new Date(ts);
+    return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+  };
+
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number | null; color: string }>; label?: number }) => {
+    if (!active || !payload || !label) return null;
+    const d = new Date(label);
+    return (
+      <div className="rounded-lg border border-border bg-surface-1 px-3 py-2 shadow-lg text-xs">
+        <p className="font-mono text-muted-foreground mb-1">{d.toLocaleTimeString()}</p>
+        {payload.map((entry, i) => (
+          <div key={i} className="flex items-center gap-2 py-0.5">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-foreground font-semibold">
+              {entry.value !== null && entry.value !== undefined ? `${entry.value}${unit}` : "N/A"}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="ui-panel rounded-xl border border-border/60 bg-surface-1 overflow-hidden">
+      {/* Card header */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-surface-2/30">
+        <span className="flex items-center justify-center h-6 w-6 rounded-md" style={{ backgroundColor: `${color}20` }}>
+          <Icon className="h-3.5 w-3.5" style={{ color }} />
+        </span>
+        <span className="text-xs font-semibold text-foreground">{title}</span>
+        {subtitle && (
+          <span className="text-[10px] text-muted-foreground ml-auto font-mono">{subtitle}</span>
+        )}
+      </div>
+
+      {/* Current value */}
+      <div className="px-4 pt-3 pb-1">
+        <span className="text-2xl font-bold text-foreground" style={{ color }}>{current}</span>
+        {dataKey2 && (
+          <span className="ml-3 text-sm font-semibold text-muted-foreground">
+            {dataKey2Label}: <span style={{ color: dataKey2Color }}>{dataKey2}</span>
+          </span>
+        )}
+      </div>
+
+      {/* Chart */}
+      <div className="px-2 pb-3 h-[140px]">
+        {visibleData.length < 2 ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <Activity className="w-3 h-3 animate-pulse mr-1.5" />
+            <span className="text-[10px]">Collecting...</span>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={visibleData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #333)" opacity={0.2} />
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={formatTime}
+                tick={{ fontSize: 9, fill: "var(--color-muted-foreground, #888)" }}
+                stroke="var(--color-border, #333)"
+                minTickGap={40}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                tick={{ fontSize: 9, fill: "var(--color-muted-foreground, #888)" }}
+                stroke="var(--color-border, #333)"
+                domain={maxValue > 0 ? [0, maxValue] : [0, "auto"]}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Line
+                type="monotone"
+                dataKey={dataKey}
+                stroke={color}
+                strokeWidth={1.5}
+                dot={false}
+                isAnimationActive={false}
+                connectNulls={connectNulls}
+              />
+              {dataKey2 && (
+                <Line
+                  type="monotone"
+                  dataKey={dataKey2}
+                  stroke={dataKey2Color || "#888"}
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls={connectNulls}
+                  strokeDasharray={dataKey2Dash ? "4 2" : undefined}
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────
 
 export function SystemGraphView() {
   const [history, setHistory] = useState<MetricsSample[]>([]);
-  const [activeChannels, setActiveChannels] = useState<Set<MetricChannel>>(
-    new Set(["cpu", "memory", "gpu"])
-  );
   const [connectionMode, setConnectionMode] = useState<string | null>(null);
   const [gatewayHostname, setGatewayHostname] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBrowserLocal, setIsBrowserLocal] = useState(true);
   const [remoteDisplayHostname, setRemoteDisplayHostname] = useState<string | null>(null);
-  const historyRef = useRef<MetricsSample[]>([]);
+  const [timeRange, setTimeRange] = useState<TimeRange>("30m");
+  const [hasGpu, setHasGpu] = useState(false);
 
   // Browser locality detection
   useEffect(() => {
@@ -124,7 +230,7 @@ export function SystemGraphView() {
       const result = await response.json();
 
       if (result.success && result.data) {
-        const m: SystemMetrics = result.data;
+        const m = result.data;
         setConnectionMode(result.connectionMode || "local");
         setGatewayHostname(result.hostname || null);
 
@@ -133,6 +239,8 @@ export function SystemGraphView() {
           primaryGpu?.memory?.total && primaryGpu?.memory?.used
             ? Math.round((primaryGpu.memory.used / primaryGpu.memory.total) * 100)
             : null;
+
+        if (primaryGpu?.usage != null) setHasGpu(true);
 
         const sample: MetricsSample = {
           timestamp: Date.now(),
@@ -144,14 +252,13 @@ export function SystemGraphView() {
           gpuTemp: primaryGpu?.temperature ?? null,
           gpuVram: gpuVramPercent,
           gpuPower: primaryGpu?.power ?? null,
-          netRxSec: Math.round((m.network?.rxSec ?? 0) / 1024),
-          netTxSec: Math.round((m.network?.txSec ?? 0) / 1024),
+          netRxKBps: Math.round((m.network?.rxSec ?? 0) / 1024),
+          netTxKBps: Math.round((m.network?.txSec ?? 0) / 1024),
         };
 
         setHistory((prev) => {
           const next = [...prev, sample];
           if (next.length > MAX_SAMPLES) next.shift();
-          historyRef.current = next;
           return next;
         });
         setError(null);
@@ -169,55 +276,8 @@ export function SystemGraphView() {
     return () => clearInterval(interval);
   }, [fetchMetrics]);
 
-  // Toggle channel
-  const toggleChannel = (channel: MetricChannel) => {
-    setActiveChannels((prev) => {
-      const next = new Set(prev);
-      if (next.has(channel)) {
-        if (next.size > 1) next.delete(channel);
-      } else {
-        next.add(channel);
-      }
-      return next;
-    });
-  };
-
-  // Format timestamp for X axis
-  const formatTime = (ts: number) => {
-    const d = new Date(ts);
-    return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
-  };
-
-  // Format tooltip label
-  const formatTooltipLabel = (ts: number) => {
-    const d = new Date(ts);
-    return d.toLocaleTimeString();
-  };
-
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number | null; name: string; color: string }>; label?: number }) => {
-    if (!active || !payload || !label) return null;
-    return (
-      <div className="rounded-lg border border-border bg-surface-1 px-3 py-2 shadow-lg text-xs">
-        <p className="font-mono text-muted-foreground mb-1">{formatTooltipLabel(label)}</p>
-        {payload.map((entry, i) => (
-          <div key={i} className="flex items-center gap-2 py-0.5">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-            <span className="text-muted-foreground">{entry.name}:</span>
-            <span className="font-semibold text-foreground">
-              {entry.value !== null && entry.value !== undefined ? entry.value : "N/A"}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Determine which lines to render
-  const visibleChannels = CHANNELS.filter((ch) => activeChannels.has(ch.id));
-
-  // Check if any data has GPU metrics
-  const hasGpuData = history.some((s) => s.gpu !== null);
+  // Latest sample
+  const latest = history.length > 0 ? history[history.length - 1] : null;
 
   if (error && history.length === 0) {
     return (
@@ -233,8 +293,8 @@ export function SystemGraphView() {
   return (
     <div className="ui-panel ui-depth-workspace p-4 h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3 pb-3 border-b border-border/50 shrink-0">
-        <Server className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50 shrink-0">
+        <TrendingUp className="w-4 h-4 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">Graph View</h2>
         {isRemoteMetrics && (
           <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-blue-500/20 text-blue-500 border border-blue-500/30">
@@ -246,119 +306,148 @@ export function SystemGraphView() {
             Local
           </span>
         )}
-        <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          {history.length > 0
-            ? `${Math.round((history.length * POLL_INTERVAL_MS) / 60000)}m history`
-            : "Collecting..."}
+        <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-2">
+          {history.length > 0 && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {Math.round((history.length * POLL_INTERVAL_MS) / 60000)}m
+            </span>
+          )}
+          {/* Time range selector */}
+          <div className="flex gap-0.5 bg-surface-2 rounded-md p-0.5">
+            {(["5m", "10m", "30m"] as TimeRange[]).map((tr) => (
+              <button
+                key={tr}
+                type="button"
+                onClick={() => setTimeRange(tr)}
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+                  timeRange === tr
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tr}
+              </button>
+            ))}
+          </div>
         </span>
       </div>
 
-      {/* Channel selector */}
-      <div className="flex flex-wrap gap-1.5 mb-3 shrink-0">
-        {CHANNELS.filter((ch) => ch.id === "gpu" || ch.id === "gpuTemp" || ch.id === "gpuVram" ? hasGpuData : true).map((ch) => {
-          const Icon = ch.icon;
-          const isActive = activeChannels.has(ch.id);
-          return (
-            <button
-              key={ch.id}
-              type="button"
-              onClick={() => toggleChannel(ch.id)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold tracking-wide transition-all ${
-                isActive
-                  ? "text-white shadow-sm"
-                  : "text-muted-foreground bg-surface-2 hover:bg-surface-3"
-              }`}
-              style={isActive ? { backgroundColor: ch.color } : undefined}
-            >
-              <Icon className="w-3 h-3" />
-              {ch.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Metric cards grid */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {/* CPU Card */}
+          <MetricCard
+            title="CPU"
+            icon={Cpu}
+            color="#3b82f6"
+            current={latest ? `${latest.cpu}%` : "--"}
+            subtitle={latest ? `${latest.cpuSpeedMHz} MHz` : undefined}
+            history={history}
+            dataKey="cpu"
+            unit="%"
+            maxValue={100}
+            timeRange={timeRange}
+          />
 
-      {/* Chart */}
-      <div className="flex-1 min-h-0">
-        {history.length < 2 ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 animate-pulse" />
-              <span className="text-sm">Collecting data points...</span>
-            </div>
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={history} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #333)" opacity={0.3} />
-              <XAxis
-                dataKey="timestamp"
-                tickFormatter={formatTime}
-                tick={{ fontSize: 10, fill: "var(--color-muted-foreground, #888)" }}
-                stroke="var(--color-border, #333)"
-                minTickGap={60}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: "var(--color-muted-foreground, #888)" }}
-                stroke="var(--color-border, #333)"
-                domain={[0, "auto"]}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend
-                wrapperStyle={{ fontSize: 11 }}
-                formatter={(value: string) => (
-                  <span style={{ color: "var(--color-foreground, #ccc)" }}>{value}</span>
-                )}
-              />
-              {visibleChannels.map((ch) => (
-                <Line
-                  key={ch.id}
-                  type="monotone"
-                  dataKey={ch.dataKey}
-                  name={ch.label}
-                  stroke={ch.color}
-                  strokeWidth={1.5}
-                  dot={false}
-                  isAnimationActive={false}
-                  connectNulls={ch.id !== "network"}
-                />
-              ))}
-              {/* Network TX as secondary line */}
-              {activeChannels.has("network") && (
-                <Line
-                  type="monotone"
-                  dataKey="netTxSec"
-                  name="Net TX"
-                  stroke="#06b6d4"
-                  strokeWidth={1.5}
-                  dot={false}
-                  isAnimationActive={false}
-                  strokeDasharray="4 2"
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+          {/* CPU Temperature Card */}
+          <MetricCard
+            title="CPU Temperature"
+            icon={Thermometer}
+            color="#f59e0b"
+            current={latest && latest.cpuTemp !== null ? `${latest.cpuTemp}°C` : "N/A"}
+            subtitle={latest && latest.cpuTemp !== null ? (latest.cpuTemp > 80 ? "HOT" : latest.cpuTemp > 60 ? "WARM" : "COOL") : undefined}
+            history={history}
+            dataKey="cpuTemp"
+            unit="°C"
+            maxValue={120}
+            connectNulls={false}
+            timeRange={timeRange}
+          />
 
-      {/* Current values strip */}
-      {history.length > 0 && (
-        <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-border/50 shrink-0">
-          {visibleChannels.map((ch) => {
-            const latest = history[history.length - 1];
-            const value = (latest as unknown as Record<string, number | null>)[ch.dataKey];
-            return (
-              <div key={ch.id} className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: ch.color }} />
-                <span className="text-[10px] font-semibold text-muted-foreground">{ch.label}:</span>
-                <span className="text-xs font-bold text-foreground">
-                  {value !== null && value !== undefined ? `${value}${ch.unit}` : "N/A"}
-                </span>
-              </div>
-            );
-          })}
+          {/* Memory Card */}
+          <MetricCard
+            title="Memory"
+            icon={MemoryStick}
+            color="#8b5cf6"
+            current={latest ? `${latest.memory}%` : "--"}
+            history={history}
+            dataKey="memory"
+            unit="%"
+            maxValue={100}
+            timeRange={timeRange}
+          />
+
+          {/* Network Card */}
+          <MetricCard
+            title="Network"
+            icon={Wifi}
+            color="#10b981"
+            current={latest ? `${latest.netRxKBps} KB/s` : "--"}
+            subtitle="↓ RX / ↑ TX"
+            history={history}
+            dataKey="netRxKBps"
+            dataKey2="netTxKBps"
+            dataKey2Label="TX"
+            dataKey2Color="#06b6d4"
+            dataKey2Dash
+            unit=" KB/s"
+            maxValue={0}
+            connectNulls={false}
+            timeRange={timeRange}
+          />
+
+          {/* GPU Usage Card - only shown if GPU detected */}
+          {hasGpu && (
+            <MetricCard
+              title="GPU"
+              icon={Video}
+              color="#ef4444"
+              current={latest && latest.gpu !== null ? `${latest.gpu}%` : "N/A"}
+              subtitle={latest && latest.gpuPower !== null ? `${latest.gpuPower}W` : undefined}
+              history={history}
+              dataKey="gpu"
+              unit="%"
+              maxValue={100}
+              connectNulls={false}
+              timeRange={timeRange}
+            />
+          )}
+
+          {/* GPU Temperature Card - only shown if GPU detected */}
+          {hasGpu && (
+            <MetricCard
+              title="GPU Temperature"
+              icon={Thermometer}
+              color="#f97316"
+              current={latest && latest.gpuTemp !== null ? `${latest.gpuTemp}°C` : "N/A"}
+              subtitle={latest && latest.gpuTemp !== null ? (latest.gpuTemp > 85 ? "HOT" : latest.gpuTemp > 65 ? "WARM" : "COOL") : undefined}
+              history={history}
+              dataKey="gpuTemp"
+              unit="°C"
+              maxValue={120}
+              connectNulls={false}
+              timeRange={timeRange}
+            />
+          )}
+
+          {/* GPU VRAM Card - only shown if GPU detected */}
+          {hasGpu && (
+            <MetricCard
+              title="GPU VRAM"
+              icon={Gauge}
+              color="#ec4899"
+              current={latest && latest.gpuVram !== null ? `${latest.gpuVram}%` : "N/A"}
+              history={history}
+              dataKey="gpuVram"
+              unit="%"
+              maxValue={100}
+              connectNulls={false}
+              timeRange={timeRange}
+            />
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
