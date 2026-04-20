@@ -522,9 +522,9 @@ async function getGpuUsage(rocmSmiPath: string): Promise<
   }
 
   try {
-    // Get temperature
+    // Get temperature (-t is the short form; --showtemperature is not supported on all versions)
     const { stdout: tempOutput } = await execAsync(
-      `${rocmSmiPath} --showtemperature 2>/dev/null`
+      `${rocmSmiPath} -t 2>/dev/null`
     );
     const tempMatches = tempOutput.matchAll(
       /GPU\[(\d+)\][\s\S]*?Temperature \(Sensor edge\) \(C\):\s*([\d.]+)/g
@@ -724,11 +724,14 @@ export async function detectROCm(): Promise<ROCmSystemInfo> {
         gpu.driverVersion = driverVersion;
 
         // Merge real-time metrics using index-based lookup (rocm-smi --showuse matches rocm-smi -a indices)
+        // Only override values that are actually present in metrics — some rocm-smi
+        // flags (e.g., --showtemperature) may fail on certain versions, leaving fields
+        // as undefined. We must not overwrite a valid value from rocm-smi -a with undefined.
         const metrics = usageData.get(extraInfo?.index ?? gpu.index);
         if (metrics) {
-          gpu.usage = metrics.usage;
-          gpu.temperature = metrics.temperature;
-          gpu.power = metrics.power;
+          if (metrics.usage !== undefined) gpu.usage = metrics.usage;
+          if (metrics.temperature !== undefined) gpu.temperature = metrics.temperature;
+          if (metrics.power !== undefined) gpu.power = metrics.power;
           if (metrics.memoryTotal !== undefined) {
             gpu.memory = {
               total: metrics.memoryTotal,
