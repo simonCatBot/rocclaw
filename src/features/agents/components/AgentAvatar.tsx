@@ -18,7 +18,7 @@ type AgentAvatarProps = {
   isSelected?: boolean;
 };
 
-const DEFAULT_AVATAR_COUNT = 12;
+const DEFAULT_AVATAR_COUNT = 24;
 
 /** Sentinel for "not explicitly set" — derive from seed hash. */
 const UNSET_INDEX = -1;
@@ -26,7 +26,7 @@ const UNSET_INDEX = -1;
 /** Derive a per-agent avatar index from the seed string so different agents always get different images.
  *  Blends explicitIndex (if set) with seed hash so:
  *    - same explicitIndex still yields different images for different agents
- *    - explicitIndex is used as a base offset within the 6-image set */
+ *    - explicitIndex is used as a base offset within the image set */
 export const deriveDefaultIndex = (seed: string, explicitIndex: number): number => {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -40,7 +40,10 @@ export const deriveDefaultIndex = (seed: string, explicitIndex: number): number 
 
 export const buildDefaultAvatarUrl = (index: number): string => {
   const safeIndex = ((index % DEFAULT_AVATAR_COUNT) + DEFAULT_AVATAR_COUNT) % DEFAULT_AVATAR_COUNT;
-  return `/avatars/profile-${safeIndex + 1}.png`;
+  if (safeIndex < 12) {
+    return `/avatars/profile-${safeIndex + 1}.png`;
+  }
+  return `/avatars/cat-profile-${String(safeIndex - 11).padStart(2, "0")}.png`;
 };
 
 export const AgentAvatar = ({

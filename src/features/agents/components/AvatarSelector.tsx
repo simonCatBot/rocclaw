@@ -22,7 +22,7 @@ export type AvatarSelectorValue = {
   avatarUrl: string;
 };
 
-const DEFAULT_AVATAR_COUNT = 6;
+const DEFAULT_AVATAR_COUNT = 24;
 
 const AVATAR_TABS = ["auto", "default", "custom"] as const;
 type Tab = (typeof AVATAR_TABS)[number];
