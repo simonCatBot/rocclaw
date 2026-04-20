@@ -202,8 +202,8 @@ export function SystemMetricsDashboard() {
   }, []);
 
   // Determine if the browser is accessing this page locally or remotely.
-  // The server-side connectionMode tells us about the rocclaw→gateway relationship,
-  // but the user's perspective depends on whether their browser is local or remote.
+  // This handles the case where rocclaw and gateway are on the same machine
+  // but the browser is remote (e.g., accessing rocclaw via LAN IP from a laptop).
   // We must use useEffect (not useMemo) because window is undefined during SSR —
   // useMemo would cache the SSR value (true) and never re-evaluate on the client.
   const [isBrowserLocal, setIsBrowserLocal] = useState(true);
@@ -228,8 +228,8 @@ export function SystemMetricsDashboard() {
   // A connection is "remote" from the user's perspective if either:
   // 1. The server reports connectionMode "client" (rocclaw is remote from gateway), OR
   // 2. The browser is accessing the page remotely (even though rocclaw and gateway are local to each other)
-  // Note: we check connectionMode explicitly to avoid flashing "Remote" during initial load (null state)
-  const isRemoteMetrics = (connectionMode !== null && connectionMode !== "local") || (!isBrowserLocal && connectionMode !== null);
+  // We wait for connectionMode to be set (non-null) before showing Remote to avoid flashing.
+  const isRemoteMetrics = connectionMode !== null && (connectionMode !== "local" || !isBrowserLocal);
 
   useEffect(() => {
     fetchMetrics();
