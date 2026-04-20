@@ -252,8 +252,8 @@ export function SystemGraphView() {
           gpuTemp: primaryGpu?.temperature ?? null,
           gpuVram: gpuVramPercent,
           gpuPower: primaryGpu?.power ?? null,
-          netRxKBps: Math.round((m.network?.rxSec ?? 0) / 1024),
-          netTxKBps: Math.round((m.network?.txSec ?? 0) / 1024),
+          netRxKBps: m.network?.rxSec ?? 0,
+          netTxKBps: m.network?.txSec ?? 0,
         };
 
         setHistory((prev) => {
@@ -383,8 +383,8 @@ export function SystemGraphView() {
             title="Network"
             icon={Wifi}
             color="#10b981"
-            current={latest ? `${latest.netRxKBps} KB/s` : "--"}
-            subtitle="↓ RX / ↑ TX"
+            current={latest ? `↓${latest.netRxKBps} ↑${latest.netTxKBps}` : "--"}
+            subtitle="KB/s"
             history={history}
             dataKey="netRxKBps"
             dataKey2="netTxKBps"
