@@ -59,6 +59,26 @@ const POLL_INTERVAL_MS = 5000;
 const formatGB = (gb: number) => `${gb.toFixed(1)} GB`;
 const formatMHz = (mhz: number) => mhz >= 1000 ? `${(mhz / 1000).toFixed(2)} GHz` : `${mhz} MHz`;
 
+// ─── Tooltip Component ──────────────────────────────────────────────────
+
+function GraphTooltip({ active, payload, label, unit }: { active?: boolean; payload?: Array<{ dataKey: string; value: number | null; color: string }>; label?: number; unit?: string }) {
+  if (!active || !payload || !label) return null;
+  const d = new Date(label);
+  return (
+    <div className="rounded-lg border border-border bg-surface-1 px-3 py-2 shadow-lg text-xs">
+      <p className="font-mono text-muted-foreground mb-1">{d.toLocaleTimeString()}</p>
+      {payload.map((entry, i) => (
+        <div key={i} className="flex items-center gap-2 py-0.5">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+          <span className="text-foreground font-semibold">
+            {entry.value !== null && entry.value !== undefined ? `${entry.value}${unit ?? ""}` : "N/A"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Metric Card ─────────────────────────────────────────────────────
 
 interface MetricCardProps {
@@ -96,31 +116,13 @@ function MetricCard({
   connectNulls = true,
   timeRange,
 }: MetricCardProps) {
-  const sampleCount = TIME_RANGE_SAMPLES[timeRange];
-  const visibleData = history.slice(-sampleCount);
-
   const formatTime = (ts: number) => {
     const d = new Date(ts);
     return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
   };
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number | null; color: string }>; label?: number }) => {
-    if (!active || !payload || !label) return null;
-    const d = new Date(label);
-    return (
-      <div className="rounded-lg border border-border bg-surface-1 px-3 py-2 shadow-lg text-xs">
-        <p className="font-mono text-muted-foreground mb-1">{d.toLocaleTimeString()}</p>
-        {payload.map((entry, i) => (
-          <div key={i} className="flex items-center gap-2 py-0.5">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-            <span className="text-foreground font-semibold">
-              {entry.value !== null && entry.value !== undefined ? `${entry.value}${unit}` : "N/A"}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  };
+  const sampleCount = TIME_RANGE_SAMPLES[timeRange];
+  const visibleData = history.slice(-sampleCount);
 
   return (
     <div className="ui-panel rounded-xl border border-border/60 bg-surface-1 overflow-hidden">
@@ -169,7 +171,7 @@ function MetricCard({
                 stroke="var(--color-border, #333)"
                 domain={maxValue > 0 ? [0, maxValue] : [0, "auto"]}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<GraphTooltip unit={unit} />} />
               <Line
                 type="monotone"
                 dataKey={dataKey}
@@ -206,14 +208,19 @@ export function SystemGraphView() {
   const [connectionMode, setConnectionMode] = useState<string | null>(null);
   const [gatewayHostname, setGatewayHostname] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isBrowserLocal, setIsBrowserLocal] = useState(true);
-  const [remoteDisplayHostname, setRemoteDisplayHostname] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<TimeRange>("30m");
-  const [hasGpu, setHasGpu] = useState(false);
-
-  // Browser locality detection
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const [isBrowserLocal] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const hostname = window.location.hostname.toLowerCase();
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      hostname === "0.0.0.0" ||
+      hostname === "[::1]"
+    );
+  });
+  const [remoteDisplayHostname] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
     const hostname = window.location.hostname.toLowerCase();
     const local =
       hostname === "localhost" ||
@@ -221,9 +228,10 @@ export function SystemGraphView() {
       hostname === "::1" ||
       hostname === "0.0.0.0" ||
       hostname === "[::1]";
-    setIsBrowserLocal(local);
-    if (!local) setRemoteDisplayHostname(window.location.hostname);
-  }, []);
+    return local ? null : window.location.hostname;
+  });
+  const [timeRange, setTimeRange] = useState<TimeRange>("30m");
+  const [hasGpu, setHasGpu] = useState(false);
 
   const isRemoteMetrics =
     connectionMode !== null && (connectionMode !== "local" || !isBrowserLocal);
@@ -281,7 +289,8 @@ export function SystemGraphView() {
   }, []);
 
   useEffect(() => {
-    fetchMetrics();
+    // Start polling — first tick fires immediately, then at POLL_INTERVAL_MS
+    void fetchMetrics();
     const interval = setInterval(fetchMetrics, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchMetrics]);
