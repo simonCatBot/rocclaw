@@ -75,12 +75,13 @@ function agentAvatarSrc(
   avatarSeed: string | null | undefined,
   footerMode: AvatarDisplayMode,
   defaultAvatarIndex: number = 0
-) {
+): string {
   const seed = avatarSeed?.trim() || agentId;
   if (footerMode === "default") {
     return buildDefaultAvatarUrl(deriveDefaultIndex(seed, defaultAvatarIndex));
   }
-  return buildAvatarDataUrl(seed);
+  // Ensure we never return an empty string — causes browser to reload the page
+  return buildAvatarDataUrl(seed || "default");
 }
 
 // ─── Duration / time formatting ────────────────────────────────────────────────

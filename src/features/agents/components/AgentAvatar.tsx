@@ -87,6 +87,9 @@ export const AgentAvatar = ({
     }
   }, [footerMode, avatarSource, avatarUrl, seed, derivedIndex]);
 
+  // Ensure src is never empty — Next.js <Image> warns on src=""
+  const safeSrc = src || buildAvatarDataUrl(seed || "default");
+
   const isFill = size === "fill";
 
   return (
@@ -96,7 +99,7 @@ export const AgentAvatar = ({
     >
       <Image
         className="pointer-events-none h-full w-full select-none object-cover"
-        src={src}
+        src={safeSrc}
         alt={`Avatar for ${name}`}
         width={isFill ? undefined : size}
         height={isFill ? undefined : size}
