@@ -72,8 +72,8 @@ test.describe("System Metrics Dashboard", () => {
     // System tab is default active - look for System Metrics header
     await expect(page.getByText("System Metrics")).toBeVisible({ timeout: 5000 });
     await expect(page.getByText("Test CPU")).toBeVisible({ timeout: 5000 });
-    // Should show Local badge (exact match)
-    await expect(page.getByText("Local", { exact: true })).toBeVisible();
+    // Should show Local badge (exact match) — scope to the System Metrics panel
+    await expect(page.locator("section, div").filter({ hasText: /^System Metrics/ }).getByText("Local", { exact: true })).toBeVisible();
   });
 
   test("shows remote badge when connected to remote gateway", async ({ page }) => {
@@ -104,8 +104,8 @@ test.describe("System Metrics Dashboard", () => {
 
     // Wait for system metrics to load
     await expect(page.getByText("System Metrics")).toBeVisible({ timeout: 5000 });
-    // Should show Remote badge with hostname
-    await expect(page.getByText(/Remote: test-remote-host/)).toBeVisible();
+    // Should show Remote badge with hostname — scope to the System Metrics panel
+    await expect(page.locator("section, div").filter({ hasText: /^System Metrics/ }).getByText(/Remote: test-remote-host/)).toBeVisible();
   });
 });
 
