@@ -29,7 +29,7 @@ const AVAILABLE_TABS: TabConfig[] = [
   { id: "chat", label: "Chat", icon: MessageSquare, defaultActive: false },
   { id: "connection", label: "Connection", icon: Link, defaultActive: true },
   { id: "system", label: "System", icon: Server, defaultActive: true },
-  { id: "graph", label: "Graph", icon: TrendingUp, defaultActive: true },
+  { id: "graph", label: "System Graph", icon: TrendingUp, defaultActive: true },
   { id: "tasks", label: "Tasks", icon: ListTodo, defaultActive: false },
   { id: "tokens", label: "Tokens", icon: Coins, defaultActive: false },
   { id: "settings", label: "Settings", icon: Settings, defaultActive: false },

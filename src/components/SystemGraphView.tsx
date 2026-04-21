@@ -3,18 +3,15 @@
 
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-  Server,
   Clock,
   Cpu,
   MemoryStick,
   Video,
-  Wifi,
   Activity,
   Thermometer,
   Gauge,
-  Zap,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -35,12 +32,15 @@ interface MetricsSample {
   cpuTemp: number | null;
   cpuSpeedMHz: number;
   memory: number;
+  memoryUsedGB: number;
+  memoryTotalGB: number;
   gpu: number | null;
   gpuTemp: number | null;
   gpuVram: number | null;
+  gpuVramUsedGB: number | null;
+  gpuVramTotalGB: number | null;
   gpuPower: number | null;
-  netRxKBps: number;
-  netTxKBps: number;
+  gpuClockMHz: number | null;
 }
 
 type TimeRange = "5m" | "10m" | "30m";
@@ -53,6 +53,11 @@ const TIME_RANGE_SAMPLES: Record<TimeRange, number> = {
 
 const MAX_SAMPLES = 360; // 30 min at 5s intervals
 const POLL_INTERVAL_MS = 5000;
+
+// ─── Formatting helpers (match SystemMetricsDashboard) ──────────────
+
+const formatGB = (gb: number) => `${gb.toFixed(1)} GB`;
+const formatMHz = (mhz: number) => mhz >= 1000 ? `${(mhz / 1000).toFixed(2)} GHz` : `${mhz} MHz`;
 
 // ─── Metric Card ─────────────────────────────────────────────────────
 
@@ -242,18 +247,23 @@ export function SystemGraphView() {
 
         if (primaryGpu?.usage != null) setHasGpu(true);
 
+        // Match SystemMetricsDashboard rounding: Math.round for usage/percent,
+        // toFixed(1) for GB values, direct values for temperature (already rounded server-side)
         const sample: MetricsSample = {
           timestamp: Date.now(),
           cpu: Math.round(m.cpu?.usage ?? 0),
           cpuTemp: m.cpu?.temperature ?? null,
-          cpuSpeedMHz: m.cpu?.currentSpeedMHz ?? 0,
+          cpuSpeedMHz: Math.round(m.cpu?.currentSpeedMHz ?? 0),
           memory: Math.round(m.memory?.usage ?? 0),
+          memoryUsedGB: Math.round((m.memory?.used ?? 0) * 10) / 10,
+          memoryTotalGB: Math.round((m.memory?.total ?? 0) * 10) / 10,
           gpu: primaryGpu?.usage != null ? Math.round(primaryGpu.usage) : null,
-          gpuTemp: primaryGpu?.temperature ?? null,
+          gpuTemp: primaryGpu?.temperature != null ? Math.round(primaryGpu.temperature) : null,
           gpuVram: gpuVramPercent,
-          gpuPower: primaryGpu?.power ?? null,
-          netRxKBps: m.network?.rxSec ?? 0,
-          netTxKBps: m.network?.txSec ?? 0,
+          gpuVramUsedGB: primaryGpu?.memory?.used != null ? Math.round(primaryGpu.memory.used * 10) / 10 : null,
+          gpuVramTotalGB: primaryGpu?.memory?.total != null ? Math.round(primaryGpu.memory.total * 10) / 10 : null,
+          gpuPower: primaryGpu?.power != null ? Math.round(primaryGpu.power * 10) / 10 : null,
+          gpuClockMHz: primaryGpu?.currentClockMHz != null ? Math.round(primaryGpu.currentClockMHz) : null,
         };
 
         setHistory((prev) => {
@@ -295,7 +305,7 @@ export function SystemGraphView() {
       {/* Header */}
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50 shrink-0">
         <TrendingUp className="w-4 h-4 text-primary" />
-        <h2 className="text-sm font-semibold text-foreground">Graph View</h2>
+        <h2 className="text-sm font-semibold text-foreground">System Graph View</h2>
         {isRemoteMetrics && (
           <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-blue-500/20 text-blue-500 border border-blue-500/30">
             Remote: {gatewayHostname || remoteDisplayHostname || "unknown"}
@@ -342,7 +352,7 @@ export function SystemGraphView() {
             icon={Cpu}
             color="#3b82f6"
             current={latest ? `${latest.cpu}%` : "--"}
-            subtitle={latest ? `${latest.cpuSpeedMHz} MHz` : undefined}
+            subtitle={latest ? `${formatMHz(latest.cpuSpeedMHz)}` : undefined}
             history={history}
             dataKey="cpu"
             unit="%"
@@ -355,6 +365,7 @@ export function SystemGraphView() {
             icon={MemoryStick}
             color="#8b5cf6"
             current={latest ? `${latest.memory}%` : "--"}
+            subtitle={latest ? `${formatGB(latest.memoryUsedGB)} / ${formatGB(latest.memoryTotalGB)}` : undefined}
             history={history}
             dataKey="memory"
             unit="%"
@@ -369,7 +380,10 @@ export function SystemGraphView() {
               icon={Video}
               color="#ef4444"
               current={latest && latest.gpu !== null ? `${latest.gpu}%` : "N/A"}
-              subtitle={latest && latest.gpuPower !== null ? `${latest.gpuPower}W` : undefined}
+              subtitle={latest ? [
+                latest.gpuClockMHz !== null ? formatMHz(latest.gpuClockMHz) : null,
+                latest.gpuPower !== null ? `${latest.gpuPower}W` : null,
+              ].filter(Boolean).join(" • ") : undefined}
               history={history}
               dataKey="gpu"
               unit="%"
@@ -385,6 +399,7 @@ export function SystemGraphView() {
               icon={Gauge}
               color="#ec4899"
               current={latest && latest.gpuVram !== null ? `${latest.gpuVram}%` : "N/A"}
+              subtitle={latest && latest.gpuVramUsedGB !== null && latest.gpuVramTotalGB !== null ? `${formatGB(latest.gpuVramUsedGB)} / ${formatGB(latest.gpuVramTotalGB)}` : undefined}
               history={history}
               dataKey="gpuVram"
               unit="%"
