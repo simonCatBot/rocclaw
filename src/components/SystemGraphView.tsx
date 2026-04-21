@@ -336,7 +336,7 @@ export function SystemGraphView() {
       {/* Metric cards grid */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {/* CPU Card */}
+          {/* Row 1: CPU + Memory */}
           <MetricCard
             title="CPU"
             icon={Cpu}
@@ -350,22 +350,6 @@ export function SystemGraphView() {
             timeRange={timeRange}
           />
 
-          {/* CPU Temperature Card */}
-          <MetricCard
-            title="CPU Temperature"
-            icon={Thermometer}
-            color="#f59e0b"
-            current={latest && latest.cpuTemp !== null ? `${latest.cpuTemp}°C` : "N/A"}
-            subtitle={latest && latest.cpuTemp !== null ? (latest.cpuTemp > 80 ? "HOT" : latest.cpuTemp > 60 ? "WARM" : "COOL") : undefined}
-            history={history}
-            dataKey="cpuTemp"
-            unit="°C"
-            maxValue={120}
-            connectNulls={false}
-            timeRange={timeRange}
-          />
-
-          {/* Memory Card */}
           <MetricCard
             title="Memory"
             icon={MemoryStick}
@@ -378,26 +362,7 @@ export function SystemGraphView() {
             timeRange={timeRange}
           />
 
-          {/* Network Card */}
-          <MetricCard
-            title="Network"
-            icon={Wifi}
-            color="#10b981"
-            current={latest ? `↓${latest.netRxKBps} ↑${latest.netTxKBps}` : "--"}
-            subtitle="KB/s"
-            history={history}
-            dataKey="netRxKBps"
-            dataKey2="netTxKBps"
-            dataKey2Label="TX"
-            dataKey2Color="#06b6d4"
-            dataKey2Dash
-            unit=" KB/s"
-            maxValue={0}
-            connectNulls={false}
-            timeRange={timeRange}
-          />
-
-          {/* GPU Usage Card - only shown if GPU detected */}
+          {/* Row 2: GPU + GPU VRAM */}
           {hasGpu && (
             <MetricCard
               title="GPU"
@@ -414,7 +379,36 @@ export function SystemGraphView() {
             />
           )}
 
-          {/* GPU Temperature Card - only shown if GPU detected */}
+          {hasGpu && (
+            <MetricCard
+              title="GPU VRAM"
+              icon={Gauge}
+              color="#ec4899"
+              current={latest && latest.gpuVram !== null ? `${latest.gpuVram}%` : "N/A"}
+              history={history}
+              dataKey="gpuVram"
+              unit="%"
+              maxValue={100}
+              connectNulls={false}
+              timeRange={timeRange}
+            />
+          )}
+
+          {/* Row 3: CPU Temperature + GPU Temperature */}
+          <MetricCard
+            title="CPU Temperature"
+            icon={Thermometer}
+            color="#f59e0b"
+            current={latest && latest.cpuTemp !== null ? `${latest.cpuTemp}°C` : "N/A"}
+            subtitle={latest && latest.cpuTemp !== null ? (latest.cpuTemp > 80 ? "HOT" : latest.cpuTemp > 60 ? "WARM" : "COOL") : undefined}
+            history={history}
+            dataKey="cpuTemp"
+            unit="°C"
+            maxValue={120}
+            connectNulls={false}
+            timeRange={timeRange}
+          />
+
           {hasGpu && (
             <MetricCard
               title="GPU Temperature"
@@ -426,22 +420,6 @@ export function SystemGraphView() {
               dataKey="gpuTemp"
               unit="°C"
               maxValue={120}
-              connectNulls={false}
-              timeRange={timeRange}
-            />
-          )}
-
-          {/* GPU VRAM Card - only shown if GPU detected */}
-          {hasGpu && (
-            <MetricCard
-              title="GPU VRAM"
-              icon={Gauge}
-              color="#ec4899"
-              current={latest && latest.gpuVram !== null ? `${latest.gpuVram}%` : "N/A"}
-              history={history}
-              dataKey="gpuVram"
-              unit="%"
-              maxValue={100}
               connectNulls={false}
               timeRange={timeRange}
             />
