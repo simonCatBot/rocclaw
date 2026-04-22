@@ -29,7 +29,7 @@ const AVAILABLE_TABS: TabConfig[] = [
   { id: "agents", label: "Agents", icon: Users, defaultActive: true },
   { id: "chat", label: "Chat", icon: MessageSquare, defaultActive: false },
   { id: "connection", label: "Connection", icon: Link, defaultActive: true },
-  { id: "skills", label: "Skills", icon: Puzzle, defaultActive: true },
+  { id: "skills", label: "Skills", icon: Puzzle, defaultActive: false },
   { id: "system", label: "System", icon: Server, defaultActive: true },
   { id: "graph", label: "System Graph", icon: TrendingUp, defaultActive: true },
   { id: "tasks", label: "Tasks", icon: ListTodo, defaultActive: false },
