@@ -2,68 +2,40 @@
 // See LICENSE file for details.
 
 import { NextResponse } from "next/server";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 
-const execFileAsync = promisify(execFile);
+import { executeRuntimeGatewayRead } from "@/lib/controlplane/runtime-read-route";
 
-function resolveOpenClawBin(): string {
-  const env = process.env.OPENCLAW_BIN;
-  if (env) return env;
-  return "openclaw";
-}
+export const runtime = "nodejs";
 
 /**
- * Extract the JSON object from openclaw CLI output.
+ * GET /api/runtime/skills
  *
- * The openclaw CLI `skills list --json` command writes everything to stderr,
- * including a human-readable table followed by JSON. We need to find and
- * parse just the JSON portion.
+ * Fetches skills list via the gateway's skills.status RPC method.
+ * This works for both local and remote gateway connections.
+ *
+ * The gateway returns the same format as `openclaw skills list --json`:
+ * { workspaceDir, managedSkillsDir, skills: [...] }
  */
-function extractJsonFromOutput(text: string): unknown {
-  // Try direct parse first (in case they fix the output channel)
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Continue to extraction
-  }
-
-  // Find the last top-level JSON object in the output
-  // The CLI may print a table then the JSON, so we look for the last '{' that opens a valid object
-  let lastBrace = text.lastIndexOf("{");
-  while (lastBrace !== -1) {
-    try {
-      const candidate = text.substring(lastBrace);
-      return JSON.parse(candidate);
-    } catch {
-      // Not a valid JSON start — try the previous brace
-      lastBrace = text.lastIndexOf("{", lastBrace - 1);
-    }
-  }
-
-  throw new Error("No valid JSON found in openclaw output");
-}
-
 export async function GET() {
   try {
-    // The openclaw CLI writes --json output to stderr, not stdout.
-    // We capture both and try to parse JSON from either.
-    const result = await execFileAsync(resolveOpenClawBin(), [
-      "skills",
-      "list",
-      "--json",
-    ], {
-      timeout: 15_000,
-      maxBuffer: 4 * 1024 * 1024,
-    });
+    const response = await executeRuntimeGatewayRead("skills.status", {});
 
-    const output = result.stdout || result.stderr || "";
-    const data = extractJsonFromOutput(output);
+    // executeRuntimeGatewayRead returns a NextResponse with { ok, payload }
+    const data = await response.json();
 
-    return NextResponse.json(data);
+    if (!data.ok) {
+      return NextResponse.json(
+        { error: data.error ?? "Gateway skills.status failed" },
+        { status: response.status }
+      );
+    }
+
+    // The payload IS the skills data (workspaceDir, managedSkillsDir, skills[])
+    const payload = data.payload ?? {};
+    return NextResponse.json(payload);
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "Failed to list skills via openclaw CLI";
+      err instanceof Error ? err.message : "Failed to fetch skills from gateway";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
