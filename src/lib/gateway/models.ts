@@ -25,6 +25,7 @@ export type GatewayModelPolicySnapshot = {
       list?: Array<{
         id?: string;
         model?: string | { primary?: string; fallbacks?: string[] };
+        agentDir?: string;
       }>;
     };
   };
