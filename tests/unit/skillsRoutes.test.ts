@@ -39,6 +39,32 @@ function parseSkillListOutput(stdout: string): { skills: unknown[] } | null {
   }
 }
 
+/**
+ * Extract the JSON object from openclaw CLI output.
+ * The CLI writes everything to stderr, including table + JSON.
+ */
+function extractJsonFromOutput(text: string): unknown {
+  // Try direct parse first
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Continue to extraction
+  }
+
+  // Find the last top-level JSON object
+  let lastBrace = text.lastIndexOf("{");
+  while (lastBrace !== -1) {
+    try {
+      const candidate = text.substring(lastBrace);
+      return JSON.parse(candidate);
+    } catch {
+      lastBrace = text.lastIndexOf("{", lastBrace - 1);
+    }
+  }
+
+  throw new Error("No valid JSON found in openclaw output");
+}
+
 // ─── Install route logic ──────────────────────────────────────────────────
 
 function validateInstallPayload(body: unknown): string | null {
@@ -174,6 +200,43 @@ describe("Skills route — output parsing", () => {
   it("returns null for JSON without skills key or array", () => {
     const result = parseSkillListOutput(JSON.stringify({ foo: "bar" }));
     expect(result).toBeNull();
+  });
+});
+
+describe("Skills route — JSON extraction from CLI output", () => {
+  it("extracts JSON from pure JSON output", () => {
+    const data = { skills: [{ name: "test" }] };
+    const result = extractJsonFromOutput(JSON.stringify(data));
+    expect(result).toEqual(data);
+  });
+
+  it("extracts JSON from mixed stderr output (table + JSON)", () => {
+    const tableOutput = "Skills (26/69 ready)\n┌───────────┐\n│ test      │\n└───────────┘\n";
+    const jsonData = { skills: [{ name: "proactive-agent", eligible: true }] };
+    const mixed = tableOutput + JSON.stringify(jsonData);
+    const result = extractJsonFromOutput(mixed) as { skills: unknown[] };
+    expect(result.skills).toHaveLength(1);
+  });
+
+  it("extracts JSON when JSON appears after table with progress chars", () => {
+    const prefix = "- Loading skills\n✓ Ready\n";
+    const jsonData = { skills: [{ name: "github" }] };
+    const mixed = prefix + JSON.stringify(jsonData);
+    const result = extractJsonFromOutput(mixed) as { skills: unknown[] };
+    expect(result.skills).toHaveLength(1);
+  });
+
+  it("extracts JSON from complex nested output", () => {
+    const output = `Some table output here
+with multiple lines
+and { braces in text }
+then the real JSON: {"workspaceDir":"/home/test","skills":[{"name":"test"}]}`;
+    const result = extractJsonFromOutput(output) as { skills: unknown[] };
+    expect(result.skills).toHaveLength(1);
+  });
+
+  it("throws when no JSON is found", () => {
+    expect(() => extractJsonFromOutput("no json here")).toThrow("No valid JSON found");
   });
 });
 
