@@ -865,18 +865,21 @@ export function SkillsDashboard() {
       const slugLc = slug.toLowerCase();
       const nameLc = displayName.toLowerCase();
 
-      // Exact match
+      // 1. Exact match on slug or displayName
       if (installedNames.has(slugLc) || installedNames.has(nameLc)) return true;
 
-      // Partial match: installed name contains slug stem or vice versa
-      // e.g. "gog-v2" → stem "gog" matches installed "gog"
-      const slugStem = slugLc.replace(/-v?\d+$/, "").replace(/-\d+$/, "");
+      // 2. Slug stem match: "gog-v2" → stem "gog" matches installed "gog"
+      //    Only strip version-like suffixes (e.g. -v2, -2, -v1.0)
+      const slugStem = slugLc.replace(/-v?[\d.]+$/, "");
+      if (installedNames.has(slugStem)) return true;
+
+      // 3. DisplayName contains installed name in parentheses or brackets
+      //    e.g. "Google Workspace CLI (gog)" → "gog" is in parens
       for (const installedName of installedNames) {
-        if (installedName === slugStem) return true;
-        if (installedName.startsWith(slugStem) || slugStem.startsWith(installedName)) return true;
-        // Check if displayName contains the installed name (e.g. "Google Workspace CLI (gog)" contains "gog")
-        if (nameLc.includes(installedName)) return true;
+        const inParens = new RegExp(`[(\\[]${installedName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[)\\]]`, "i");
+        if (inParens.test(displayName)) return true;
       }
+
       return false;
     },
     [installedNames]

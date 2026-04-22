@@ -273,11 +273,11 @@ describe("SkillsDashboard — fuzzy ClawHub to installed skill matching", () => 
     const slugLc = slug.toLowerCase();
     const nameLc = displayName.toLowerCase();
     if (installedNames.has(slugLc) || installedNames.has(nameLc)) return true;
-    const slugStem = slugLc.replace(/-v?\d+$/, "").replace(/-\d+$/, "");
+    const slugStem = slugLc.replace(/-v?[\d.]+$/, "");
+    if (installedNames.has(slugStem)) return true;
     for (const installedName of installedNames) {
-      if (installedName === slugStem) return true;
-      if (installedName.startsWith(slugStem) || slugStem.startsWith(installedName)) return true;
-      if (nameLc.includes(installedName)) return true;
+      const inParens = new RegExp(`[(\\[]${installedName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[)\\]]`, "i");
+      if (inParens.test(displayName)) return true;
     }
     return false;
   }
@@ -290,15 +290,27 @@ describe("SkillsDashboard — fuzzy ClawHub to installed skill matching", () => 
     expect(isInstalledFromClawhub("unknown-slug", "1password")).toBe(true);
   });
 
-  it("matches ClawHub slug 'gog-v2' to installed 'gog'", () => {
-    expect(isInstalledFromClawhub("gog-v2", "Google Workspace CLI (gog)")).toBe(true);
+  it("matches ClawHub slug 'gog-v2' to installed 'gog' (version suffix stripped)", () => {
+    expect(isInstalledFromClawhub("gog-v2", "Gog V2")).toBe(true);
   });
 
-  it("matches when displayName contains installed name", () => {
-    expect(isInstalledFromClawhub("proactive-v3", "Proactive Agent")).toBe(true);
+  it("matches ClawHub slug 'gog-v1.0' to installed 'gog' (semver suffix stripped)", () => {
+    expect(isInstalledFromClawhub("gog-v1.0", "Gog")).toBe(true);
   });
 
-  it("does not match unrelated skills", () => {
+  it("does NOT match 'gogcli' to installed 'gog' (different name, not a version suffix)", () => {
+    expect(isInstalledFromClawhub("gogcli", "Gogcli")).toBe(false);
+  });
+
+  it("does NOT match 'gog-jasmine' to installed 'gog' (different skill, not a version suffix)", () => {
+    expect(isInstalledFromClawhub("gog-jasmine", "Gog Jasmine")).toBe(false);
+  });
+
+  it("matches when displayName has installed name in parentheses", () => {
+    expect(isInstalledFromClawhub("jx76-gog", "Google Workspace CLI (gog)")).toBe(true);
+  });
+
+  it("does NOT match unrelated skills", () => {
     expect(isInstalledFromClawhub("slack", "Slack Integration")).toBe(false);
   });
 });
