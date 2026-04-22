@@ -331,7 +331,7 @@ function AgentSkillCard({
   agentName,
   avatarSeed,
   footerMode,
-  assignedSkills,
+  agentSkillCfg,
   readyInstalledSkills,
   featuredSkills,
   isInstalledSet,
@@ -343,7 +343,7 @@ function AgentSkillCard({
   agentName: string;
   avatarSeed?: string | null;
   footerMode: AvatarDisplayMode;
-  assignedSkills: Set<string>;
+  agentSkillCfg: { explicit: boolean; skills: Set<string> };
   readyInstalledSkills: InstalledSkill[];
   featuredSkills: typeof FEATURED_SKILLS;
   isInstalledSet: Set<string>;
@@ -355,23 +355,31 @@ function AgentSkillCard({
   const [expanded, setExpanded] = useState(true);
   const [showAllSkills, setShowAllSkills] = useState(false);
 
+  const assignedSkills = agentSkillCfg.skills;
+  const hasExplicitAllowlist = agentSkillCfg.explicit;
+
   const assignedFeatured = featuredSkills.filter((f) => assignedSkills.has(f.slug.toLowerCase()) || assignedSkills.has(f.name.toLowerCase()));
   const availableFeatured = featuredSkills.filter(
     (f) => !assignedSkills.has(f.slug.toLowerCase()) && !assignedSkills.has(f.name.toLowerCase())
   );
 
-  // Build the full list of skills this agent has access to
-  // These are all eligible installed skills that aren't already in the "assigned" set
+  // Determine which installed skills this agent actually has access to.
+  // If no explicit allowlist is set (default), ALL eligible installed skills are available.
+  // If an explicit allowlist is set, only the skills in the allowlist are available.
   const featuredSlugs = new Set(featuredSkills.map((f) => f.slug.toLowerCase()));
   const featuredNames = new Set(featuredSkills.map((f) => f.name.toLowerCase()));
-  const systemSkills = readyInstalledSkills.filter(
-    (s) =>
-      !featuredSlugs.has(s.name.toLowerCase()) &&
-      !featuredNames.has(s.name.toLowerCase()) &&
-      !assignedSkills.has(s.name.toLowerCase())
-  );
 
-  const totalSkillCount = assignedFeatured.length + systemSkills.length;
+  const systemSkills = hasExplicitAllowlist
+    ? [] // When allowlist is set, only explicitly listed skills are available
+    : readyInstalledSkills.filter(
+        (s) =>
+          !featuredSlugs.has(s.name.toLowerCase()) &&
+          !featuredNames.has(s.name.toLowerCase())
+      );
+
+  const totalSkillCount = hasExplicitAllowlist
+    ? assignedFeatured.length
+    : assignedFeatured.length + systemSkills.length;
 
   return (
     <div className="rounded-xl border border-border bg-surface-1 shadow-sm transition-all hover:border-accent/30">
@@ -618,7 +626,7 @@ export function SkillsDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "ready" | "needs-setup">("all");
   const [refreshing, setRefreshing] = useState(false);
-  const [agentSkillAssignments, setAgentSkillAssignments] = useState<Map<string, Set<string>>>(new Map());
+  const [agentSkillConfig, setAgentSkillConfig] = useState<Map<string, { explicit: boolean; skills: Set<string> }>>(new Map());
   const pendingInstallAssignRef = useRef<Map<string, string[]>>(new Map());
 
   // ── Fetch installed skills ─────────────────────────────────────────────
@@ -663,20 +671,26 @@ export function SkillsDashboard() {
         const data = await res.json();
         const config = data?.payload?.parsed ?? data?.config ?? data?.payload?.config ?? {};
         const agentList = config?.agents?.list ?? [];
-        const newAssignments = new Map<string, Set<string>>();
+        const newAssignments = new Map<string, { explicit: boolean; skills: Set<string> }>();
         for (const agent of agentList) {
           const id = agent.id ?? agent.agentId;
           if (!id) continue;
-          const existing = new Set<string>();
-          // Check for skillAllowlist
-          if (Array.isArray(agent.skillAllowlist)) {
-            for (const s of agent.skillAllowlist) {
-              if (typeof s === "string" && s.trim()) existing.add(s.trim().toLowerCase());
+          // The openclaw config uses `skills` as the allowlist
+          // Omit = all skills, empty array = no skills, array = only those
+          const agentSkills = agent.skills ?? agent.skillAllowlist;
+          if (agentSkills !== undefined && agentSkills !== null) {
+            const skillSet = new Set<string>();
+            if (Array.isArray(agentSkills)) {
+              for (const s of agentSkills) {
+                if (typeof s === "string" && s.trim()) skillSet.add(s.trim().toLowerCase());
+              }
             }
+            newAssignments.set(id, { explicit: true, skills: skillSet });
+          } else {
+            newAssignments.set(id, { explicit: false, skills: new Set() });
           }
-          newAssignments.set(id, existing);
         }
-        setAgentSkillAssignments(newAssignments);
+        setAgentSkillConfig(newAssignments);
       } catch {
         // silently skip — will show all skills as available
       }
@@ -687,16 +701,18 @@ export function SkillsDashboard() {
   // ── Toggle skill on agent ─────────────────────────────────────────────
   const handleToggleSkill = useCallback(
     (agentId: string, slug: string, assign: boolean) => {
-      setAgentSkillAssignments((prev) => {
+      setAgentSkillConfig((prev) => {
         const next = new Map(prev);
-        const current = new Set<string>(next.get(agentId) ?? new Set<string>());
+        const current = next.get(agentId) ?? { explicit: false, skills: new Set<string>() };
+        const newSkills = new Set<string>(current.skills);
         const key = slug.toLowerCase();
         if (assign) {
-          current.add(key);
+          newSkills.add(key);
         } else {
-          current.delete(key);
+          newSkills.delete(key);
         }
-        next.set(agentId, current);
+        // Once a user toggles a skill, this becomes an explicit allowlist
+        next.set(agentId, { explicit: true, skills: newSkills });
         return next;
       });
     },
@@ -709,7 +725,7 @@ export function SkillsDashboard() {
       await fetch("/api/intents/agent-skills-assign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, skillAllowlist: skillNames }),
+        body: JSON.stringify({ agentId, skills: skillNames }),
       });
     } catch (err) {
       console.error("Failed to persist skill assignment:", err);
@@ -805,23 +821,24 @@ export function SkillsDashboard() {
     [handleInstall]
   );
 
-  // When assignments change, persist them via the skills-assign API
-  const prevAssignmentsRef = useRef<Map<string, Set<string>>>(new Map());
+  // When skill config changes, persist them via the skills-assign API
+  const prevConfigRef = useRef<Map<string, { explicit: boolean; skills: Set<string> }>>(new Map());
 
   useEffect(() => {
     // Skip the first render
-    if (prevAssignmentsRef.current.size > 0 || agentSkillAssignments.size > 0) {
-      for (const [agentId, skills] of agentSkillAssignments) {
-        const prev = prevAssignmentsRef.current.get(agentId);
-        const current = skills;
-        // Only persist if this agent's set actually changed
-        if (prev === current) continue;
-        if (prev && current && prev.size === current.size && [...prev].every((s) => current.has(s))) continue;
-        void persistAgentSkills(agentId, [...current]);
+    if (prevConfigRef.current.size > 0 || agentSkillConfig.size > 0) {
+      for (const [agentId, config] of agentSkillConfig) {
+        const prev = prevConfigRef.current.get(agentId);
+        if (prev === config) continue;
+        if (prev && prev.explicit === config.explicit && prev.skills.size === config.skills.size && [...prev.skills].every((s) => config.skills.has(s))) continue;
+        // Only persist if we have an explicit allowlist set
+        if (config.explicit) {
+          void persistAgentSkills(agentId, [...config.skills]);
+        }
       }
     }
-    prevAssignmentsRef.current = new Map(agentSkillAssignments);
-  }, [agentSkillAssignments, persistAgentSkills]);
+    prevConfigRef.current = new Map(agentSkillConfig);
+  }, [agentSkillConfig, persistAgentSkills]);
 
   // ── Refresh ──────────────────────────────────────────────────────────
   const handleRefresh = useCallback(async () => {
@@ -1023,7 +1040,7 @@ export function SkillsDashboard() {
                     agentName={agent.name}
                     avatarSeed={agent.avatarSeed}
                     footerMode={footerMode}
-                    assignedSkills={agentSkillAssignments.get(agent.agentId) ?? new Set()}
+                    agentSkillCfg={agentSkillConfig.get(agent.agentId) ?? { explicit: false, skills: new Set() }}
                     readyInstalledSkills={readyInstalledSkills}
                     featuredSkills={filteredFeatured}
                     isInstalledSet={installedNames}

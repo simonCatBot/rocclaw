@@ -82,7 +82,7 @@ function validateAgentSkillsAssignPayload(body: unknown): string | null {
   const record = body as Record<string, unknown>;
   const agentId = (record.agentId ?? "").toString().trim();
   if (!agentId) return "agentId is required.";
-  if (!Array.isArray(record.skillAllowlist)) return "skillAllowlist must be an array of strings.";
+  if (!Array.isArray(record.skills)) return "skills must be an array of strings.";
   return null;
 }
 
@@ -108,17 +108,17 @@ function readConfigAgentList(config: Record<string, unknown>): Array<Record<stri
 function upsertAgentSkillAllowlist(
   config: Record<string, unknown>,
   agentId: string,
-  skillAllowlist: string[]
+  skillsList: string[]
 ): Record<string, unknown> {
   const list = readConfigAgentList(config);
   let found = false;
   const nextList = list.map((entry) => {
     if (entry.id !== agentId) return entry;
     found = true;
-    return { ...entry, skillAllowlist };
+    return { ...entry, skills: skillsList };
   });
   if (!found) {
-    nextList.push({ id: agentId, skillAllowlist });
+    nextList.push({ id: agentId, skills: skillsList });
   }
   const agents = isRecord(config.agents) ? { ...config.agents } : {};
   return { ...config, agents: { ...agents, list: nextList } };
@@ -263,17 +263,17 @@ describe("Agent skills assign route — payload validation", () => {
     expect(validateAgentSkillsAssignPayload({ agentId: "", skillAllowlist: [] })).toBe("agentId is required.");
   });
 
-  it("rejects missing skillAllowlist", () => {
-    expect(validateAgentSkillsAssignPayload({ agentId: "oscar" })).toBe("skillAllowlist must be an array of strings.");
-    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skillAllowlist: "not-array" })).toBe("skillAllowlist must be an array of strings.");
+  it("rejects missing skills", () => {
+    expect(validateAgentSkillsAssignPayload({ agentId: "oscar" })).toBe("skills must be an array of strings.");
+    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skills: "not-array" })).toBe("skills must be an array of strings.");
   });
 
   it("accepts valid payload", () => {
-    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skillAllowlist: ["proactive-agent"] })).toBeNull();
+    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skills: ["proactive-agent"] })).toBeNull();
   });
 
-  it("accepts empty skillAllowlist (means no skills)", () => {
-    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skillAllowlist: [] })).toBeNull();
+  it("accepts empty skills (means no skills)", () => {
+    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skills: [] })).toBeNull();
   });
 });
 
@@ -292,23 +292,23 @@ describe("Agent skills assign route — config upsert", () => {
     agents: {
       list: [
         { id: "oscar", name: "Oscar" },
-        { id: "simon", name: "Simon", skillAllowlist: ["old-skill"] },
+        { id: "simon", name: "Simon", skills: ["old-skill"] },
       ],
     },
   };
 
-  it("adds skillAllowlist to existing agent without one", () => {
+  it("adds skills to existing agent without one", () => {
     const result = upsertAgentSkillAllowlist(baseConfig, "oscar", ["proactive-agent"]);
     const list = (result.agents as Record<string, unknown>).list as Array<Record<string, unknown>>;
     const oscar = list.find((a) => a.id === "oscar");
-    expect(oscar?.skillAllowlist).toEqual(["proactive-agent"]);
+    expect(oscar?.skills).toEqual(["proactive-agent"]);
   });
 
-  it("replaces skillAllowlist on existing agent with one", () => {
+  it("replaces skills on existing agent with one", () => {
     const result = upsertAgentSkillAllowlist(baseConfig, "simon", ["new-skill"]);
     const list = (result.agents as Record<string, unknown>).list as Array<Record<string, unknown>>;
     const simon = list.find((a) => a.id === "simon");
-    expect(simon?.skillAllowlist).toEqual(["new-skill"]);
+    expect(simon?.skills).toEqual(["new-skill"]);
   });
 
   it("adds new agent entry if not found", () => {
@@ -316,13 +316,13 @@ describe("Agent skills assign route — config upsert", () => {
     const list = (result.agents as Record<string, unknown>).list as Array<Record<string, unknown>>;
     expect(list).toHaveLength(3);
     const newAgent = list.find((a) => a.id === "new-agent");
-    expect(newAgent?.skillAllowlist).toEqual(["skill1"]);
+    expect(newAgent?.skills).toEqual(["skill1"]);
   });
 
   it("preserves other agents unchanged", () => {
     const result = upsertAgentSkillAllowlist(baseConfig, "oscar", ["test"]);
     const list = (result.agents as Record<string, unknown>).list as Array<Record<string, unknown>>;
     const simon = list.find((a) => a.id === "simon");
-    expect(simon?.skillAllowlist).toEqual(["old-skill"]);
+    expect(simon?.skills).toEqual(["old-skill"]);
   });
 });

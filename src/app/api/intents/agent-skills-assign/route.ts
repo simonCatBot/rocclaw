@@ -76,8 +76,11 @@ const buildConfigSetPayload = (params: {
 /**
  * POST /api/intents/agent-skills-assign
  *
- * Updates the `skillAllowlist` array on an agent entry in the gateway config.
- * Body: { agentId: string, skillAllowlist: string[] }
+ * Updates the `skills` array on an agent entry in the gateway config.
+ * This is the official allowlist: omit = all skills, empty = no skills,
+ * array = only listed skills.
+ *
+ * Body: { agentId: string, skills: string[] }
  */
 export async function POST(request: Request) {
   const bodyOrError = await parseIntentBody(request);
@@ -86,15 +89,15 @@ export async function POST(request: Request) {
   }
 
   const agentId = typeof bodyOrError.agentId === "string" ? bodyOrError.agentId.trim() : "";
-  const skillAllowlist = Array.isArray(bodyOrError.skillAllowlist)
-    ? bodyOrError.skillAllowlist.filter((s: unknown) => typeof s === "string" && s.trim().length > 0)
+  const skillsList = Array.isArray(bodyOrError.skills)
+    ? bodyOrError.skills.filter((s: unknown) => typeof s === "string" && s.trim().length > 0)
     : null;
 
   if (!agentId) {
     return NextResponse.json({ error: "agentId is required." }, { status: 400 });
   }
-  if (skillAllowlist === null) {
-    return NextResponse.json({ error: "skillAllowlist must be an array of strings." }, { status: 400 });
+  if (skillsList === null) {
+    return NextResponse.json({ error: "skills must be an array of strings." }, { status: 400 });
   }
 
   const runtimeOrError = await ensureDomainIntentRuntime();
@@ -111,11 +114,11 @@ export async function POST(request: Request) {
     const nextList = list.map((entry) => {
       if (entry.id !== agentId) return entry;
       found = true;
-      return { ...entry, skillAllowlist };
+      return { ...entry, skills: skillsList };
     });
 
     if (!found) {
-      nextList.push({ id: agentId, skillAllowlist });
+      nextList.push({ id: agentId, skills: skillsList });
     }
 
     const nextConfig = writeConfigAgentList(baseConfig, nextList);
@@ -127,7 +130,7 @@ export async function POST(request: Request) {
 
     await runtimeOrError.callGateway("config.set", payload);
 
-    return NextResponse.json({ ok: true, agentId, skillAllowlist });
+    return NextResponse.json({ ok: true, agentId, skills: skillsList });
   } catch (err) {
     if (isGatewayUnavailable(err)) {
       return NextResponse.json(
