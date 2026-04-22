@@ -1,7 +1,7 @@
 // MIT License - Copyright (c) 2026 SimonCatBot
 // See LICENSE file for details.
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -22,15 +22,6 @@ interface InstalledSkill {
     config: string[];
     os: string[];
   };
-}
-
-interface ClawHubSearchResult {
-  score: number;
-  slug: string;
-  displayName: string;
-  summary: string;
-  version: string | null;
-  updatedAt: number;
 }
 
 // ─── Feature data ─────────────────────────────────────────────────────────
@@ -66,7 +57,7 @@ const FEATURED_SKILLS = [
   },
 ];
 
-const CATEGORIES = [...new Set(FEATURED_SKILLS.map((s) => s.category))];
+// Categories extracted from featured skills (used in component, not directly in tests)
 
 // ─── Filter logic ─────────────────────────────────────────────────────────
 
@@ -188,24 +179,7 @@ const SAMPLE_INSTALLED: InstalledSkill[] = [
   },
 ];
 
-const SAMPLE_SEARCH_RESULTS: ClawHubSearchResult[] = [
-  {
-    score: 3.5,
-    slug: "slack",
-    displayName: "Slack",
-    summary: "Control Slack from Clawdbot via the slack tool.",
-    version: null,
-    updatedAt: Date.now() - 86400000,
-  },
-  {
-    score: 3.2,
-    slug: "tmux",
-    displayName: "Tmux",
-    summary: "Remote-control tmux sessions.",
-    version: null,
-    updatedAt: Date.now() - 172800000,
-  },
-];
+// Sample ClawHub search results (used by component, not directly in route tests)
 
 // ─── Tests ────────────────────────────────────────────────────────────────
 
