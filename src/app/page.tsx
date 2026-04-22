@@ -23,6 +23,7 @@ import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { ConnectionPage } from "@/components/ConnectionPage";
+import { SkillsDashboard } from "@/components/SkillsDashboard";
 import { TabBar, type TabId, getDefaultActiveTabs } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
@@ -1564,6 +1565,13 @@ const AgentROCclawPage = () => {
                       onDisconnect={() => void disconnect()}
                       onConnect={() => void saveSettings()}
                     />
+                  </div>
+                ) : null}
+
+                {/* Skills Tab */}
+                {activeTabs.includes("skills") ? (
+                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                    <SkillsDashboard />
                   </div>
                 ) : null}
 
