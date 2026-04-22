@@ -363,23 +363,20 @@ function AgentSkillCard({
     (f) => !assignedSkills.has(f.slug.toLowerCase()) && !assignedSkills.has(f.name.toLowerCase())
   );
 
-  // Determine which installed skills this agent actually has access to.
-  // If no explicit allowlist is set (default), ALL eligible installed skills are available.
-  // If an explicit allowlist is set, only the skills in the allowlist are available.
+  // Build the list of non-featured eligible system skills.
+  // These are always shown in the "Available" section regardless of allowlist state.
+  // When an explicit allowlist is set, assigned skills show in "Assigned" and
+  // the rest show in "Available" (so the user can see what else they could add).
   const featuredSlugs = new Set(featuredSkills.map((f) => f.slug.toLowerCase()));
   const featuredNames = new Set(featuredSkills.map((f) => f.name.toLowerCase()));
 
-  const systemSkills = hasExplicitAllowlist
-    ? [] // When allowlist is set, only explicitly listed skills are available
-    : readyInstalledSkills.filter(
-        (s) =>
-          !featuredSlugs.has(s.name.toLowerCase()) &&
-          !featuredNames.has(s.name.toLowerCase())
-      );
+  const systemSkills = readyInstalledSkills.filter(
+    (s) =>
+      !featuredSlugs.has(s.name.toLowerCase()) &&
+      !featuredNames.has(s.name.toLowerCase())
+  );
 
-  const totalSkillCount = hasExplicitAllowlist
-    ? assignedFeatured.length
-    : assignedFeatured.length + systemSkills.length;
+  const totalSkillCount = assignedFeatured.length + systemSkills.length;
 
   return (
     <div className="rounded-xl border border-border bg-surface-1 shadow-sm transition-all hover:border-accent/30">
