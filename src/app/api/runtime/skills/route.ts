@@ -1,7 +1,7 @@
 // MIT License - Copyright (c) 2026 SimonCatBot
 // See LICENSE file for details.
 
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
@@ -44,7 +44,7 @@ function extractJsonFromOutput(text: string): unknown {
   throw new Error("No valid JSON found in openclaw output");
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     // The openclaw CLI writes --json output to stderr, not stdout.
     // We capture both and try to parse JSON from either.

@@ -8,7 +8,6 @@ import {
   parseIntentBody,
 } from "@/lib/controlplane/intent-route";
 import { ControlPlaneGatewayError } from "@/lib/controlplane/openclaw-adapter";
-import type { ControlPlaneRuntime } from "@/lib/controlplane/runtime";
 
 export const runtime = "nodejs";
 

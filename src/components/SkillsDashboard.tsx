@@ -14,7 +14,6 @@ import {
   Sparkles,
   Package,
   RefreshCw,
-  ExternalLink,
   Users,
   ChevronDown,
   ChevronRight,
@@ -23,8 +22,6 @@ import {
   Zap,
   Plus,
   Minus,
-  GripVertical,
-  Star,
   Shield,
 } from "lucide-react";
 import { useAgentStore } from "@/features/agents/state/store";
@@ -60,12 +57,6 @@ interface ClawHubSearchResult {
   summary: string;
   version: string | null;
   updatedAt: number;
-}
-
-interface AgentSkillAssignment {
-  agentId: string;
-  agentName: string;
-  assignedSkillNames: string[];
 }
 
 // ─── Featured / Preset Skills ─────────────────────────────────────────────────
@@ -347,8 +338,6 @@ function AgentSkillCard({
   onToggleSkill,
   onInstallAndAssign,
   installingSlugs,
-  compact,
-  selectedCategory,
 }: {
   agentId: string;
   agentName: string;
@@ -361,8 +350,6 @@ function AgentSkillCard({
   onToggleSkill: (agentId: string, slug: string, assign: boolean) => void;
   onInstallAndAssign: (slug: string, agentId: string) => void;
   installingSlugs: Set<string>;
-  compact: boolean;
-  selectedCategory: string | null;
 }) {
   const avatarUrl = agentAvatarSrc(agentId, avatarSeed, footerMode);
   const [expanded, setExpanded] = useState(true);
@@ -550,21 +537,23 @@ function ClawHubResultCard({
   installing,
   onInstall,
   compact,
+  now,
 }: {
   result: ClawHubSearchResult;
   isInstalled: boolean;
   installing: boolean;
   onInstall: (slug: string) => void;
   compact: boolean;
+  now: number;
 }) {
   const timeAgo = useMemo(() => {
-    const diff = Date.now() - result.updatedAt;
+    const diff = now - result.updatedAt;
     const days = Math.floor(diff / 86400000);
     if (days < 1) return "today";
     if (days === 1) return "yesterday";
     if (days < 30) return `${days}d ago`;
     return `${Math.floor(days / 30)}mo ago`;
-  }, [result.updatedAt]);
+  }, [now, result.updatedAt]);
 
   return (
     <div className="group rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-surface-2/30">
@@ -695,6 +684,38 @@ export function SkillsDashboard() {
     void loadAgentSkillConfig();
   }, []);
 
+  // ── Toggle skill on agent ─────────────────────────────────────────────
+  const handleToggleSkill = useCallback(
+    (agentId: string, slug: string, assign: boolean) => {
+      setAgentSkillAssignments((prev) => {
+        const next = new Map(prev);
+        const current = new Set<string>(next.get(agentId) ?? new Set<string>());
+        const key = slug.toLowerCase();
+        if (assign) {
+          current.add(key);
+        } else {
+          current.delete(key);
+        }
+        next.set(agentId, current);
+        return next;
+      });
+    },
+    []
+  );
+
+  // ── Persist agent skill assignments to gateway config ─────────────────
+  const persistAgentSkills = useCallback(async (agentId: string, skillNames: string[]) => {
+    try {
+      await fetch("/api/intents/agent-skills-assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId, skillAllowlist: skillNames }),
+      });
+    } catch (err) {
+      console.error("Failed to persist skill assignment:", err);
+    }
+  }, []);
+
   // ── After install, apply any pending assign-to-agent operations ────────
   useEffect(() => {
     if (pendingInstallAssignRef.current.size === 0) return;
@@ -705,7 +726,7 @@ export function SkillsDashboard() {
         handleToggleSkill(agentId, slug, true);
       }
     }
-  }, [installedSkills]);
+  }, [installedSkills, handleToggleSkill]);
 
   // ── ClawHub search ────────────────────────────────────────────────────
   const handleSearch = useCallback(async (query: string) => {
@@ -784,26 +805,6 @@ export function SkillsDashboard() {
     [handleInstall]
   );
 
-  // ── Toggle skill on agent ─────────────────────────────────────────────
-  const handleToggleSkill = useCallback(
-    (agentId: string, slug: string, assign: boolean) => {
-      setAgentSkillAssignments((prev) => {
-        const next = new Map(prev);
-        const current = new Set<string>(next.get(agentId) ?? new Set<string>());
-        const key = slug.toLowerCase();
-        if (assign) {
-          current.add(key);
-        } else {
-          current.delete(key);
-        }
-        next.set(agentId, current);
-        return next;
-      });
-    },
-    []
-  );
-
-  // ── Persist agent skill assignments to gateway config ─────────────────
   // When assignments change, persist them via the skills-assign API
   const prevAssignmentsRef = useRef<Map<string, Set<string>>>(new Map());
 
@@ -820,19 +821,7 @@ export function SkillsDashboard() {
       }
     }
     prevAssignmentsRef.current = new Map(agentSkillAssignments);
-  }, [agentSkillAssignments]);
-
-  const persistAgentSkills = useCallback(async (agentId: string, skillNames: string[]) => {
-    try {
-      await fetch("/api/intents/agent-skills-assign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId, skillAllowlist: skillNames }),
-      });
-    } catch (err) {
-      console.error("Failed to persist skill assignment:", err);
-    }
-  }, []);
+  }, [agentSkillAssignments, persistAgentSkills]);
 
   // ── Refresh ──────────────────────────────────────────────────────────
   const handleRefresh = useCallback(async () => {
@@ -1041,8 +1030,6 @@ export function SkillsDashboard() {
                     onToggleSkill={handleToggleSkill}
                     onInstallAndAssign={handleInstallAndAssign}
                     installingSlugs={installingSlugs}
-                    compact={compactView}
-                    selectedCategory={selectedCategory}
                   />
                 ))}
               </div>
@@ -1088,6 +1075,7 @@ export function SkillsDashboard() {
                       installing={installingSlugs.has(result.slug)}
                       onInstall={handleInstall}
                       compact={compactView}
+                      now={Date.now()}
                     />
                   ))}
                 </div>
