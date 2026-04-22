@@ -334,7 +334,7 @@ function AgentSkillCard({
   agentSkillCfg,
   readyInstalledSkills,
   featuredSkills,
-  isInstalledSet,
+  isInstalledFromClawhub,
   onToggleSkill,
   onInstallAndAssign,
   installingSlugs,
@@ -346,7 +346,7 @@ function AgentSkillCard({
   agentSkillCfg: { explicit: boolean; skills: Set<string> };
   readyInstalledSkills: InstalledSkill[];
   featuredSkills: typeof FEATURED_SKILLS;
-  isInstalledSet: Set<string>;
+  isInstalledFromClawhub: (slug: string, displayName: string) => boolean;
   onToggleSkill: (agentId: string, slug: string, assign: boolean) => void;
   onInstallAndAssign: (slug: string, agentId: string) => void;
   installingSlugs: Set<string>;
@@ -424,7 +424,7 @@ function AgentSkillCard({
                     key={skill.slug}
                     skill={skill}
                     isAssigned
-                    isInstalled={isInstalledSet.has(skill.slug.toLowerCase()) || isInstalledSet.has(skill.name.toLowerCase())}
+                    isInstalled={isInstalledFromClawhub(skill.slug, skill.name)}
                     onToggle={(slug, assign) => onToggleSkill(agentId, slug, assign)}
                   />
                 ))}
@@ -481,7 +481,7 @@ function AgentSkillCard({
               </p>
               <div className="flex flex-wrap gap-1">
                 {availableFeatured.map((skill) => {
-                  const isInst = isInstalledSet.has(skill.slug.toLowerCase()) || isInstalledSet.has(skill.name.toLowerCase());
+                  const isInst = isInstalledFromClawhub(skill.slug, skill.name);
                   const isInstalling = installingSlugs.has(skill.slug);
                   return (
                     <button
@@ -854,6 +854,34 @@ export function SkillsDashboard() {
     [installedSkills]
   );
 
+  /**
+   * Check if a skill from ClawHub (slug or displayName) matches
+   * an installed skill. Handles name mismatches like:
+   *   ClawHub slug "gog-v2" → installed name "gog"
+   *   ClawHub displayName "Google Workspace CLI (gog)" → installed name "gog"
+   */
+  const isSkillInstalledFromClawhub = useCallback(
+    (slug: string, displayName: string): boolean => {
+      const slugLc = slug.toLowerCase();
+      const nameLc = displayName.toLowerCase();
+
+      // Exact match
+      if (installedNames.has(slugLc) || installedNames.has(nameLc)) return true;
+
+      // Partial match: installed name contains slug stem or vice versa
+      // e.g. "gog-v2" → stem "gog" matches installed "gog"
+      const slugStem = slugLc.replace(/-v?\d+$/, "").replace(/-\d+$/, "");
+      for (const installedName of installedNames) {
+        if (installedName === slugStem) return true;
+        if (installedName.startsWith(slugStem) || slugStem.startsWith(installedName)) return true;
+        // Check if displayName contains the installed name (e.g. "Google Workspace CLI (gog)" contains "gog")
+        if (nameLc.includes(installedName)) return true;
+      }
+      return false;
+    },
+    [installedNames]
+  );
+
   const filteredInstalled = useMemo(() => {
     let skills = installedSkills;
     if (statusFilter === "ready") skills = skills.filter((s) => s.eligible);
@@ -1044,7 +1072,7 @@ export function SkillsDashboard() {
                     agentSkillCfg={agentSkillConfig.get(agent.agentId) ?? { explicit: false, skills: new Set() }}
                     readyInstalledSkills={readyInstalledSkills}
                     featuredSkills={filteredFeatured}
-                    isInstalledSet={installedNames}
+                    isInstalledFromClawhub={isSkillInstalledFromClawhub}
                     onToggleSkill={handleToggleSkill}
                     onInstallAndAssign={handleInstallAndAssign}
                     installingSlugs={installingSlugs}
@@ -1089,7 +1117,7 @@ export function SkillsDashboard() {
                     <ClawHubResultCard
                       key={result.slug}
                       result={result}
-                      isInstalled={installedNames.has(result.slug.toLowerCase())}
+                      isInstalled={isSkillInstalledFromClawhub(result.slug, result.displayName)}
                       installing={installingSlugs.has(result.slug)}
                       onInstall={handleInstall}
                       compact={compactView}
@@ -1119,7 +1147,7 @@ export function SkillsDashboard() {
                   }`}
                 >
                   {filteredFeatured.map((skill) => {
-                    const isInst = installedNames.has(skill.slug.toLowerCase()) || installedNames.has(skill.name.toLowerCase());
+                    const isInst = isSkillInstalledFromClawhub(skill.slug, skill.name);
                     const isInstalling = installingSlugs.has(skill.slug);
                     return (
                       <div

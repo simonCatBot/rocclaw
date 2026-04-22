@@ -266,6 +266,43 @@ describe("SkillsDashboard — installed name matching", () => {
   });
 });
 
+describe("SkillsDashboard — fuzzy ClawHub to installed skill matching", () => {
+  const installedNames = new Set(["gog", "proactive-agent", "github", "1password", "self-improving + proactive agent"]);
+
+  function isInstalledFromClawhub(slug: string, displayName: string): boolean {
+    const slugLc = slug.toLowerCase();
+    const nameLc = displayName.toLowerCase();
+    if (installedNames.has(slugLc) || installedNames.has(nameLc)) return true;
+    const slugStem = slugLc.replace(/-v?\d+$/, "").replace(/-\d+$/, "");
+    for (const installedName of installedNames) {
+      if (installedName === slugStem) return true;
+      if (installedName.startsWith(slugStem) || slugStem.startsWith(installedName)) return true;
+      if (nameLc.includes(installedName)) return true;
+    }
+    return false;
+  }
+
+  it("matches exact slug", () => {
+    expect(isInstalledFromClawhub("github", "GitHub")).toBe(true);
+  });
+
+  it("matches exact displayName", () => {
+    expect(isInstalledFromClawhub("unknown-slug", "1password")).toBe(true);
+  });
+
+  it("matches ClawHub slug 'gog-v2' to installed 'gog'", () => {
+    expect(isInstalledFromClawhub("gog-v2", "Google Workspace CLI (gog)")).toBe(true);
+  });
+
+  it("matches when displayName contains installed name", () => {
+    expect(isInstalledFromClawhub("proactive-v3", "Proactive Agent")).toBe(true);
+  });
+
+  it("does not match unrelated skills", () => {
+    expect(isInstalledFromClawhub("slack", "Slack Integration")).toBe(false);
+  });
+});
+
 describe("SkillsDashboard — categories extraction", () => {
   it("extracts unique categories from featured skills", () => {
     const categories = [...new Set(FEATURED_SKILLS.map((s) => s.category))];
