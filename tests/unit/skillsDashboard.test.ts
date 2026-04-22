@@ -105,6 +105,51 @@ function computeInstalledNames(skills: InstalledSkill[]): Set<string> {
   return new Set(skills.map((s) => s.name.toLowerCase()));
 }
 
+// ─── Agent skill assignment logic ─────────────────────────────────────────
+
+function toggleAgentSkill(
+  assignments: Map<string, Set<string>>,
+  agentId: string,
+  slug: string,
+  assign: boolean
+): Map<string, Set<string>> {
+  const next = new Map<string, Set<string>>(assignments);
+  const current = new Set<string>(next.get(agentId) ?? []);
+  const key = slug.toLowerCase();
+  if (assign) {
+    current.add(key);
+  } else {
+    current.delete(key);
+  }
+  next.set(agentId, current);
+  return next;
+}
+
+function getAssignedSkills(
+  assignments: Map<string, Set<string>>,
+  agentId: string
+): Set<string> {
+  return new Set<string>(assignments.get(agentId) ?? []);
+}
+
+function parseAgentSkillConfig(
+  agentList: Array<{ id?: string; agentId?: string; skillAllowlist?: unknown }>
+): Map<string, Set<string>> {
+  const result = new Map<string, Set<string>>();
+  for (const agent of agentList) {
+    const id = agent.id ?? agent.agentId ?? "";
+    if (!id) continue;
+    const skills = new Set<string>();
+    if (Array.isArray(agent.skillAllowlist)) {
+      for (const s of agent.skillAllowlist) {
+        if (typeof s === "string" && s.trim()) skills.add(s.trim().toLowerCase());
+      }
+    }
+    result.set(id, skills);
+  }
+  return result;
+}
+
 // ─── Sample data ──────────────────────────────────────────────────────────
 
 const SAMPLE_INSTALLED: InstalledSkill[] = [
@@ -258,5 +303,65 @@ describe("SkillsDashboard — ready/needs-setup counts", () => {
     const needsSetupCount = SAMPLE_INSTALLED.filter((s) => !s.eligible).length;
     expect(readyCount).toBe(2);
     expect(needsSetupCount).toBe(1);
+  });
+});
+
+describe("SkillsDashboard — agent skill assignments", () => {
+  it("assigns a skill to an agent", () => {
+    const initial = new Map<string, Set<string>>();
+    const result = toggleAgentSkill(initial, "oscar", "proactive-agent", true);
+    expect(result.get("oscar")?.has("proactive-agent")).toBe(true);
+  });
+
+  it("removes a skill from an agent", () => {
+    const initial = new Map<string, Set<string>>();
+    initial.set("oscar", new Set(["proactive-agent", "plan-first"]));
+    const result = toggleAgentSkill(initial, "oscar", "proactive-agent", false);
+    expect(result.get("oscar")?.has("proactive-agent")).toBe(false);
+    expect(result.get("oscar")?.has("plan-first")).toBe(true);
+  });
+
+  it("does not affect other agents when toggling", () => {
+    const initial = new Map<string, Set<string>>();
+    initial.set("oscar", new Set(["proactive-agent"]));
+    initial.set("simon", new Set(["plan-first"]));
+    const result = toggleAgentSkill(initial, "oscar", "react-loop", true);
+    expect(result.get("oscar")?.has("react-loop")).toBe(true);
+    expect(result.get("simon")?.size).toBe(1);
+  });
+
+  it("returns empty set for unknown agent", () => {
+    const initial = new Map<string, Set<string>>();
+    const result = getAssignedSkills(initial, "unknown");
+    expect(result.size).toBe(0);
+  });
+
+  it("handles case-insensitive skill keys", () => {
+    const initial = new Map<string, Set<string>>();
+    const result = toggleAgentSkill(initial, "oscar", "Proactive-Agent", true);
+    expect(result.get("oscar")?.has("proactive-agent")).toBe(true);
+  });
+
+  it("parses agent config with skillAllowlist", () => {
+    const config = [
+      { id: "oscar", skillAllowlist: ["proactive-agent", "plan-first"] },
+      { id: "simon", skillAllowlist: ["GitHub"] },
+      { id: "dev" }, // no skills
+    ];
+    const result = parseAgentSkillConfig(config);
+    expect(result.get("oscar")?.size).toBe(2);
+    expect(result.get("oscar")?.has("proactive-agent")).toBe(true);
+    expect(result.get("simon")?.has("github")).toBe(true);
+    expect(result.get("dev")?.size).toBe(0);
+  });
+
+  it("ignores invalid skillAllowlist entries", () => {
+    const config = [
+      { id: "oscar", skillAllowlist: ["valid", "", 123, null, "also-valid"] },
+    ];
+    const result = parseAgentSkillConfig(config);
+    expect(result.get("oscar")?.size).toBe(2);
+    expect(result.get("oscar")?.has("valid")).toBe(true);
+    expect(result.get("oscar")?.has("also-valid")).toBe(true);
   });
 });

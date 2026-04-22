@@ -3,13 +3,13 @@
 
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import Image from "next/image";
 import {
   Search,
   Download,
   CheckCircle,
   AlertTriangle,
-  XCircle,
   Loader,
   Sparkles,
   Package,
@@ -21,8 +21,16 @@ import {
   LayoutGrid,
   LayoutList,
   Zap,
+  Plus,
+  Minus,
+  GripVertical,
+  Star,
+  Shield,
 } from "lucide-react";
 import { useAgentStore } from "@/features/agents/state/store";
+import { buildAvatarDataUrl } from "@/lib/avatars/multiavatar";
+import { buildDefaultAvatarUrl, deriveDefaultIndex } from "@/features/agents/components/AgentAvatar";
+import { useAvatarMode, type AvatarDisplayMode } from "@/components/AvatarModeContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,28 +62,10 @@ interface ClawHubSearchResult {
   updatedAt: number;
 }
 
-interface ClawHubSkillDetail {
-  skill: {
-    slug: string;
-    displayName: string;
-    summary: string;
-    tags: Record<string, string>;
-    stats: {
-      comments: number;
-      downloads: number;
-      installsAllTime: number;
-      installsCurrent: number;
-      stars: number;
-      versions: number;
-    };
-    createdAt: number;
-    updatedAt: number;
-  };
-  owner: {
-    handle: string;
-    displayName: string;
-    image: string;
-  };
+interface AgentSkillAssignment {
+  agentId: string;
+  agentName: string;
+  assignedSkillNames: string[];
 }
 
 // ─── Featured / Preset Skills ─────────────────────────────────────────────────
@@ -268,96 +258,231 @@ function SkillStatusBadge({ eligible, missing }: { eligible: boolean; missing: I
 function InstalledSkillCard({ skill, compact }: { skill: InstalledSkill; compact: boolean }) {
   return (
     <div className="group rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-surface-2/30">
-      <div className="mb-2 flex items-start gap-2">
-        <span className="text-lg" role="img" aria-label={skill.name}>
+      <div className="mb-1 flex items-start gap-2">
+        <span className="text-base leading-none" role="img" aria-label={skill.name}>
           {skill.emoji}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-semibold text-foreground">{skill.name}</p>
+            <p className="truncate text-xs font-semibold text-foreground">{skill.name}</p>
             <SkillStatusBadge eligible={skill.eligible} missing={skill.missing} />
           </div>
           {!compact && (
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{skill.description}</p>
+            <p className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground">{skill.description}</p>
           )}
-          <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span className="rounded bg-surface-2 px-1.5 py-0.5">{skill.source}</span>
-            {skill.bundled && (
-              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">bundled</span>
-            )}
-            {skill.homepage && (
-              <a
-                href={skill.homepage}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-0.5 text-primary hover:underline"
-              >
-                <ExternalLink className="h-2.5 w-2.5" />
-              </a>
-            )}
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Featured Skill Card ──────────────────────────────────────────────────────
+// ─── Featured Skill Chip (for left column agent cards) ───────────────────────
 
-function FeaturedSkillCard({
+function FeaturedSkillChip({
   skill,
+  isAssigned,
   isInstalled,
-  installing,
-  onInstall,
-  compact,
+  onToggle,
+  disabled,
 }: {
   skill: (typeof FEATURED_SKILLS)[number];
+  isAssigned: boolean;
   isInstalled: boolean;
-  installing: boolean;
-  onInstall: (slug: string) => void;
-  compact: boolean;
+  onToggle: (slug: string, assign: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
-    <div className="group rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-surface-2/30">
-      <div className="mb-2 flex items-start gap-2">
-        <span className="text-lg" role="img" aria-label={skill.name}>
-          {skill.emoji}
-        </span>
+    <button
+      type="button"
+      onClick={() => onToggle(skill.slug, !isAssigned)}
+      disabled={disabled}
+      className={`group/chip flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] transition-all disabled:opacity-40 ${
+        isAssigned
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-border bg-surface-1 text-muted-foreground hover:border-accent/40 hover:text-foreground"
+      }`}
+      title={
+        isAssigned
+          ? `Remove ${skill.name} from this agent`
+          : isInstalled
+            ? `Assign ${skill.name} to this agent`
+            : `Install ${skill.name} first, then assign`
+      }
+    >
+      <span>{skill.emoji}</span>
+      <span className="truncate">{skill.name}</span>
+      {isAssigned ? (
+        <Minus className="ml-auto h-2.5 w-2.5 shrink-0 text-primary/60 group-hover/ship:text-red-400" />
+      ) : (
+        <Plus className="ml-auto h-2.5 w-2.5 shrink-0 text-muted-foreground/40" />
+      )}
+    </button>
+  );
+}
+
+// ─── Agent Skill Card (left column) ──────────────────────────────────────────
+
+function agentAvatarSrc(
+  agentId: string,
+  avatarSeed: string | null | undefined,
+  footerMode: AvatarDisplayMode,
+  defaultAvatarIndex: number = 0
+): string {
+  const seed = avatarSeed?.trim() || agentId;
+  if (footerMode === "default") {
+    return buildDefaultAvatarUrl(deriveDefaultIndex(seed, defaultAvatarIndex));
+  }
+  return buildAvatarDataUrl(seed || "default");
+}
+
+function AgentSkillCard({
+  agentId,
+  agentName,
+  avatarSeed,
+  footerMode,
+  assignedSkills,
+  readyInstalledSkills,
+  featuredSkills,
+  isInstalledSet,
+  onToggleSkill,
+  onInstallAndAssign,
+  installingSlugs,
+  compact,
+  selectedCategory,
+}: {
+  agentId: string;
+  agentName: string;
+  avatarSeed?: string | null;
+  footerMode: AvatarDisplayMode;
+  assignedSkills: Set<string>;
+  readyInstalledSkills: InstalledSkill[];
+  featuredSkills: typeof FEATURED_SKILLS;
+  isInstalledSet: Set<string>;
+  onToggleSkill: (agentId: string, slug: string, assign: boolean) => void;
+  onInstallAndAssign: (slug: string, agentId: string) => void;
+  installingSlugs: Set<string>;
+  compact: boolean;
+  selectedCategory: string | null;
+}) {
+  const avatarUrl = agentAvatarSrc(agentId, avatarSeed, footerMode);
+  const [expanded, setExpanded] = useState(true);
+
+  const assignedList = featuredSkills.filter((f) => assignedSkills.has(f.slug) || assignedSkills.has(f.name));
+  const availableFeatured = featuredSkills.filter(
+    (f) => !assignedSkills.has(f.slug) && !assignedSkills.has(f.name)
+  );
+
+  return (
+    <div className="rounded-xl border border-border bg-surface-1 shadow-sm transition-all hover:border-accent/30">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
+        <Image
+          src={avatarUrl}
+          alt={agentName}
+          width={28}
+          height={28}
+          className="h-7 w-7 shrink-0 rounded-full bg-surface-2 ring-1 ring-accent"
+          unoptimized
+        />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-semibold text-foreground">{skill.name}</p>
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
-              {skill.category}
-            </span>
-          </div>
-          {!compact && (
-            <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
-              {skill.description}
-            </p>
+          <p className="truncate text-sm font-semibold text-foreground">{agentName}</p>
+          <p className="font-mono text-[10px] text-muted-foreground">{agentId}</p>
+        </div>
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 font-mono text-[10px] font-medium text-primary">
+          {assignedList.length}
+        </span>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          {expanded ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="space-y-2 px-3 py-2">
+          {/* Currently assigned skills */}
+          {assignedList.length > 0 && (
+            <div>
+              <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-green-400">
+                Assigned
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {assignedList.map((skill) => (
+                  <FeaturedSkillChip
+                    key={skill.slug}
+                    skill={skill}
+                    isAssigned
+                    isInstalled={isInstalledSet.has(skill.slug.toLowerCase()) || isInstalledSet.has(skill.name.toLowerCase())}
+                    onToggle={(slug, assign) => onToggleSkill(agentId, slug, assign)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Available skills to add */}
+          {availableFeatured.length > 0 && (
+            <div>
+              <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Add Skills
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {availableFeatured.map((skill) => {
+                  const isInst = isInstalledSet.has(skill.slug.toLowerCase()) || isInstalledSet.has(skill.name.toLowerCase());
+                  const isInstalling = installingSlugs.has(skill.slug);
+                  return (
+                    <button
+                      key={skill.slug}
+                      type="button"
+                      onClick={() => {
+                        if (!isInst) {
+                          onInstallAndAssign(skill.slug, agentId);
+                        } else {
+                          onToggleSkill(agentId, skill.slug, true);
+                        }
+                      }}
+                      disabled={isInstalling}
+                      className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] transition-all disabled:opacity-40 ${
+                        isInst
+                          ? "border-border bg-surface-1 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                          : "border-dashed border-border/60 bg-surface-1 text-muted-foreground/60 hover:border-primary/40 hover:text-foreground"
+                      }`}
+                      title={
+                        isInst
+                          ? `Assign ${skill.name} to ${agentName}`
+                          : `Install & assign ${skill.name} to ${agentName}`
+                      }
+                    >
+                      {isInstalling ? (
+                        <Loader className="h-2.5 w-2.5 animate-spin" />
+                      ) : !isInst ? (
+                        <Download className="h-2.5 w-2.5" />
+                      ) : null}
+                      <span>{skill.emoji}</span>
+                      <span className="truncate">{skill.name}</span>
+                      <Plus className="h-2.5 w-2.5 shrink-0 text-primary/60" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Ready installed skills (non-featured) count */}
+          {readyInstalledSkills.length > 0 && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Shield className="h-3 w-3" />
+              <span>{readyInstalledSkills.length} system skills available</span>
+            </div>
           )}
         </div>
-      </div>
-      <div className="flex items-center gap-2">
-        {isInstalled ? (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-green-400">
-            <CheckCircle className="h-3 w-3" />
-            Installed
-          </span>
-        ) : (
-          <button
-            onClick={() => onInstall(skill.slug)}
-            disabled={installing}
-            className="inline-flex items-center gap-1 rounded-md bg-primary/90 px-2.5 py-1 text-[10px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
-          >
-            {installing ? (
-              <Loader className="h-3 w-3 animate-spin" />
-            ) : (
-              <Download className="h-3 w-3" />
-            )}
-            Install
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -389,14 +514,14 @@ function ClawHubResultCard({
   return (
     <div className="group rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-surface-2/30">
       <div className="mb-2 flex items-start gap-2">
-        <Package className="h-5 w-5 shrink-0 text-muted-foreground" />
+        <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
+          <p className="truncate text-xs font-semibold text-foreground">
             {result.displayName}
           </p>
           <p className="font-mono text-[10px] text-muted-foreground">{result.slug}</p>
           {!compact && (
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+            <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">
               {result.summary}
             </p>
           )}
@@ -415,7 +540,7 @@ function ClawHubResultCard({
           <button
             onClick={() => onInstall(result.slug)}
             disabled={installing}
-            className="inline-flex items-center gap-1 rounded-md bg-primary/90 px-2.5 py-1 text-[10px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md bg-primary/90 px-2 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
           >
             {installing ? (
               <Loader className="h-3 w-3 animate-spin" />
@@ -430,93 +555,13 @@ function ClawHubResultCard({
   );
 }
 
-// ─── Agent Skills Map ─────────────────────────────────────────────────────────
-
-interface AgentEntry {
-  agentId: string;
-  name: string;
-}
-
-function AgentSkillsMap({
-  agents,
-  installedSkills,
-}: {
-  agents: AgentEntry[];
-  installedSkills: InstalledSkill[];
-}) {
-  const readySkills = useMemo(
-    () => installedSkills.filter((s) => s.eligible),
-    [installedSkills]
-  );
-
-  if (agents.length === 0) {
-    return (
-      <p className="py-4 text-center text-xs text-muted-foreground/40">
-        No agents available. Create an agent to see skill assignments.
-      </p>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="px-3 py-2 text-left font-semibold text-muted-foreground">
-              Agent
-            </th>
-            <th className="px-3 py-2 text-left font-semibold text-muted-foreground">
-              Available Skills
-            </th>
-            <th className="px-3 py-2 text-right font-semibold text-muted-foreground">
-              Count
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {agents.map((agent) => (
-            <tr
-              key={agent.agentId}
-              className="border-b border-border/50 transition-colors hover:bg-surface-2/30"
-            >
-              <td className="px-3 py-2 font-medium text-foreground">
-                {agent.name}
-              </td>
-              <td className="px-3 py-2">
-                <div className="flex flex-wrap gap-1">
-                  {readySkills.slice(0, 8).map((skill) => (
-                    <span
-                      key={skill.name}
-                      className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                      title={skill.description}
-                    >
-                      <span>{skill.emoji}</span>
-                      {skill.name}
-                    </span>
-                  ))}
-                  {readySkills.length > 8 && (
-                    <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                      +{readySkills.length - 8} more
-                    </span>
-                  )}
-                </div>
-              </td>
-              <td className="px-3 py-2 text-right font-mono text-muted-foreground">
-                {readySkills.length}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 // ─── Main SkillsDashboard ─────────────────────────────────────────────────────
 
 export function SkillsDashboard() {
   const { state } = useAgentStore();
   const agents = state.agents;
+  const footerMode = useAvatarMode();
+
   const [installedSkills, setInstalledSkills] = useState<InstalledSkill[]>([]);
   const [skillsLoading, setSkillsLoading] = useState(true);
   const [skillsError, setSkillsError] = useState<string | null>(null);
@@ -529,12 +574,8 @@ export function SkillsDashboard() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "ready" | "needs-setup">("all");
   const [refreshing, setRefreshing] = useState(false);
-
-  // ── Agent list from store ──────────────────────────────────────────────
-  const agentEntries: AgentEntry[] = useMemo(
-    () => agents.map((a) => ({ agentId: a.agentId, name: a.name })),
-    [agents]
-  );
+  const [agentSkillAssignments, setAgentSkillAssignments] = useState<Map<string, Set<string>>>(new Map());
+  const pendingInstallAssignRef = useRef<Map<string, string[]>>(new Map());
 
   // ── Fetch installed skills ─────────────────────────────────────────────
   const fetchSkills = useCallback(async () => {
@@ -561,6 +602,49 @@ export function SkillsDashboard() {
   useEffect(() => {
     void fetchSkills();
   }, [fetchSkills]);
+
+  // ── Initialize agent skill assignments from config ─────────────────────
+  // On load, we try to read per-agent skillAllowlist from the gateway config
+  useEffect(() => {
+    async function loadAgentSkillConfig() {
+      try {
+        const res = await fetch("/api/runtime/config");
+        if (!res.ok) return;
+        const data = await res.json();
+        const config = data?.payload?.parsed ?? data?.config ?? data?.payload?.config ?? {};
+        const agentList = config?.agents?.list ?? [];
+        const newAssignments = new Map<string, Set<string>>();
+        for (const agent of agentList) {
+          const id = agent.id ?? agent.agentId;
+          if (!id) continue;
+          const existing = new Set<string>();
+          // Check for skillAllowlist
+          if (Array.isArray(agent.skillAllowlist)) {
+            for (const s of agent.skillAllowlist) {
+              if (typeof s === "string" && s.trim()) existing.add(s.trim().toLowerCase());
+            }
+          }
+          newAssignments.set(id, existing);
+        }
+        setAgentSkillAssignments(newAssignments);
+      } catch {
+        // silently skip — will show all skills as available
+      }
+    }
+    void loadAgentSkillConfig();
+  }, []);
+
+  // ── After install, apply any pending assign-to-agent operations ────────
+  useEffect(() => {
+    if (pendingInstallAssignRef.current.size === 0) return;
+    const pending = new Map(pendingInstallAssignRef.current);
+    pendingInstallAssignRef.current = new Map();
+    for (const [slug, agentIds] of pending) {
+      for (const agentId of agentIds) {
+        handleToggleSkill(agentId, slug, true);
+      }
+    }
+  }, [installedSkills]);
 
   // ── ClawHub search ────────────────────────────────────────────────────
   const handleSearch = useCallback(async (query: string) => {
@@ -611,7 +695,6 @@ export function SkillsDashboard() {
           const err = await res.json().catch(() => ({ error: "Install failed" }));
           throw new Error(err.error ?? `HTTP ${res.status}`);
         }
-        // Refresh installed skills after install
         await fetchSkills();
       } catch (err) {
         console.error("Install failed:", err);
@@ -625,6 +708,70 @@ export function SkillsDashboard() {
     },
     [fetchSkills]
   );
+
+  // ── Install and assign to agent ────────────────────────────────────────
+  const handleInstallAndAssign = useCallback(
+    (slug: string, agentId: string) => {
+      // Track the pending assignment so after install completes, we auto-assign
+      const pending = new Map(pendingInstallAssignRef.current);
+      const existing = pending.get(slug) ?? [];
+      if (!existing.includes(agentId)) existing.push(agentId);
+      pending.set(slug, existing);
+      pendingInstallAssignRef.current = pending;
+      void handleInstall(slug);
+    },
+    [handleInstall]
+  );
+
+  // ── Toggle skill on agent ─────────────────────────────────────────────
+  const handleToggleSkill = useCallback(
+    (agentId: string, slug: string, assign: boolean) => {
+      setAgentSkillAssignments((prev) => {
+        const next = new Map(prev);
+        const current = new Set<string>(next.get(agentId) ?? new Set<string>());
+        const key = slug.toLowerCase();
+        if (assign) {
+          current.add(key);
+        } else {
+          current.delete(key);
+        }
+        next.set(agentId, current);
+        return next;
+      });
+    },
+    []
+  );
+
+  // ── Persist agent skill assignments to gateway config ─────────────────
+  // When assignments change, persist them via the skills-assign API
+  const prevAssignmentsRef = useRef<Map<string, Set<string>>>(new Map());
+
+  useEffect(() => {
+    // Skip the first render
+    if (prevAssignmentsRef.current.size > 0 || agentSkillAssignments.size > 0) {
+      for (const [agentId, skills] of agentSkillAssignments) {
+        const prev = prevAssignmentsRef.current.get(agentId);
+        const current = skills;
+        // Only persist if this agent's set actually changed
+        if (prev === current) continue;
+        if (prev && current && prev.size === current.size && [...prev].every((s) => current.has(s))) continue;
+        void persistAgentSkills(agentId, [...current]);
+      }
+    }
+    prevAssignmentsRef.current = new Map(agentSkillAssignments);
+  }, [agentSkillAssignments]);
+
+  const persistAgentSkills = useCallback(async (agentId: string, skillNames: string[]) => {
+    try {
+      await fetch("/api/intents/agent-skills-assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId, skillAllowlist: skillNames }),
+      });
+    } catch (err) {
+      console.error("Failed to persist skill assignment:", err);
+    }
+  }, []);
 
   // ── Refresh ──────────────────────────────────────────────────────────
   const handleRefresh = useCallback(async () => {
@@ -661,6 +808,11 @@ export function SkillsDashboard() {
 
   const needsSetupCount = useMemo(
     () => installedSkills.filter((s) => !s.eligible).length,
+    [installedSkills]
+  );
+
+  const readyInstalledSkills = useMemo(
+    () => installedSkills.filter((s) => s.eligible),
     [installedSkills]
   );
 
@@ -781,148 +933,219 @@ export function SkillsDashboard() {
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
-        {/* Error state */}
-        {skillsError && (
-          <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">
-            {skillsError}
-          </div>
-        )}
-
-        {/* ── ClawHub Search Results ── */}
-        {searchQuery.trim() && (
-          <div>
-            <div className="mb-3 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">
-                ClawHub Results
-              </h2>
-              {searchLoading && (
-                <Loader className="h-3 w-3 animate-spin text-muted-foreground" />
-              )}
+      {/* ── Two-Column Layout ── */}
+      <div className="flex flex-1 gap-0 overflow-hidden">
+        {/* ═══ LEFT COLUMN: Agents & Skill Assignments ═══ */}
+        <div className="flex w-1/2 flex-col border-r border-border overflow-y-auto">
+          <div className="px-4 py-3 space-y-4">
+            {/* Section header */}
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Agents & Skills</h2>
             </div>
-            {searchError && (
-              <p className="text-xs text-red-400">{searchError}</p>
+            <p className="text-xs text-muted-foreground">
+              Assign SimonCatBot preset skills to each agent. Click a skill to add or remove it.
+            </p>
+
+            {/* Error state */}
+            {skillsError && (
+              <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                {skillsError}
+              </div>
             )}
-            {!searchLoading && searchResults.length === 0 && !searchError && (
-              <p className="py-4 text-center text-xs text-muted-foreground/40">
-                No skills found on ClawHub for &quot;{searchQuery}&quot;
+
+            {/* Loading */}
+            {skillsLoading && installedSkills.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-xs text-muted-foreground">Loading skills...</span>
+              </div>
+            ) : agents.length === 0 ? (
+              <p className="py-8 text-center text-xs text-muted-foreground/40">
+                No agents available. Create an agent first.
               </p>
+            ) : (
+              <div className="space-y-3">
+                {agents.map((agent) => (
+                  <AgentSkillCard
+                    key={agent.agentId}
+                    agentId={agent.agentId}
+                    agentName={agent.name}
+                    avatarSeed={agent.avatarSeed}
+                    footerMode={footerMode}
+                    assignedSkills={agentSkillAssignments.get(agent.agentId) ?? new Set()}
+                    readyInstalledSkills={readyInstalledSkills}
+                    featuredSkills={filteredFeatured}
+                    isInstalledSet={installedNames}
+                    onToggleSkill={handleToggleSkill}
+                    onInstallAndAssign={handleInstallAndAssign}
+                    installingSlugs={installingSlugs}
+                    compact={compactView}
+                    selectedCategory={selectedCategory}
+                  />
+                ))}
+              </div>
             )}
-            <div
-              className={`grid gap-2 ${
-                compactView
-                  ? "grid-cols-1"
-                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              }`}
-            >
-              {searchResults.map((result) => (
-                <ClawHubResultCard
-                  key={result.slug}
-                  result={result}
-                  isInstalled={installedNames.has(result.slug.toLowerCase())}
-                  installing={installingSlugs.has(result.slug)}
-                  onInstall={handleInstall}
-                  compact={compactView}
-                />
-              ))}
-            </div>
           </div>
-        )}
+        </div>
 
-        {/* ── Featured Skills ── */}
-        {!searchQuery.trim() && (
-          <CollapsibleSection
-            title="Featured Skills"
-            icon={Sparkles}
-            accent="text-primary"
-            count={filteredFeatured.length}
-          >
-            <p className="mb-3 text-xs text-muted-foreground">
-              Curated skill presets from the SimonCatBot ecosystem — install with one
-              click to supercharge your agents.
-            </p>
-            <div
-              className={`grid gap-2 ${
-                compactView
-                  ? "grid-cols-1"
-                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              }`}
+        {/* ═══ RIGHT COLUMN: ClawHub Browse & Installed Skills ═══ */}
+        <div className="flex w-1/2 flex-col overflow-y-auto">
+          <div className="px-4 py-3 space-y-6">
+            {/* ── ClawHub Search Results ── */}
+            {searchQuery.trim() && (
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground">
+                    ClawHub Results
+                  </h2>
+                  {searchLoading && (
+                    <Loader className="h-3 w-3 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                {searchError && (
+                  <p className="text-xs text-red-400">{searchError}</p>
+                )}
+                {!searchLoading && searchResults.length === 0 && !searchError && (
+                  <p className="py-4 text-center text-xs text-muted-foreground/40">
+                    No skills found on ClawHub for &quot;{searchQuery}&quot;
+                  </p>
+                )}
+                <div
+                  className={`grid gap-2 ${
+                    compactView
+                      ? "grid-cols-1"
+                      : "grid-cols-1 sm:grid-cols-2"
+                  }`}
+                >
+                  {searchResults.map((result) => (
+                    <ClawHubResultCard
+                      key={result.slug}
+                      result={result}
+                      isInstalled={installedNames.has(result.slug.toLowerCase())}
+                      installing={installingSlugs.has(result.slug)}
+                      onInstall={handleInstall}
+                      compact={compactView}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Featured Skills Browse ── */}
+            {!searchQuery.trim() && (
+              <CollapsibleSection
+                title="Featured Skills"
+                icon={Sparkles}
+                accent="text-primary"
+                count={filteredFeatured.length}
+              >
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Curated skill presets from the SimonCatBot ecosystem. Install and assign to your agents from the left panel.
+                </p>
+                <div
+                  className={`grid gap-2 ${
+                    compactView
+                      ? "grid-cols-1"
+                      : "grid-cols-1 sm:grid-cols-2"
+                  }`}
+                >
+                  {filteredFeatured.map((skill) => {
+                    const isInst = installedNames.has(skill.slug.toLowerCase()) || installedNames.has(skill.name.toLowerCase());
+                    const isInstalling = installingSlugs.has(skill.slug);
+                    return (
+                      <div
+                        key={skill.slug}
+                        className="group rounded-xl border border-border bg-surface-1 p-3 shadow-sm transition-all hover:border-accent/40 hover:bg-surface-2/30"
+                      >
+                        <div className="mb-2 flex items-start gap-2">
+                          <span className="text-base leading-none" role="img" aria-label={skill.name}>
+                            {skill.emoji}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-xs font-semibold text-foreground">{skill.name}</p>
+                              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary">
+                                {skill.category}
+                              </span>
+                            </div>
+                            {!compactView && (
+                              <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">
+                                {skill.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isInst ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-green-400">
+                              <CheckCircle className="h-3 w-3" />
+                              Installed
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleInstall(skill.slug)}
+                              disabled={isInstalling}
+                              className="inline-flex items-center gap-1 rounded-md bg-primary/90 px-2 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
+                            >
+                              {isInstalling ? (
+                                <Loader className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Download className="h-3 w-3" />
+                              )}
+                              Install
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* ── Installed Skills ── */}
+            <CollapsibleSection
+              title="Installed Skills"
+              icon={Package}
+              accent="text-green-400"
+              count={filteredInstalled.length}
+              defaultOpen={!searchQuery.trim()}
             >
-              {filteredFeatured.map((skill) => (
-                <FeaturedSkillCard
-                  key={skill.slug}
-                  skill={skill}
-                  isInstalled={installedNames.has(skill.slug.toLowerCase()) || installedNames.has(skill.name.toLowerCase())}
-                  installing={installingSlugs.has(skill.slug)}
-                  onInstall={handleInstall}
-                  compact={compactView}
-                />
-              ))}
-            </div>
-          </CollapsibleSection>
-        )}
-
-        {/* ── Installed Skills ── */}
-        <CollapsibleSection
-          title="Installed Skills"
-          icon={Package}
-          accent="text-green-400"
-          count={filteredInstalled.length}
-          defaultOpen={!searchQuery.trim()}
-        >
-          {skillsLoading && installedSkills.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader className="h-5 w-5 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-xs text-muted-foreground">
-                Loading skills...
-              </span>
-            </div>
-          ) : filteredInstalled.length === 0 ? (
-            <p className="py-4 text-center text-xs text-muted-foreground/40">
-              {installedSkills.length === 0
-                ? "No skills detected. Connect to a gateway or install from the Featured section."
-                : "No skills match the current filter."}
-            </p>
-          ) : (
-            <div
-              className={`grid gap-2 ${
-                compactView
-                  ? "grid-cols-1"
-                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              }`}
-            >
-              {filteredInstalled.map((skill) => (
-                <InstalledSkillCard
-                  key={skill.name}
-                  skill={skill}
-                  compact={compactView}
-                />
-              ))}
-            </div>
-          )}
-        </CollapsibleSection>
-
-        {/* ── Agent Skills Map ── */}
-        {!searchQuery.trim() && agentEntries.length > 0 && (
-          <CollapsibleSection
-            title="Agent Skills Map"
-            icon={Users}
-            accent="text-blue-400"
-            count={agentEntries.length}
-            defaultOpen={false}
-          >
-            <p className="mb-3 text-xs text-muted-foreground">
-              Shows which skills are available to each agent based on the
-              current gateway configuration.
-            </p>
-            <AgentSkillsMap
-              agents={agentEntries}
-              installedSkills={installedSkills}
-            />
-          </CollapsibleSection>
-        )}
+              {skillsLoading && installedSkills.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    Loading skills...
+                  </span>
+                </div>
+              ) : filteredInstalled.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground/40">
+                  {installedSkills.length === 0
+                    ? "No skills detected. Connect to a gateway or install from above."
+                    : "No skills match the current filter."}
+                </p>
+              ) : (
+                <div
+                  className={`grid gap-2 ${
+                    compactView
+                      ? "grid-cols-1"
+                      : "grid-cols-1 sm:grid-cols-2"
+                  }`}
+                >
+                  {filteredInstalled.map((skill) => (
+                    <InstalledSkillCard
+                      key={skill.name}
+                      skill={skill}
+                      compact={compactView}
+                    />
+                  ))}
+                </div>
+              )}
+            </CollapsibleSection>
+          </div>
+        </div>
       </div>
     </div>
   );

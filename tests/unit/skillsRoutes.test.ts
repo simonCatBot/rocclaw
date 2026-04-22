@@ -1,7 +1,7 @@
 // MIT License - Copyright (c) 2026 SimonCatBot
 // See LICENSE file for details.
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // ─── ClawHub search route logic ───────────────────────────────────────────
 
@@ -47,6 +47,55 @@ function validateInstallPayload(body: unknown): string | null {
   const slug = (record.slug ?? "").toString().trim();
   if (!slug) return "Missing slug";
   return null;
+}
+
+// ─── Agent skills assign route logic ──────────────────────────────────────
+
+function validateAgentSkillsAssignPayload(body: unknown): string | null {
+  if (!body || typeof body !== "object") return "Invalid payload";
+  const record = body as Record<string, unknown>;
+  const agentId = (record.agentId ?? "").toString().trim();
+  if (!agentId) return "agentId is required.";
+  if (!Array.isArray(record.skillAllowlist)) return "skillAllowlist must be an array of strings.";
+  return null;
+}
+
+function sanitizeSkillAllowlist(raw: unknown[]): string[] {
+  return raw.filter((s): s is string => typeof s === "string" && s.trim().length > 0);
+}
+
+// ─── Config agent list operations ─────────────────────────────────────────
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value && typeof value === "object" && !Array.isArray(value));
+
+function readConfigAgentList(config: Record<string, unknown>): Array<Record<string, unknown> & { id: string }> {
+  const agents = isRecord(config.agents) ? config.agents : null;
+  const list = Array.isArray(agents?.list) ? agents.list : [];
+  return list.filter((entry): entry is Record<string, unknown> & { id: string } => {
+    if (!isRecord(entry)) return false;
+    if (typeof entry.id !== "string") return false;
+    return entry.id.trim().length > 0;
+  });
+}
+
+function upsertAgentSkillAllowlist(
+  config: Record<string, unknown>,
+  agentId: string,
+  skillAllowlist: string[]
+): Record<string, unknown> {
+  const list = readConfigAgentList(config);
+  let found = false;
+  const nextList = list.map((entry) => {
+    if (entry.id !== agentId) return entry;
+    found = true;
+    return { ...entry, skillAllowlist };
+  });
+  if (!found) {
+    nextList.push({ id: agentId, skillAllowlist });
+  }
+  const agents = isRecord(config.agents) ? { ...config.agents } : {};
+  return { ...config, agents: { ...agents, list: nextList } };
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────
@@ -142,5 +191,75 @@ describe("Install route — payload validation", () => {
   it("rejects non-object payload", () => {
     expect(validateInstallPayload(null)).toBe("Invalid payload");
     expect(validateInstallPayload("string")).toBe("Invalid payload");
+  });
+});
+
+describe("Agent skills assign route — payload validation", () => {
+  it("rejects missing agentId", () => {
+    expect(validateAgentSkillsAssignPayload({ skillAllowlist: [] })).toBe("agentId is required.");
+    expect(validateAgentSkillsAssignPayload({ agentId: "", skillAllowlist: [] })).toBe("agentId is required.");
+  });
+
+  it("rejects missing skillAllowlist", () => {
+    expect(validateAgentSkillsAssignPayload({ agentId: "oscar" })).toBe("skillAllowlist must be an array of strings.");
+    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skillAllowlist: "not-array" })).toBe("skillAllowlist must be an array of strings.");
+  });
+
+  it("accepts valid payload", () => {
+    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skillAllowlist: ["proactive-agent"] })).toBeNull();
+  });
+
+  it("accepts empty skillAllowlist (means no skills)", () => {
+    expect(validateAgentSkillsAssignPayload({ agentId: "oscar", skillAllowlist: [] })).toBeNull();
+  });
+});
+
+describe("Agent skills assign route — skill sanitization", () => {
+  it("filters out empty and non-string entries", () => {
+    expect(sanitizeSkillAllowlist(["valid", "", 123, null as unknown as string, "also-valid"] as unknown[])).toEqual(["valid", "also-valid"]);
+  });
+
+  it("returns empty array for all-invalid input", () => {
+    expect(sanitizeSkillAllowlist(["", "  ", 0, false as unknown as string] as unknown[])).toEqual([]);
+  });
+});
+
+describe("Agent skills assign route — config upsert", () => {
+  const baseConfig = {
+    agents: {
+      list: [
+        { id: "oscar", name: "Oscar" },
+        { id: "simon", name: "Simon", skillAllowlist: ["old-skill"] },
+      ],
+    },
+  };
+
+  it("adds skillAllowlist to existing agent without one", () => {
+    const result = upsertAgentSkillAllowlist(baseConfig, "oscar", ["proactive-agent"]);
+    const list = (result.agents as Record<string, unknown>).list as Array<Record<string, unknown>>;
+    const oscar = list.find((a) => a.id === "oscar");
+    expect(oscar?.skillAllowlist).toEqual(["proactive-agent"]);
+  });
+
+  it("replaces skillAllowlist on existing agent with one", () => {
+    const result = upsertAgentSkillAllowlist(baseConfig, "simon", ["new-skill"]);
+    const list = (result.agents as Record<string, unknown>).list as Array<Record<string, unknown>>;
+    const simon = list.find((a) => a.id === "simon");
+    expect(simon?.skillAllowlist).toEqual(["new-skill"]);
+  });
+
+  it("adds new agent entry if not found", () => {
+    const result = upsertAgentSkillAllowlist(baseConfig, "new-agent", ["skill1"]);
+    const list = (result.agents as Record<string, unknown>).list as Array<Record<string, unknown>>;
+    expect(list).toHaveLength(3);
+    const newAgent = list.find((a) => a.id === "new-agent");
+    expect(newAgent?.skillAllowlist).toEqual(["skill1"]);
+  });
+
+  it("preserves other agents unchanged", () => {
+    const result = upsertAgentSkillAllowlist(baseConfig, "oscar", ["test"]);
+    const list = (result.agents as Record<string, unknown>).list as Array<Record<string, unknown>>;
+    const simon = list.find((a) => a.id === "simon");
+    expect(simon?.skillAllowlist).toEqual(["old-skill"]);
   });
 });
