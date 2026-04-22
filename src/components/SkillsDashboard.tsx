@@ -1069,7 +1069,7 @@ export function SkillsDashboard() {
                   <AgentSkillCard
                     key={agent.agentId}
                     agentId={agent.agentId}
-                    agentName={agent.name}
+                    agentName={agent.identityName ?? agent.name}
                     avatarSeed={agent.avatarSeed}
                     footerMode={footerMode}
                     agentSkillCfg={agentSkillConfig.get(agent.agentId) ?? { explicit: false, skills: new Set() }}
