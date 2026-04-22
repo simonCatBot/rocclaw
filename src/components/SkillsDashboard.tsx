@@ -584,11 +584,17 @@ export function SkillsDashboard() {
     try {
       const res = await fetch("/api/runtime/skills");
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
         throw new Error(err.error ?? `HTTP ${res.status}`);
       }
-      const data = await res.json();
-      const skills: InstalledSkill[] = data.skills ?? [];
+      const text = await res.text();
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Failed to parse skills data from gateway. Try refreshing the page.");
+      }
+      const skills: InstalledSkill[] = (data.skills as InstalledSkill[]) ?? [];
       setInstalledSkills(skills);
     } catch (err) {
       setSkillsError(
