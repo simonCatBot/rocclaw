@@ -366,11 +366,25 @@ function AgentSkillCard({
 }) {
   const avatarUrl = agentAvatarSrc(agentId, avatarSeed, footerMode);
   const [expanded, setExpanded] = useState(true);
+  const [showAllSkills, setShowAllSkills] = useState(false);
 
-  const assignedList = featuredSkills.filter((f) => assignedSkills.has(f.slug) || assignedSkills.has(f.name));
+  const assignedFeatured = featuredSkills.filter((f) => assignedSkills.has(f.slug.toLowerCase()) || assignedSkills.has(f.name.toLowerCase()));
   const availableFeatured = featuredSkills.filter(
-    (f) => !assignedSkills.has(f.slug) && !assignedSkills.has(f.name)
+    (f) => !assignedSkills.has(f.slug.toLowerCase()) && !assignedSkills.has(f.name.toLowerCase())
   );
+
+  // Build the full list of skills this agent has access to
+  // These are all eligible installed skills that aren't already in the "assigned" set
+  const featuredSlugs = new Set(featuredSkills.map((f) => f.slug.toLowerCase()));
+  const featuredNames = new Set(featuredSkills.map((f) => f.name.toLowerCase()));
+  const systemSkills = readyInstalledSkills.filter(
+    (s) =>
+      !featuredSlugs.has(s.name.toLowerCase()) &&
+      !featuredNames.has(s.name.toLowerCase()) &&
+      !assignedSkills.has(s.name.toLowerCase())
+  );
+
+  const totalSkillCount = assignedFeatured.length + systemSkills.length;
 
   return (
     <div className="rounded-xl border border-border bg-surface-1 shadow-sm transition-all hover:border-accent/30">
@@ -388,8 +402,8 @@ function AgentSkillCard({
           <p className="truncate text-sm font-semibold text-foreground">{agentName}</p>
           <p className="font-mono text-[10px] text-muted-foreground">{agentId}</p>
         </div>
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 font-mono text-[10px] font-medium text-primary">
-          {assignedList.length}
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-green-500/10 px-1.5 font-mono text-[10px] font-medium text-green-400">
+          {totalSkillCount}
         </span>
         <button
           type="button"
@@ -405,15 +419,16 @@ function AgentSkillCard({
       </div>
 
       {expanded && (
-        <div className="space-y-2 px-3 py-2">
-          {/* Currently assigned skills */}
-          {assignedList.length > 0 && (
+        <div className="space-y-3 px-3 py-2">
+          {/* ── Currently assigned featured skills ── */}
+          {assignedFeatured.length > 0 && (
             <div>
               <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-green-400">
+                <CheckCircle className="mr-0.5 inline h-3 w-3" />
                 Assigned
               </p>
               <div className="flex flex-wrap gap-1">
-                {assignedList.map((skill) => (
+                {assignedFeatured.map((skill) => (
                   <FeaturedSkillChip
                     key={skill.slug}
                     skill={skill}
@@ -426,10 +441,51 @@ function AgentSkillCard({
             </div>
           )}
 
-          {/* Available skills to add */}
+          {/* ── Available system skills (eligible & installed) ── */}
+          {systemSkills.length > 0 && (
+            <div>
+              <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-blue-400">
+                <Shield className="mr-0.5 inline h-3 w-3" />
+                Available ({systemSkills.length})
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {(showAllSkills ? systemSkills : systemSkills.slice(0, 8)).map((skill) => (
+                  <span
+                    key={skill.name}
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-1 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                    title={skill.description}
+                  >
+                    {skill.emoji && <span>{skill.emoji}</span>}
+                    {skill.name}
+                  </span>
+                ))}
+                {systemSkills.length > 8 && !showAllSkills && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllSkills(true)}
+                    className="rounded-md border border-dashed border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground/60 hover:text-foreground"
+                  >
+                    +{systemSkills.length - 8} more
+                  </button>
+                )}
+                {showAllSkills && systemSkills.length > 8 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllSkills(false)}
+                    className="rounded-md border border-dashed border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground/60 hover:text-foreground"
+                  >
+                    Show less
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Featured skills to add ── */}
           {availableFeatured.length > 0 && (
             <div>
               <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <Plus className="mr-0.5 inline h-3 w-3" />
                 Add Skills
               </p>
               <div className="flex flex-wrap gap-1">
@@ -474,12 +530,11 @@ function AgentSkillCard({
             </div>
           )}
 
-          {/* Ready installed skills (non-featured) count */}
-          {readyInstalledSkills.length > 0 && (
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <Shield className="h-3 w-3" />
-              <span>{readyInstalledSkills.length} system skills available</span>
-            </div>
+          {/* ── No skills at all ── */}
+          {totalSkillCount === 0 && availableFeatured.length === 0 && (
+            <p className="py-2 text-center text-[10px] text-muted-foreground/40">
+              No skills available yet.
+            </p>
           )}
         </div>
       )}
