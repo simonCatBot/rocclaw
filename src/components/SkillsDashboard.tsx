@@ -329,6 +329,7 @@ function agentAvatarSrc(
 function AgentSkillCard({
   agentId,
   agentName,
+  identityName,
   avatarSeed,
   footerMode,
   agentSkillCfg,
@@ -341,6 +342,7 @@ function AgentSkillCard({
 }: {
   agentId: string;
   agentName: string;
+  identityName?: string | null;
   avatarSeed?: string | null;
   footerMode: AvatarDisplayMode;
   agentSkillCfg: { explicit: boolean; skills: Set<string> };
@@ -390,7 +392,14 @@ function AgentSkillCard({
           unoptimized
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">{agentName}</p>
+          {identityName && identityName !== agentName ? (
+            <>
+              <p className="truncate text-sm font-semibold text-foreground">{identityName}</p>
+              <p className="truncate text-xs text-muted-foreground">{agentName}</p>
+            </>
+          ) : (
+            <p className="truncate text-sm font-semibold text-foreground">{agentName}</p>
+          )}
           <p className="font-mono text-[10px] text-muted-foreground">{agentId}</p>
         </div>
         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-green-500/10 px-1.5 font-mono text-[10px] font-medium text-green-400">
@@ -1070,6 +1079,7 @@ export function SkillsDashboard() {
                     key={agent.agentId}
                     agentId={agent.agentId}
                     agentName={agent.identityName ?? agent.name ?? agent.agentId}
+                    identityName={agent.identityName}
                     avatarSeed={agent.avatarSeed}
                     footerMode={footerMode}
                     agentSkillCfg={agentSkillConfig.get(agent.agentId) ?? { explicit: false, skills: new Set() }}
