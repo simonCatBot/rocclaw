@@ -77,7 +77,7 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
       return buildDefaultAvatarUrl(deriveDefaultIndex(agent.avatarSeed ?? agent.agentId, agent.defaultAvatarIndex ?? 0));
     }
     // auto
-    return buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId);
+    return buildAvatarDataUrl(agent.avatarSeed ?? agent.agentId ?? "default");
   };
 
   return (

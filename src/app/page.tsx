@@ -18,6 +18,7 @@ import { ConnectionSetupView } from "@/features/agents/components/ConnectionSetu
 import { SettingsRoutePanel } from "@/features/agents/components/SettingsRoutePanel";
 import { CreateAgentBlockModal, RestartingMutationBlockModal } from "@/features/agents/components/MutationBlockingModals";
 import { SystemMetricsDashboard } from "@/components/SystemMetricsDashboard";
+import { SystemGraphView } from "@/components/SystemGraphView";
 import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { SettingsPanel } from "@/components/SettingsPanel";
@@ -1570,6 +1571,13 @@ const AgentROCclawPage = () => {
                 {activeTabs.includes("system") ? (
                   <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                     <SystemMetricsDashboard />
+                  </div>
+                ) : null}
+
+                {/* Graph Tab */}
+                {activeTabs.includes("graph") ? (
+                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                    <SystemGraphView />
                   </div>
                 ) : null}
 

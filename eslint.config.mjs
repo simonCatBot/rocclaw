@@ -13,7 +13,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/components/SystemDashboard.tsx", "src/components/SystemInfo.tsx", "src/components/SystemMetricsDashboard.tsx", "src/components/TokenUsage.tsx", "src/features/agents/components/AgentInspectPanels.tsx", "src/components/AvatarModeContext.tsx"],
+    files: ["src/components/SystemDashboard.tsx", "src/components/SystemInfo.tsx", "src/components/SystemMetricsDashboard.tsx", "src/components/SystemGraphView.tsx", "src/components/TokenUsage.tsx", "src/features/agents/components/AgentInspectPanels.tsx", "src/components/AvatarModeContext.tsx"],
     rules: {
       "react-hooks/set-state-in-effect": "off",
     },
