@@ -356,7 +356,6 @@ function AgentSkillCard({
   const [showAllSkills, setShowAllSkills] = useState(false);
 
   const assignedSkills = agentSkillCfg.skills;
-  const hasExplicitAllowlist = agentSkillCfg.explicit;
 
   const assignedFeatured = featuredSkills.filter((f) => assignedSkills.has(f.slug.toLowerCase()) || assignedSkills.has(f.name.toLowerCase()));
   const availableFeatured = featuredSkills.filter(
@@ -789,6 +788,11 @@ export function SkillsDashboard() {
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: "Install failed" }));
           throw new Error(err.error ?? `HTTP ${res.status}`);
+        }
+        const result = await res.json().catch(() => ({ success: false }));
+        // "Already installed" is fine — refresh skills to reflect current state
+        if (result.alreadyInstalled) {
+          // Skill is already there, just refresh the list
         }
         await fetchSkills();
       } catch (err) {

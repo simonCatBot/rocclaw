@@ -22,25 +22,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     }
 
-    const { stdout, stderr } = await execFileAsync(resolveClawhubBin(), [
-      "install",
-      slug,
-      "--no-input",
-    ], {
-      timeout: 60_000,
-      maxBuffer: 1 * 1024 * 1024,
-    });
+    let stdout = "";
+    let stderr = "";
 
-    const output = (stdout ?? "").trim();
-    const errOutput = (stderr ?? "").trim();
+    try {
+      const result = await execFileAsync(resolveClawhubBin(), [
+        "install",
+        slug,
+        "--no-input",
+      ], {
+        timeout: 60_000,
+        maxBuffer: 1 * 1024 * 1024,
+      });
+      stdout = (result.stdout ?? "").trim();
+      stderr = (result.stderr ?? "").trim();
+    } catch (execErr) {
+      // clawhub exits non-zero for "Already installed" — treat as success
+      const errMessage =
+        execErr instanceof Error ? execErr.message : String(execErr);
+      if (errMessage.includes("Already installed")) {
+        return NextResponse.json({
+          success: true,
+          alreadyInstalled: true,
+          slug,
+          output: errMessage,
+        });
+      }
+      // Re-throw genuine errors
+      throw execErr;
+    }
 
-    // clawhub install outputs to stderr for progress, stdout for result
-    const success = !errOutput.toLowerCase().includes("error") || output.length > 0;
+    const output = stdout || stderr;
 
     return NextResponse.json({
-      success,
+      success: true,
+      alreadyInstalled: false,
       slug,
-      output: output || errOutput,
+      output,
     });
   } catch (err) {
     const message =
