@@ -138,7 +138,9 @@ export function PhotoBoothDashboard() {
   // Camera state
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false); // true once video is actually playing
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [capturedImageBase64, setCapturedImageBase64] = useState<string | null>(null);
@@ -165,6 +167,7 @@ export function PhotoBoothDashboard() {
   const startCamera = useCallback(async () => {
     try {
       setCameraError(null);
+      setCameraReady(false);
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1024 },
@@ -173,38 +176,52 @@ export function PhotoBoothDashboard() {
         },
         audio: false,
       });
-      // Wait for the next render to ensure videoRef is attached
+      // Store the stream
+      streamRef.current = stream;
+      // Mark camera as active so the video element renders
+      setCameraActive(true);
+
+      // Wait a tick for React to mount the video element, then attach the stream
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
       const video = videoRef.current;
       if (!video) {
         stream.getTracks().forEach((t) => t.stop());
-        setCameraError("Video element not ready. Please try again.");
+        streamRef.current = null;
+        setCameraActive(false);
+        setCameraError("Video element not available. Please try again.");
         return;
       }
+
       video.srcObject = stream;
-      // Explicitly wait for loadedmetadata before playing
+
+      // Wait for the video to actually start playing
       await new Promise<void>((resolve, reject) => {
-        const onLoaded = () => {
-          video.removeEventListener("loadedmetadata", onLoaded);
+        const onCanPlay = () => {
+          video.removeEventListener("canplay", onCanPlay);
           video.removeEventListener("error", onError);
           resolve();
         };
         const onError = () => {
-          video.removeEventListener("loadedmetadata", onLoaded);
+          video.removeEventListener("canplay", onCanPlay);
           video.removeEventListener("error", onError);
           reject(new Error("Video failed to load"));
         };
-        video.addEventListener("loadedmetadata", onLoaded);
+        video.addEventListener("canplay", onCanPlay);
         video.addEventListener("error", onError);
-        // Timeout fallback
+        // Timeout fallback — resolve anyway after 5s
         setTimeout(() => {
-          video.removeEventListener("loadedmetadata", onLoaded);
+          video.removeEventListener("canplay", onCanPlay);
           video.removeEventListener("error", onError);
-          resolve(); // resolve anyway, play() will handle it
-        }, 3000);
+          resolve();
+        }, 5000);
       });
+
       await video.play();
-      setCameraActive(true);
+      setCameraReady(true);
     } catch (err) {
+      setCameraActive(false);
+      setCameraReady(false);
       setCameraError(
         err instanceof Error ? err.message : "Failed to access camera"
       );
@@ -213,12 +230,15 @@ export function PhotoBoothDashboard() {
 
   // ── Stop camera ──────────────────────────────────────────────────────────
   const stopCamera = useCallback(() => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((t) => t.stop());
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     setCameraActive(false);
+    setCameraReady(false);
   }, []);
 
   // ── Capture photo ────────────────────────────────────────────────────────
@@ -258,6 +278,7 @@ export function PhotoBoothDashboard() {
     setCapturedImageBase64(null);
     setJobs([]);
     setProcessing(false);
+    // Camera stays active — just clear the photo so user can take another
   }, []);
 
   // ── Toggle style selection ───────────────────────────────────────────────
@@ -486,39 +507,43 @@ export function PhotoBoothDashboard() {
           {/* Camera viewport — takes remaining space */}
           <div className="flex flex-1 items-center justify-center p-4 min-h-0">
             <div className="relative w-full overflow-hidden rounded-2xl border-2 border-border bg-black shadow-xl" style={{ aspectRatio: "1 / 1" }}>
-              {cameraActive && !capturedImage ? (
-                <>
-                  <video
-                    key={cameraActive ? "active" : "inactive"}
-                    ref={videoRef}
-                    playsInline
-                    autoPlay
-                    muted
-                    width={1024}
-                    height={1024}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      transform: "scaleX(-1)",
-                    }}
-                  />
-                  <canvas ref={canvasRef} className="hidden" />
-                  {/* Capture overlay button */}
-                  <div style={{ position: "absolute", bottom: 16, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
-                    <button
-                      onClick={capturePhoto}
-                      className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-white/20 shadow-lg backdrop-blur-sm transition-all hover:bg-white/40 hover:scale-105 active:scale-95"
-                      title="Take photo"
-                    >
-                      <div className="h-10 w-10 rounded-full border-2 border-white bg-white/80" />
-                    </button>
-                  </div>
-                </>
-              ) : capturedImage ? (
+              {/* Video is always in the DOM so the ref is always available */}
+              <video
+                ref={videoRef}
+                playsInline
+                autoPlay
+                muted
+                width={1024}
+                height={1024}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  transform: "scaleX(-1)",
+                  visibility: cameraActive && !capturedImage ? "visible" : "hidden",
+                }}
+              />
+              <canvas ref={canvasRef} className="hidden" />
+
+              {/* Capture overlay button — shown on top of live video */}
+              {cameraActive && !capturedImage && (
+                <div style={{ position: "absolute", bottom: 16, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+                  <button
+                    onClick={capturePhoto}
+                    disabled={!cameraReady}
+                    className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-white/20 shadow-lg backdrop-blur-sm transition-all hover:bg-white/40 hover:scale-105 active:scale-95 disabled:opacity-30"
+                    title="Take photo"
+                  >
+                    <div className="h-10 w-10 rounded-full border-2 border-white bg-white/80" />
+                  </button>
+                </div>
+              )}
+
+              {/* Captured image — overlays the video */}
+              {capturedImage && (
                 <img
                   src={capturedImage}
                   alt="Captured"
@@ -531,7 +556,10 @@ export function PhotoBoothDashboard() {
                     objectFit: "cover",
                   }}
                 />
-              ) : (
+              )}
+
+              {/* Empty state — shown when camera is not active and no image */}
+              {!cameraActive && !capturedImage && (
                 <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center gap-4 p-6 text-center">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10">
                     <Camera className="h-10 w-10 text-white/30" />
