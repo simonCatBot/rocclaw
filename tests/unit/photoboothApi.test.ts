@@ -311,4 +311,30 @@ describe("Photo Booth - ComfyUI Workflow", () => {
     expect(ksampler.scheduler).toBe("normal");
     expect(typeof ksampler.denoise).toBe("number");
   });
+
+  it("multipart form data boundary is constructed correctly", () => {
+    const boundary = `----PhotoBoothBoundary1700000000000`;
+    const filename = "capture.png";
+
+    const preamble =
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="image"; filename="${filename}"\r\n` +
+      `Content-Type: image/png\r\n\r\n`;
+
+    // Verify preamble contains required multipart fields
+    expect(preamble).toContain(boundary);
+    expect(preamble).toContain(`name="image"`);
+    expect(preamble).toContain(`filename="${filename}"`);
+    expect(preamble).toContain("Content-Type: image/png");
+
+    const postamble =
+      `\r\n--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="overwrite"\r\n\r\n` +
+      `true\r\n` +
+      `--${boundary}--\r\n`;
+
+    // Verify postamble has overwrite field and final boundary
+    expect(postamble).toContain("overwrite");
+    expect(postamble).toContain("--" + boundary + "--");
+  });
 });

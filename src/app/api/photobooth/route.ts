@@ -218,22 +218,39 @@ export async function POST(request: NextRequest) {
     if (imageBase64) {
       // Strip data URL prefix if present
       const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, "base64");
+      const imageBuffer = Buffer.from(base64Data, "base64");
+
+      // ComfyUI's /upload/image endpoint expects multipart/form-data
+      // Build it manually to avoid Blob/FormData issues in Node.js
+      const boundary = `----PhotoBoothBoundary${Date.now()}`;
+      const filename = finalImageName;
+
+      const preamble = Buffer.from(
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="image"; filename="${filename}"\r\n` +
+        `Content-Type: image/png\r\n\r\n`
+      );
+      const postamble = Buffer.from(
+        `\r\n--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="overwrite"\r\n\r\n` +
+        `true\r\n` +
+        `--${boundary}--\r\n`
+      );
+
+      const fullBody = Buffer.concat([preamble, imageBuffer, postamble]);
 
       const uploadRes = await fetch(`${COMFYUI_API_URL}/upload/image`, {
         method: "POST",
-        headers: { "Content-Type": "multipart/form-data" },
-        body: (() => {
-          const formData = new FormData();
-          const blob = new Blob([buffer], { type: "image/png" });
-          formData.append("image", blob, finalImageName);
-          formData.append("overwrite", "true");
-          return formData;
-        })(),
+        headers: {
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+        },
+        body: fullBody,
+        signal: AbortSignal.timeout(30000), // 30s for image upload
       });
 
       if (!uploadRes.ok) {
         const errText = await uploadRes.text();
+        console.error("ComfyUI upload failed:", uploadRes.status, errText);
         return NextResponse.json(
           { error: "Failed to upload image to ComfyUI", details: errText },
           { status: 502 }
