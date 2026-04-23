@@ -1,5 +1,5 @@
 --- /tmp/reachy_160_extracted/reachy_mini/media/media_server.py	2026-03-27 13:05:38.000000000 -0700
-+++ /home/kiriti/.openclaw/workspace/venv/lib/python3.12/site-packages/reachy_mini/media/media_server.py	2026-04-23 08:47:44.931319485 -0700
++++ /home/kiriti/.openclaw/workspace/venv/lib/python3.12/site-packages/reachy_mini/media/media_server.py	2026-04-23 10:29:15.797758838 -0700
 @@ -35,6 +35,7 @@
      CAMERA_SOCKET_PATH,
      is_local_camera_available,
@@ -62,3 +62,23 @@
              audiosrc = Gst.ElementFactory.make("alsasrc")
              audiosrc.set_property("device", "reachymini_audio_src")
              self._logger.info("Using ALSA device reachymini_audio_src for capture.")
+@@ -809,6 +830,19 @@
+ 
+         elif t == Gst.MessageType.ERROR:
+             err, debug = msg.parse_error()
++
++            # v4l2src and unixfdsrc emit RESOURCE_ERROR_NOT_FOUND
++            # ("The object can not be found here") when the device path
++            # is invalid or the device is temporarily unavailable.  This
++            # should not tear down the entire pipeline — the source may
++            # recover or the error may be from a non-critical branch.
++            if err.matches(Gst.ResourceError(), Gst.ResourceError.NOT_FOUND):
++                self._logger.warning(
++                    f"Resource not found (transient): {err.message}. "
++                    f"Debug: {debug}"
++                )
++                return True  # Keep the bus watch alive
++
+             self._logger.error(f"Error: {err} {debug}")
+             return False
+ 

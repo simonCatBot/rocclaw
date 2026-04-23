@@ -1,0 +1,33 @@
+--- /tmp/reachy_160_extracted/reachy_mini/media/device_detection.py	2026-03-27 13:05:38.000000000 -0700
++++ /home/kiriti/.openclaw/workspace/venv/lib/python3.12/site-packages/reachy_mini/media/device_detection.py	2026-04-23 10:28:20.037061984 -0700
+@@ -197,12 +197,28 @@
+ 
+ 
+ def gst_props_to_dict(props: Gst.Structure) -> dict[str, str]:
+-    """Convert all fields of a ``Gst.Structure`` to a flat string dict."""
++    """Convert all fields of a ``Gst.Structure`` to a flat string dict.
++
++    ``GstValueArray`` / ``GstValueList`` fields are unpacked by
++    :func:`gst_structure_get_field` into Python lists.  A single-element
++    list is unwrapped to its element (e.g. ``['/dev/video0']`` becomes
++    ``'/dev/video0'``) so that downstream consumers like
++    :func:`find_video_device` receive a usable device path string.
++    Multi-element lists are joined with commas.
++    """
+     output_dict: dict[str, str] = {}
+     for i in range(props.n_fields()):
+         field_name: str = props.nth_field_name(i)
+         value = gst_structure_get_field(props, field_name)
+-        output_dict[field_name] = str(value) if value is not None else ""
++        if value is None:
++            output_dict[field_name] = ""
++        elif isinstance(value, list):
++            if len(value) == 1:
++                output_dict[field_name] = str(value[0])
++            else:
++                output_dict[field_name] = ",".join(str(v) for v in value)
++        else:
++            output_dict[field_name] = str(value)
+     return output_dict
+ 
+ 
