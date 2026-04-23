@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { MESSAGE_CONTENT_VISIBILITY_STYLE } from "./chatConstants";
 import { formatChatTimestamp } from "./chatFormatters";
+import { MarkdownImage } from "./MarkdownImage";
 
 export const UserMessageCard = memo(function UserMessageCard({
   text,
@@ -33,7 +34,7 @@ export const UserMessageCard = memo(function UserMessageCard({
         ) : null}
       </div>
       <div className="agent-markdown type-body px-3 py-3 text-foreground dark:px-3.5 dark:py-3.5">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: MarkdownImage }}>{text}</ReactMarkdown>
       </div>
     </div>
   );

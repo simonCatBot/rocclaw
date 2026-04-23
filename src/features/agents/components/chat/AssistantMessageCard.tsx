@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Brain } from "lucide-react";
 import { rewriteMediaLinesToMarkdown } from "@/lib/text/media-markdown";
+import { MarkdownImage } from "./MarkdownImage";
 import type { AssistantTraceEvent } from "../chatItems";
 import { AgentAvatar } from "../AgentAvatar";
 import {
@@ -139,13 +140,13 @@ export const AssistantMessageCard = memo(function AssistantMessageCard({
                     }
                     return (
                       <div className="agent-markdown text-foreground">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{rewritten}</ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: MarkdownImage }}>{rewritten}</ReactMarkdown>
                       </div>
                     );
                   })()
                 ) : (
                   <div className="agent-markdown text-foreground">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: MarkdownImage }}>
                       {rewriteMediaLinesToMarkdown(contentText)}
                     </ReactMarkdown>
                   </div>

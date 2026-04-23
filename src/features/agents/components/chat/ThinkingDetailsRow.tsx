@@ -8,6 +8,7 @@ import { ChevronRight, Clock, Brain } from "lucide-react";
 import type { AssistantTraceEvent } from "../chatItems";
 import { formatDurationLabel } from "./chatFormatters";
 import { ToolCallDetails } from "./ToolCallDetails";
+import { MarkdownImage } from "./MarkdownImage";
 
 export const ThinkingDetailsRow = memo(function ThinkingDetailsRow({
   events,
@@ -77,7 +78,7 @@ export const ThinkingDetailsRow = memo(function ThinkingDetailsRow({
                 key={`thinking-event-${index}-${event.text.slice(0, 48)}`}
                 className="agent-markdown min-w-0 text-foreground/85"
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{event.text}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: MarkdownImage }}>{event.text}</ReactMarkdown>
               </div>
             ) : (
               <ToolCallDetails
