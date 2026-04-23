@@ -31,4 +31,22 @@ describe("media-markdown", () => {
     const out = rewriteMediaLinesToMarkdown(input);
     expect(out).toBe(input);
   });
+
+  it("strips markdown images with empty URLs to prevent <img src=>", () => {
+    const input = "Hello ![alt]() world";
+    const out = rewriteMediaLinesToMarkdown(input);
+    expect(out).toBe("Hello alt world");
+  });
+
+  it("removes markdown images with empty alt and empty URLs", () => {
+    const input = "Hello ![]() world";
+    const out = rewriteMediaLinesToMarkdown(input);
+    expect(out).toBe("Hello  world");
+  });
+
+  it("preserves markdown images with non-empty URLs", () => {
+    const input = "Hello ![alt](https://example.com/img.png) world";
+    const out = rewriteMediaLinesToMarkdown(input);
+    expect(out).toBe("Hello ![alt](https://example.com/img.png) world");
+  });
 });

@@ -1,0 +1,64 @@
+--- /tmp/reachy_160_extracted/reachy_mini/media/media_server.py	2026-03-27 13:05:38.000000000 -0700
++++ /home/kiriti/.openclaw/workspace/venv/lib/python3.12/site-packages/reachy_mini/media/media_server.py	2026-04-23 08:47:44.931319485 -0700
+@@ -35,6 +35,7 @@
+     CAMERA_SOCKET_PATH,
+     is_local_camera_available,
+ )
++from reachy_mini.media.audio_control_utils import init_respeaker_usb
+ from reachy_mini.media.audio_utils import has_reachymini_asoundrc
+ from reachy_mini.media.camera_constants import (
+     CameraSpecs,
+@@ -725,7 +726,10 @@
+ 
+         audiosrc = self._build_audio_source()
+         if audiosrc is None:
+-            self._logger.warning("No audio source available. Audio not configured.")
++            self._logger.warning(
++                "No audio source available. "
++                "Streaming video only; audio will be unavailable."
++            )
+             return
+ 
+         # Prevent PulseAudio/PipeWire audio sources from becoming the
+@@ -739,6 +743,7 @@
+         factory_name = factory.get_name() if factory else ""
+         if (
+             factory_name != "alsasrc"
++            and factory_name != "osxaudiosrc"
+             and audiosrc.find_property("provide-clock") is not None
+         ):
+             audiosrc.set_property("provide-clock", False)
+@@ -748,8 +753,11 @@
+                 f"{factory_name} — keeping default provide-clock behaviour."
+             )
+ 
++        queue = Gst.ElementFactory.make("queue", "queue_audiosrc")
+         pipeline.add(audiosrc)
+-        audiosrc.link(webrtcsink)
++        pipeline.add(queue)
++        audiosrc.link(queue)
++        queue.link(webrtcsink)
+ 
+     def _build_audio_source(self) -> Optional[Gst.Element]:
+         """Build a platform-aware audio source element.
+@@ -769,7 +777,20 @@
+ 
+         """
+         # Wireless CM4: .asoundrc defines reachymini_audio_src alias
++        # The Reachy Mini Audio USB card is checked first: if it is absent,
++        # the ALSA aliases in .asoundrc resolve to a missing hw: card and
++        # alsasrc would fail to open at pipeline start, tearing down the
++        # shared webrtcsink pipeline (video included).
+         if has_reachymini_asoundrc():
++            respeaker = init_respeaker_usb()
++            if respeaker is None:
++                self._logger.warning(
++                    "Reachy Mini Audio USB device not found — "
++                    "skipping audio capture to keep the video pipeline alive."
++                )
++                return None
++            respeaker.close()
++
+             audiosrc = Gst.ElementFactory.make("alsasrc")
+             audiosrc.set_property("device", "reachymini_audio_src")
+             self._logger.info("Using ALSA device reachymini_audio_src for capture.")
