@@ -484,8 +484,8 @@ export function PhotoBoothDashboard() {
         {/* ═══════ LEFT COLUMN ═══════ */}
         <div className="flex flex-col border-b lg:border-b-0 lg:border-r border-border overflow-hidden">
 
-          {/* ── Row 1: Camera ── */}
-          <div className="flex flex-col items-center gap-1.5 border-b border-border px-3 py-2 shrink-0">
+          {/* ── Row 1: Camera (50%) ── */}
+          <div className="flex flex-1 flex-col items-center justify-center gap-1.5 border-b border-border px-3 py-2 min-h-0">
             <div className="relative w-full max-w-[360px] overflow-hidden rounded-xl border-2 border-border bg-black" style={{ aspectRatio: "1 / 1" }}>
               {/* Video always in DOM */}
               <video
@@ -571,8 +571,8 @@ export function PhotoBoothDashboard() {
             </div>
           </div>
 
-          {/* ── Row 2: Styles + Generate ── */}
-          <div className="flex flex-col p-3 shrink-0 gap-2">
+          {/* ── Row 2: Styles + Generate (50%) ── */}
+          <div className="flex flex-1 flex-col items-center justify-center p-3 min-h-0 gap-2">
             {/* Style header */}
             <div className="flex items-center justify-between shrink-0">
               <div className="flex items-center gap-1.5">
@@ -592,8 +592,8 @@ export function PhotoBoothDashboard() {
               </div>
             </div>
 
-            {/* 3×3 style grid — compact square block */}
-            <div className="grid grid-cols-3 gap-1.5 max-w-[280px] mx-auto" role="group" aria-label="Style presets">
+            {/* 3×3 style grid */}
+            <div className="grid grid-cols-3 gap-1.5 w-full max-w-[340px] mx-auto" role="group" aria-label="Style presets">
               {STYLE_PRESETS.map((style, index) => {
                 const isSelected = selectedStyles.has(style.id);
                 const job = jobs.find((j) => j.style === style.id);
