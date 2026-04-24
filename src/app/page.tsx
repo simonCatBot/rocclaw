@@ -23,6 +23,7 @@ import { TasksDashboard } from "@/components/TasksDashboard";
 import { TokenUsageDashboard } from "@/components/TokenUsageDashboard";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { ConnectionPage } from "@/components/ConnectionPage";
+import { SkillsDashboard } from "@/components/SkillsDashboard";
 import { TabBar, type TabId, getDefaultActiveTabs, VALID_TAB_IDS } from "@/components/TabBar";
 import {
   isHeartbeatPrompt,
@@ -1327,30 +1328,30 @@ const AgentROCclawPage = () => {
         <HeaderBar />
         <TabBar activeTabs={activeTabs} onTabToggle={(tabId) => {
           setActiveTabs((current) => {
-            // Tasks tab is exclusive — selecting it replaces everything
-            if (tabId === "tasks") {
-              if (current.includes("tasks")) {
-                // Restore default tabs when deselecting Tasks
-                const defaults = getDefaultActiveTabs();
-                return defaults.length > 0 ? defaults : ["agents"];
-              }
-              return ["tasks"];
+            // Tasks and Skills tabs are exclusive — selecting one replaces everything
+            const exclusiveTabs: TabId[] = ["tasks", "skills"];
+            if (exclusiveTabs.includes(tabId)) {
+              return current.includes(tabId) ? [] : [tabId];
             }
-            // Non-tasks tabs: remove tasks tab if present, then normal toggle
+            // Non-exclusive tabs: remove any exclusive tab if present, then normal toggle
             let next = current.includes(tabId)
               ? current.filter((t) => t !== tabId)
               : [...current, tabId];
-            next = next.filter((t) => t !== "tasks");
+            next = next.filter((t) => !exclusiveTabs.includes(t as TabId));
             // Don't allow deselecting the last tab
             if (next.length === 0) return current;
             return next;
           });
         }} />
         <main id="main-content" className="flex min-h-0 flex-1 flex-col gap-3 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 md:px-5 md:pb-5 md:pt-3">
-          {/* Tasks tab takes exclusive full-width focus — hide everything else */}
-          {activeTabs.length === 1 && activeTabs[0] === "tasks" ? (
+          {/* Tasks/Skills tabs take exclusive full-width focus — hide everything else */}
+          {(activeTabs.length === 1 && activeTabs[0] === "tasks") ? (
             <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
               <TasksDashboard />
+            </div>
+          ) : (activeTabs.length === 1 && activeTabs[0] === "skills") ? (
+            <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+              <SkillsDashboard />
             </div>
           ) : (
             <>

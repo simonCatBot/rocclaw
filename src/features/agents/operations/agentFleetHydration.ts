@@ -40,6 +40,7 @@ type IdentityByAgent = Record<string, { name: string; emoji: string }>;
 const fetchIdentityFilesForAgents = async (
   agentIds: string[],
   baseUrl: string,
+  agentDirsById: Map<string, string>,
   parallel = 6
 ): Promise<IdentityByAgent> => {
   const results: IdentityByAgent = {};
@@ -66,19 +67,8 @@ const fetchIdentityFilesForAgents = async (
             return { agentId, name: "", emoji: "" };
           }
 
-          const lines = content.split("\n");
-          let name = "";
-          let emoji = "";
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith("- Name:") || trimmed.startsWith("Name:")) {
-              name = trimmed.split(":", 2).slice(1).join(":").trim();
-            }
-            if (trimmed.startsWith("- Emoji:") || trimmed.startsWith("Emoji:")) {
-              emoji = trimmed.split(":", 2).slice(1).join(":").trim();
-            }
-          }
-          return { agentId, name, emoji };
+          const parsed = parseIdentityContent(content);
+          return { agentId, name: parsed.name, emoji: parsed.emoji };
         } catch {
           return { agentId, name: "", emoji: "" };
         }
@@ -90,7 +80,40 @@ const fetchIdentityFilesForAgents = async (
     }
   }
 
+  // If agents share a workspace, their IDENTITY.md will have the same name.
+  // Check each agent's agentDir for an overriding IDENTITY.md.
+  for (const [agentId, agentDir] of agentDirsById) {
+    if (!agentDir || !results[agentId]?.name) continue;
+    try {
+      const fs = await import("node:fs/promises");
+      const identityPath = `${agentDir}/IDENTITY.md`;
+      const content = await fs.readFile(identityPath, "utf-8");
+      const parsed = parseIdentityContent(content);
+      if (parsed.name) {
+        results[agentId] = { name: parsed.name, emoji: parsed.emoji || results[agentId]?.emoji || "" };
+      }
+    } catch {
+      // No agentDir IDENTITY.md — keep workspace identity
+    }
+  }
+
   return results;
+};
+
+const parseIdentityContent = (content: string): { name: string; emoji: string } => {
+  const lines = content.split("\n");
+  let name = "";
+  let emoji = "";
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("- Name:") || trimmed.startsWith("Name:")) {
+      name = trimmed.split(":", 2).slice(1).join(":").trim();
+    }
+    if (trimmed.startsWith("- Emoji:") || trimmed.startsWith("Emoji:")) {
+      emoji = trimmed.split(":", 2).slice(1).join(":").trim();
+    }
+  }
+  return { name, emoji };
 };
 
 // ─── Result / snapshot types ───────────────────────────────────────────────────
@@ -202,11 +225,22 @@ export async function hydrateAgentFleetFromGateway(params: {
   const agentsResult = await callGateway<AgentsListResult>(params.client, "agents.list", {});
   const mainKey = agentsResult.mainKey?.trim() || "main";
 
+  // Build agentDir map from config for identity override lookup
+  const agentDirsById = new Map<string, string>();
+  if (configSnapshot?.config?.agents?.list) {
+    for (const agent of configSnapshot.config.agents.list) {
+      if (agent.id && agent.agentDir) {
+        agentDirsById.set(agent.id, agent.agentDir);
+      }
+    }
+  }
+
   // Fetch identity files for all agents in parallel
   const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const identityByAgent = await fetchIdentityFilesForAgents(
     agentsResult.agents.map((a) => a.id),
-    appBaseUrl
+    appBaseUrl,
+    agentDirsById
   );
 
   const mainSessionKeyByAgent = new Map<string, SessionsListEntry | null>();
