@@ -1630,7 +1630,7 @@ const AgentROCclawPage = () => {
 
                 {/* Photo Booth Tab */}
                 {activeTabs.includes("photobooth") ? (
-                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+                  <div className="ui-panel ui-depth-workspace flex h-full min-h-0 flex-1 flex-col overflow-hidden">
                     <PhotoBoothDashboard />
                   </div>
                 ) : null}
