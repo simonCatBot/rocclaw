@@ -1,7 +1,7 @@
 // MIT License - Copyright (c) 2026 SimonCatBot
 // See LICENSE file for details.
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 
 // ─── Style Presets Tests ──────────────────────────────────────────────────────
 
@@ -247,5 +247,182 @@ describe("Photo Booth - Job Status", () => {
     const jobs: StyleJob[] = [];
     const allDone = jobs.length > 0 && jobs.every((j) => j.status === "success" || j.status === "error");
     expect(allDone).toBe(false);
+  });
+});
+
+// ─── Gallery Persistence Tests ─────────────────────────────────────────────────
+
+describe("Photo Booth - Gallery Persistence", () => {
+  const GALLERY_KEY = "rocclaw-photobooth-gallery";
+  const GALLERY_MAX = 50;
+
+  interface GalleryEntry {
+    promptId: string;
+    style: string;
+    imageUrl: string;
+    imageData: { filename: string; subfolder: string; type: string };
+    timestamp: number;
+  }
+
+  function loadGallery(): GalleryEntry[] {
+    try {
+      const raw = localStorage.getItem(GALLERY_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  beforeEach(() => {
+    localStorage.removeItem(GALLERY_KEY);
+  });
+
+  it("returns empty array when localStorage has no gallery", () => {
+    expect(loadGallery()).toEqual([]);
+  });
+
+  it("returns empty array when localStorage has invalid JSON", () => {
+    localStorage.setItem(GALLERY_KEY, "not-json{{{");
+    expect(loadGallery()).toEqual([]);
+  });
+
+  it("returns empty array when localStorage has non-array JSON", () => {
+    localStorage.setItem(GALLERY_KEY, JSON.stringify({ foo: "bar" }));
+    expect(loadGallery()).toEqual([]);
+  });
+
+  it("loads valid gallery entries from localStorage", () => {
+    const entries: GalleryEntry[] = [
+      { promptId: "p1", style: "anime", imageUrl: "/img/1.png", imageData: { filename: "1.png", subfolder: "", type: "output" }, timestamp: 1000 },
+      { promptId: "p2", style: "monet", imageUrl: "/img/2.png", imageData: { filename: "2.png", subfolder: "", type: "output" }, timestamp: 2000 },
+    ];
+    localStorage.setItem(GALLERY_KEY, JSON.stringify(entries));
+    expect(loadGallery()).toEqual(entries);
+  });
+
+  it("persists gallery to localStorage via JSON.stringify", () => {
+    const entries: GalleryEntry[] = [
+      { promptId: "p1", style: "anime", imageUrl: "/img/1.png", imageData: { filename: "1.png", subfolder: "", type: "output" }, timestamp: 1000 },
+    ];
+    localStorage.setItem(GALLERY_KEY, JSON.stringify(entries));
+    const raw = localStorage.getItem(GALLERY_KEY);
+    expect(raw).not.toBeNull();
+    expect(JSON.parse(raw!)).toEqual(entries);
+  });
+
+  it("deduplicates entries by promptId", () => {
+    const existing: GalleryEntry[] = [
+      { promptId: "p1", style: "anime", imageUrl: "/img/1.png", imageData: { filename: "1.png", subfolder: "", type: "output" }, timestamp: 1000 },
+    ];
+    const newEntry: GalleryEntry = { promptId: "p1", style: "anime", imageUrl: "/img/1.png", imageData: { filename: "1.png", subfolder: "", type: "output" }, timestamp: 2000 };
+
+    const isDuplicate = existing.some((g) => g.promptId === newEntry.promptId);
+    expect(isDuplicate).toBe(true);
+  });
+
+  it("adds new entry and does not duplicate", () => {
+    const existing: GalleryEntry[] = [
+      { promptId: "p1", style: "anime", imageUrl: "/img/1.png", imageData: { filename: "1.png", subfolder: "", type: "output" }, timestamp: 1000 },
+    ];
+    const newEntry: GalleryEntry = { promptId: "p2", style: "monet", imageUrl: "/img/2.png", imageData: { filename: "2.png", subfolder: "", type: "output" }, timestamp: 2000 };
+
+    const isDuplicate = existing.some((g) => g.promptId === newEntry.promptId);
+    expect(isDuplicate).toBe(false);
+
+    const updated = [newEntry, ...existing].slice(0, GALLERY_MAX);
+    expect(updated).toHaveLength(2);
+    expect(updated[0].promptId).toBe("p2");
+  });
+
+  it("caps gallery at GALLERY_MAX entries", () => {
+    const entries: GalleryEntry[] = Array.from({ length: GALLERY_MAX }, (_, i) => ({
+      promptId: `p${i}`,
+      style: "anime",
+      imageUrl: `/img/${i}.png`,
+      imageData: { filename: `${i}.png`, subfolder: "", type: "output" },
+      timestamp: i,
+    }));
+    expect(entries).toHaveLength(GALLERY_MAX);
+
+    const newEntry: GalleryEntry = { promptId: "new", style: "monet", imageUrl: "/img/new.png", imageData: { filename: "new.png", subfolder: "", type: "output" }, timestamp: 99999 };
+    const updated = [newEntry, ...entries].slice(0, GALLERY_MAX);
+    expect(updated).toHaveLength(GALLERY_MAX);
+    expect(updated[0].promptId).toBe("new");
+    expect(updated[GALLERY_MAX - 1].promptId).toBe(`p${GALLERY_MAX - 2}`);
+  });
+
+  it("clear gallery produces empty array", () => {
+    localStorage.setItem(GALLERY_KEY, JSON.stringify([{ promptId: "p1" }]));
+    localStorage.setItem(GALLERY_KEY, JSON.stringify([]));
+    expect(loadGallery()).toEqual([]);
+  });
+});
+
+// ─── Keyboard Navigation Tests ─────────────────────────────────────────────────
+
+describe("Photo Booth - Style Grid Keyboard Navigation", () => {
+  const STYLE_GRID_COLS = 3;
+  const TOTAL = 9;
+
+  function getTargetIndex(index: number, key: string): number {
+    switch (key) {
+      case "ArrowRight":
+        return index + 1 < TOTAL ? index + 1 : 0;
+      case "ArrowLeft":
+        return index - 1 >= 0 ? index - 1 : TOTAL - 1;
+      case "ArrowDown":
+        return index + STYLE_GRID_COLS < TOTAL ? index + STYLE_GRID_COLS : index;
+      case "ArrowUp":
+        return index - STYLE_GRID_COLS >= 0 ? index - STYLE_GRID_COLS : index;
+      default:
+        return index;
+    }
+  }
+
+  it("ArrowRight moves to next style", () => {
+    expect(getTargetIndex(0, "ArrowRight")).toBe(1);
+    expect(getTargetIndex(4, "ArrowRight")).toBe(5);
+  });
+
+  it("ArrowRight wraps from last to first", () => {
+    expect(getTargetIndex(8, "ArrowRight")).toBe(0);
+  });
+
+  it("ArrowLeft moves to previous style", () => {
+    expect(getTargetIndex(5, "ArrowLeft")).toBe(4);
+    expect(getTargetIndex(1, "ArrowLeft")).toBe(0);
+  });
+
+  it("ArrowLeft wraps from first to last", () => {
+    expect(getTargetIndex(0, "ArrowLeft")).toBe(8);
+  });
+
+  it("ArrowDown moves to next row", () => {
+    expect(getTargetIndex(0, "ArrowDown")).toBe(3);
+    expect(getTargetIndex(4, "ArrowDown")).toBe(7);
+  });
+
+  it("ArrowDown stays at same index on last row", () => {
+    expect(getTargetIndex(6, "ArrowDown")).toBe(6);
+    expect(getTargetIndex(7, "ArrowDown")).toBe(7);
+    expect(getTargetIndex(8, "ArrowDown")).toBe(8);
+  });
+
+  it("ArrowUp moves to previous row", () => {
+    expect(getTargetIndex(3, "ArrowUp")).toBe(0);
+    expect(getTargetIndex(7, "ArrowUp")).toBe(4);
+  });
+
+  it("ArrowUp stays at same index on first row", () => {
+    expect(getTargetIndex(0, "ArrowUp")).toBe(0);
+    expect(getTargetIndex(1, "ArrowUp")).toBe(1);
+    expect(getTargetIndex(2, "ArrowUp")).toBe(2);
+  });
+
+  it("unknown key returns same index", () => {
+    expect(getTargetIndex(4, "Enter")).toBe(4);
+    expect(getTargetIndex(0, "Tab")).toBe(0);
   });
 });
