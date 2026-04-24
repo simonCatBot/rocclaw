@@ -485,7 +485,7 @@ export function PhotoBoothDashboard() {
         <div className="flex flex-col border-b lg:border-b-0 lg:border-r border-border overflow-hidden">
 
           {/* ── Row 1: Camera ── */}
-          <div className="flex flex-col items-center justify-center gap-2 border-b border-border p-3 flex-1 min-h-0">
+          <div className="flex flex-col items-center gap-1.5 border-b border-border px-3 py-2 shrink-0">
             <div className="relative w-full max-w-[360px] overflow-hidden rounded-xl border-2 border-border bg-black" style={{ aspectRatio: "1 / 1" }}>
               {/* Video always in DOM */}
               <video
