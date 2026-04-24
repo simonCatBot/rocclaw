@@ -69,3 +69,16 @@ echo "========================================="
 echo "Patches applied. Restart the daemon with:"
 echo "  reachy-mini-daemon"
 echo "========================================="
+# Also install required GStreamer Python bindings if missing
+echo ""
+echo "Checking GStreamer Python bindings..."
+python3 -c "import gi; gi.require_version('GstApp', '1.0')" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "WARNING: GstApp Python bindings are missing."
+    echo "  Install with: sudo apt install -y gir1.2-gst-plugins-base-1.0"
+fi
+python3 -c "import gi; gi.require_version('GstWebRTC', '1.0')" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "WARNING: GstWebRTC Python bindings are missing."
+    echo "  Install with: sudo apt install -y gir1.2-gst-plugins-bad-1.0"
+fi

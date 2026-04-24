@@ -1,6 +1,14 @@
 --- /tmp/reachy_160_extracted/reachy_mini/media/device_detection.py	2026-03-27 13:05:38.000000000 -0700
-+++ /home/kiriti/.openclaw/workspace/venv/lib/python3.12/site-packages/reachy_mini/media/device_detection.py	2026-04-23 10:28:20.037061984 -0700
-@@ -197,12 +197,28 @@
++++ /home/kiriti/.openclaw/workspace/venv/lib/python3.12/site-packages/reachy_mini/media/device_detection.py	2026-04-23 17:04:32.139389990 -0700
+@@ -22,6 +22,7 @@
+ from reachy_mini.media.camera_constants import (
+     ArducamSpecs,
+     CameraSpecs,
++    GenericWebcamSpecs,
+     ReachyMiniLiteCamSpecs,
+     ReachyMiniWirelessCamSpecs,
+ )
+@@ -197,12 +198,28 @@
  
  
  def gst_props_to_dict(props: Gst.Structure) -> dict[str, str]:
@@ -30,4 +38,28 @@
 +            output_dict[field_name] = str(value)
      return output_dict
  
+ 
+@@ -448,6 +465,23 @@
+                     )
+                     return str(device.index), _make_camera_specs(cam_name)
+ 
++    # Fallback: no named camera matched.  On Linux, pick any V4L2
++    # device that has an api.v4l2.path property — this allows generic
++    # webcams (e.g. Logitech C920) to work when no Reachy Mini or
++    # Arducam camera is present.
++    if current_platform == "Linux":
++        for device in devices:
++            props = device.properties
++            if "api.v4l2.path" in props:
++                device_path = props["api.v4l2.path"]
++                if device_path:
++                    _logger.info(
++                        "No named camera found; falling back to V4L2 device: %s (%s)",
++                        device.display_name,
++                        device_path,
++                    )
++                    return device_path, GenericWebcamSpecs()
++
+     _logger.warning("No camera found.")
+     return "", None
  
