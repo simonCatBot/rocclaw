@@ -593,7 +593,7 @@ export function PhotoBoothDashboard() {
             </div>
 
             {/* 3×3 style grid — compact square block */}
-            <div className="grid grid-cols-3 gap-1.5 max-w-[280px]" role="group" aria-label="Style presets">
+            <div className="grid grid-cols-3 gap-1.5 max-w-[280px] mx-auto" role="group" aria-label="Style presets">
               {STYLE_PRESETS.map((style, index) => {
                 const isSelected = selectedStyles.has(style.id);
                 const job = jobs.find((j) => j.style === style.id);
