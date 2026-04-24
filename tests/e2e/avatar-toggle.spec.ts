@@ -49,9 +49,9 @@ test("footer avatar toggle opens dropdown with all three mode options", async ({
 
   // Dropdown items appear with descriptive accessible names
   // Each mode button's accessible name is "{label} {description}"
-  await expect(page.getByRole("button", { name: /auto procedural/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /default profile/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /custom custom/i })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /auto procedural/i })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /default profile/i })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /custom custom/i })).toBeVisible();
 });
 
 test("selecting default mode closes dropdown and updates toggle title", async ({ page }) => {
@@ -62,10 +62,10 @@ test("selecting default mode closes dropdown and updates toggle title", async ({
   await page.getByRole("button", { name: /avatar mode: auto/i }).click();
 
   // Select Default mode
-  await page.getByRole("button", { name: /default profile/i }).click();
+  await page.getByRole("menuitem", { name: /default profile/i }).click();
 
   // Dropdown is closed
-  await expect(page.getByRole("button", { name: /auto procedural/i })).not.toBeVisible();
+  await expect(page.getByRole("menuitem", { name: /auto procedural/i })).not.toBeVisible();
 
   // Toggle reflects the new mode — re-query to avoid stale locator
   await expect(
@@ -79,7 +79,7 @@ test("selecting custom mode persists across page reload", async ({ page }) => {
 
   // Select Custom
   await page.getByRole("button", { name: /avatar mode: auto/i }).click();
-  await page.getByRole("button", { name: /custom custom/i }).click();
+  await page.getByRole("menuitem", { name: /custom custom/i }).click();
 
   // Reload — mode is restored from localStorage
   await page.reload();

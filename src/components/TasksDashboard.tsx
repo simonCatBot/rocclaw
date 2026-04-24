@@ -1217,6 +1217,8 @@ export function TasksDashboard() {
   const footerMode = useAvatarMode();
 
   const [cronJobs, setCronJobs] = useState<CronJobSummary[]>([]);
+  const [cronLoading, setCronLoading] = useState(true);
+  const [cronError, setCronError] = useState<string | null>(null);
   const [runBusy, setRunBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1273,7 +1275,12 @@ export function TasksDashboard() {
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setCronJobs(sortCronJobsByUpdatedAt(data.jobs ?? []));
-    } catch { /* silently skip */ }
+      setCronError(null);
+    } catch (err) {
+      setCronError(err instanceof Error ? err.message : "Failed to load tasks");
+    } finally {
+      setCronLoading(false);
+    }
   }, []);
 
   useEffect(() => { void fetchCronJobs(); }, [fetchCronJobs]);
@@ -1607,6 +1614,53 @@ export function TasksDashboard() {
   const activeCount = executingRuns.length + pendingRunEntries.length;
 
   // ── Render ───────────────────────────────────────────────────────────────
+  if (cronLoading) {
+    return (
+      <div className="flex h-full w-full flex-col overflow-hidden">
+        <div className="flex flex-col gap-2 border-b border-border px-4 py-3 animate-pulse">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-surface-2" />
+            <div className="flex-1 h-8 rounded bg-surface-2" />
+          </div>
+        </div>
+        <div className="flex-1 p-4 animate-pulse">
+          <div className="grid grid-cols-4 gap-4 h-full">
+            {["Queued", "Pending", "Executing", "Done"].map((col) => (
+              <div key={col} className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                  <div className="w-20 h-4 rounded bg-surface-2" />
+                  <div className="w-6 h-4 rounded-full bg-surface-2" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-16 rounded-lg bg-surface-1 border border-border" />
+                  <div className="h-16 rounded-lg bg-surface-1 border border-border" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (cronError && cronJobs.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="text-center space-y-2">
+          <AlertTriangle className="w-6 h-6 text-red-500 mx-auto" />
+          <p className="text-sm text-red-500">{cronError}</p>
+          <button
+            type="button"
+            onClick={() => { setCronLoading(true); void fetchCronJobs(); }}
+            className="text-xs text-primary hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -1614,6 +1668,14 @@ export function TasksDashboard() {
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      accessibility={{
+        announcements: {
+          onDragStart({ active }) { return `Picked up task ${active.id}`; },
+          onDragOver({ active, over }) { return over ? `Task ${active.id} is over ${over.id}` : `Task ${active.id} is no longer over a drop target`; },
+          onDragEnd({ active, over }) { return over ? `Task ${active.id} was dropped on ${over.id}` : `Task ${active.id} was dropped`; },
+          onDragCancel({ active }) { return `Dragging of task ${active.id} was cancelled`; },
+        },
+      }}
     >
       <div className="flex h-full w-full flex-col overflow-hidden">
 

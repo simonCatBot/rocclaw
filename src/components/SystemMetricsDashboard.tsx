@@ -239,10 +239,89 @@ export function SystemMetricsDashboard() {
 
   if (!metrics && !error) {
     return (
-      <div className="ui-panel ui-depth-workspace p-4 h-full">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Activity className="w-4 h-4 animate-pulse" />
-          <span className="text-sm">Loading...</span>
+      <div className="ui-panel ui-depth-workspace p-4 h-full overflow-y-auto animate-pulse">
+        {/* Header skeleton */}
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border/50">
+          <div className="w-4 h-4 rounded bg-surface-2" />
+          <div className="w-28 h-4 rounded bg-surface-2" />
+          <div className="w-12 h-4 rounded-full bg-surface-2 ml-2" />
+          <div className="ml-auto w-16 h-3 rounded bg-surface-2" />
+        </div>
+        {/* CPU card skeleton */}
+        <div className="mb-4 p-4 bg-surface-1 border border-border rounded-lg">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-surface-2 rounded-md w-9 h-9" />
+              <div>
+                <div className="w-16 h-3 rounded bg-surface-2 mb-1" />
+                <div className="w-40 h-4 rounded bg-surface-2" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="w-24 h-4 rounded bg-surface-2" />
+              <div className="flex items-center gap-3">
+                <div className="w-32 h-2 rounded-full bg-surface-2" />
+                <div className="w-10 h-5 rounded bg-surface-2" />
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Memory row skeleton */}
+        <div className="mb-4 flex items-center justify-between p-3 rounded-lg border border-border bg-surface-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-surface-2 rounded-md w-8 h-8" />
+            <div>
+              <div className="w-28 h-4 rounded bg-surface-2 mb-1" />
+              <div className="w-40 h-3 rounded bg-surface-2" />
+            </div>
+          </div>
+          <div className="w-12 h-6 rounded bg-surface-2" />
+        </div>
+        {/* GPU card skeleton */}
+        <div className="mb-4 p-4 bg-surface-1 border border-border rounded-lg">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-surface-2 rounded-md w-9 h-9" />
+              <div>
+                <div className="w-24 h-3 rounded bg-surface-2 mb-1" />
+                <div className="w-36 h-4 rounded bg-surface-2" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="w-24 h-4 rounded bg-surface-2" />
+              <div className="flex items-center gap-3">
+                <div className="w-32 h-2 rounded-full bg-surface-2" />
+                <div className="w-10 h-5 rounded bg-surface-2" />
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Disk + Network row skeletons */}
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-surface-2 rounded-md w-8 h-8" />
+              <div>
+                <div className="w-16 h-4 rounded bg-surface-2 mb-1" />
+                <div className="w-32 h-3 rounded bg-surface-2" />
+              </div>
+            </div>
+            <div className="w-12 h-6 rounded bg-surface-2" />
+          </div>
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-surface-2 rounded-md w-8 h-8" />
+              <div>
+                <div className="w-20 h-4 rounded bg-surface-2 mb-1" />
+                <div className="w-44 h-3 rounded bg-surface-2" />
+              </div>
+            </div>
+            <div className="w-16 h-6 rounded bg-surface-2" />
+          </div>
         </div>
       </div>
     );
@@ -255,6 +334,14 @@ export function SystemMetricsDashboard() {
           <Activity className="w-4 h-4" />
           <span className="text-sm">{error}</span>
         </div>
+        <p className="mt-1 text-xs text-muted-foreground">Retries automatically every 5 seconds.</p>
+        <button
+          type="button"
+          onClick={fetchMetrics}
+          className="mt-2 text-xs text-primary hover:underline"
+        >
+          Retry now
+        </button>
       </div>
     );
   }

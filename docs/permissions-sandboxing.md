@@ -4,6 +4,18 @@ How rocCLAW configures security and how the OpenClaw gateway enforces it.
 
 rocCLAW is a UI layer. It writes configuration to the gateway, but the **gateway is the enforcement point**. Approvals and sandboxing work even if rocCLAW is offline.
 
+## Execution Roles
+
+rocCLAW provides three high-level execution roles that map to specific security settings:
+
+| Role | Security | Ask Mode | Allowlist | Behavior |
+|------|----------|----------|-----------|----------|
+| **Conservative** | _(agent entry removed)_ | _(system default)_ | _(none)_ | Most restrictive — removes the agent's entry from the exec approvals file entirely, reverting to system defaults (deny). |
+| **Collaborative** | `allowlist` | `always` | Preserved | Commands checked against the allowlist; user is **always** prompted for approval regardless of match. |
+| **Autonomous** | `full` | `off` | Preserved | Full execution authority; user is **never** prompted. Commands run without operator confirmation. |
+
+These are configured via the "Run Commands" segmented control (Off / Ask / Auto) in the agent capabilities panel.
+
 ## Sandbox Modes
 
 Controls when sessions run inside a sandbox container.
@@ -34,7 +46,16 @@ Sandboxes live at `~/.openclaw/sandboxes/{agentId}/` on the gateway host.
 
 Two independent layers control which tools an agent can use.
 
-**Layer 1 — Per-agent tool overrides** (set in Capabilities tab): Controls the host toolset. Profiles: Minimal, Coding, Messaging, Full. Plus `alsoAllow` and `deny` lists for fine-grained control.
+**Layer 1 — Per-agent tool overrides** (set in Capabilities tab): Controls the host toolset.
+
+| Profile | Description |
+|---------|-------------|
+| Minimal | Basic tools only |
+| Coding | Standard development tools |
+| Messaging | Communication-focused tools |
+| Full | All available tools |
+
+Plus `alsoAllow` and `deny` lists for fine-grained control.
 
 **Layer 2 — Sandbox tool policy**: Additional gate for tools inside the sandbox container. Configured as `allow`/`deny` lists in the sandbox config.
 
@@ -53,10 +74,28 @@ Approval options:
 | Option | Effect |
 |--------|--------|
 | Allow once | Approves this command for this run only |
-| Allow always | Adds command pattern to agent's permanent allowlist |
+| Allow always | Adds command pattern to agent's permanent allowlist (normalized, deduplicated) |
 | Deny | Blocks this command this time |
 
 Approvals are enforced by the gateway. If rocCLAW is offline and an agent runs, the approval policy still applies. The gateway pauses the run until you decide.
+
+### Approval Flow in rocCLAW
+
+The exec approval system is fully wired end-to-end:
+
+1. **Gateway event** — `exec.approval.requested` arrives via SSE with command details, working directory, host, and expiry time.
+2. **Lifecycle workflow** — Pure planning function determines scoped/unscoped upserts, removals, and activity markers.
+3. **Pending store** — Two-tier state: `approvalsByAgentId` (scoped) and `unscopedApprovals` (not yet matched to an agent).
+4. **UI rendering** — Approval cards appear inline in the chat transcript showing the command, host, cwd, and three action buttons.
+5. **Pause policy** — If the agent is running and ask mode is "always", the run is paused via `chatAbort()`.
+6. **Resolution** — Decision sent to gateway via `exec.approval.resolve` intent. On allow, waits up to 15 seconds for the run to complete, then refreshes history.
+7. **Auto-resume** — After resolution, the paused run is automatically resumed with a follow-up message.
+
+### Approval Badges
+
+- Agents with pending approvals show "Needs Approval" badges in the fleet sidebar.
+- The `awaitingUserInput` flag is derived from the pending approval count.
+- The fleet sidebar filter includes an "approvals" mode to show only agents needing attention.
 
 ## Session-Level Exec Settings
 
@@ -70,6 +109,34 @@ Each session can override the default exec behavior:
 
 When `sandbox.mode = All` and there are exec overrides, rocCLAW forces `execHost = sandbox` to prevent accidentally running commands on the host.
 
+## Exec Approvals File Format
+
+The exec approvals file (`~/.openclaw/agents/{agentId}/exec-approvals.json`) uses v1 format:
+
+```json
+{
+  "version": 1,
+  "socket": { "path": "...", "token": "..." },
+  "defaults": {
+    "security": "allowlist",
+    "ask": "on-miss",
+    "autoAllowSkills": true
+  },
+  "agents": {
+    "<agentId>": {
+      "security": "allowlist",
+      "ask": "always",
+      "allowlist": [
+        { "pattern": "npm test" },
+        { "pattern": "git status" }
+      ]
+    }
+  }
+}
+```
+
+rocCLAW uses optimistic concurrency (base hash check + retry on conflict) when updating this file.
+
 ## Troubleshooting
 
 **Agent can't read/write files:**
@@ -80,11 +147,17 @@ When `sandbox.mode = All` and there are exec overrides, rocCLAW forces `execHost
 **Commands don't need approval:**
 1. Check `execAsk` in session settings — `off` suppresses approvals
 2. Check agent's allowlist — wildcards may auto-approve
+3. Check the execution role — "Autonomous" (Auto) sets `ask: "off"`
 
 **Sandbox not applying:**
 1. Check `sandbox.mode` — Off means no sandboxing
 2. Check `execHost` — `gateway` or `node` runs on host, not sandbox
 3. If Non-main, confirm you're not on the main session key
+
+**Approvals not showing in rocCLAW:**
+1. Check SSE connection — approvals arrive via the event stream
+2. Check if the approval has expired (`expiresAtMs`)
+3. Check the agent is in the fleet — unscoped approvals may not be matched
 
 **Diagnostic commands:**
 ```bash

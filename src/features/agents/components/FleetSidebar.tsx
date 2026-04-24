@@ -2,7 +2,7 @@
 // See LICENSE file for details.
 
 import type { AgentState, FocusFilter } from "@/features/agents/state/store";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AgentAvatar } from "./AgentAvatar";
 import {
   NEEDS_APPROVAL_BADGE_CLASS,
@@ -10,13 +10,13 @@ import {
   resolveAgentStatusLabel,
 } from "./colorSemantics";
 import { EmptyStatePanel } from "./EmptyStatePanel";
-import { Plus, Cpu } from "lucide-react";
+import { Plus, Cpu, Search } from "lucide-react";
 
 type FleetSidebarProps = {
   agents: AgentState[];
   selectedAgentId: string | null;
-  filter: FocusFilter;
-  onFilterChange: (next: FocusFilter) => void;
+  filter?: FocusFilter;
+  onFilterChange?: (next: FocusFilter) => void;
   onSelectAgent: (agentId: string) => void;
   onCreateAgent: () => void;
   createDisabled?: boolean;
@@ -35,8 +35,25 @@ export const FleetSidebar = ({
   const rowRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const previousTopByAgentIdRef = useRef<Map<string, number>>(new Map());
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const agentOrderKey = useMemo(() => agents.map((agent) => agent.agentId).join("|"), [agents]);
+  // Filter and sort agents
+  const filteredAgents = useMemo(() => {
+    let result = agents;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (a) =>
+          a.name.toLowerCase().includes(q) ||
+          (a.identityName?.toLowerCase().includes(q)) ||
+          a.agentId.toLowerCase().includes(q) ||
+          (a.model?.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [agents, searchQuery]);
+
+  const agentOrderKey = useMemo(() => filteredAgents.map((agent) => agent.agentId).join("|"), [filteredAgents]);
 
   useLayoutEffect(() => {
     const scroller = scrollContainerRef.current;
@@ -73,6 +90,7 @@ export const FleetSidebar = ({
 
   return (
     <aside
+      aria-label="Agent fleet"
       className={`glass-panel fade-up-delay ui-panel ui-depth-sidepanel relative flex h-full flex-1 flex-col gap-3 bg-sidebar p-3 border-r border-sidebar-border ${className || ""}`}
       data-testid="fleet-sidebar"
     >
@@ -81,18 +99,53 @@ export const FleetSidebar = ({
         <p className="console-title type-page-title text-foreground text-center">Agents ({agents.length})</p>
       </div>
 
+      {/* Search bar — shown when there are agents */}
+      {agents.length > 0 && (
+        <div className="relative px-1">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search agents..."
+            aria-label="Search agents"
+            className="ui-input h-8 w-full rounded-md pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground"
+          />
+        </div>
+      )}
+
       {/* Agent Grid - Responsive with larger cards */}
       <div ref={scrollContainerRef} className="ui-scroll min-h-0 flex-1 overflow-auto">
         {agents.length === 0 ? (
-          <EmptyStatePanel title="No agents available." compact className="p-3 text-xs" />
+          <div className="flex flex-col items-center justify-center gap-4 p-6 text-center">
+            <EmptyStatePanel
+              title="No agents yet"
+              description="Create your first agent to start chatting with an AI assistant."
+              compact
+              className="p-3 text-xs"
+            />
+            <button
+              type="button"
+              className="ui-btn-primary flex items-center gap-2 px-4 py-2 font-mono text-[11px] font-medium tracking-[0.02em]"
+              onClick={onCreateAgent}
+              disabled={createDisabled || createBusy}
+            >
+              <Plus className="w-4 h-4" />
+              {createBusy ? "Creating..." : "Create Agent"}
+            </button>
+          </div>
+        ) : filteredAgents.length === 0 ? (
+          <div className="p-4 text-center text-xs text-muted-foreground">
+            No agents matching &ldquo;{searchQuery}&rdquo;
+          </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
-            {agents.map((agent) => {
+            {filteredAgents.map((agent) => {
               const selected = selectedAgentId === agent.agentId;
               const avatarSeed = agent.avatarSeed ?? agent.agentId;
               const modelName = getModelName(agent);
               const displayName = agent.identityName ?? agent.name;
-              
+
               return (
                 <button
                   key={agent.agentId}
@@ -104,6 +157,7 @@ export const FleetSidebar = ({
                     rowRefs.current.delete(agent.agentId);
                   }}
                   type="button"
+                  aria-label={`${displayName} — ${resolveAgentStatusLabel(agent.status)}`}
                   data-testid={`fleet-agent-row-${agent.agentId}`}
                   className={`group relative ui-card flex flex-col items-center p-4 text-center border transition-colors min-h-[240px] ${
                     selected
@@ -124,7 +178,7 @@ export const FleetSidebar = ({
                       "bg-amber-500"
                     }`}
                   />
-                  
+
                   {/* Avatar - centered, fills available space */}
                   <div className="relative mb-2 min-h-0 w-full flex-1 flex items-center justify-center">
                     <AgentAvatar
@@ -157,7 +211,7 @@ export const FleetSidebar = ({
                       {resolveAgentStatusLabel(agent.status)}
                     </span>
                   </div>
-                  
+
                   {/* Approval Badge */}
                   {agent.awaitingUserInput ? (
                     <span className={`absolute bottom-3 left-3 right-3 text-[10px] ${NEEDS_APPROVAL_BADGE_CLASS} py-1 rounded-md`} data-status="approval">

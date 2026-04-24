@@ -82,8 +82,18 @@ export function ColorSchemeToggle() {
         setOpen(false);
       }
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+      }
+    };
     document.addEventListener("mousedown", onPointer);
-    return () => document.removeEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [open]);
 
   const handleSchemeSelect = (id: ColorSchemeId) => {
@@ -105,7 +115,8 @@ export function ColorSchemeToggle() {
       <button
         type="button"
         onClick={handleThemeToggle}
-        className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+        className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
         title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       >
         {theme === "dark" ? (
@@ -120,7 +131,10 @@ export function ColorSchemeToggle() {
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="flex h-7 items-center gap-2 rounded-md border border-border bg-surface-2 px-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+          className="flex h-8 items-center gap-2 rounded-md border border-border bg-surface-2 px-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+          aria-label="Change color scheme"
+          aria-expanded={open}
+          aria-haspopup="true"
           title="Change color scheme"
         >
           <div
@@ -131,7 +145,7 @@ export function ColorSchemeToggle() {
         </button>
 
         {open ? (
-          <div className="ui-card absolute bottom-full right-0 z-[300] mb-2 min-w-48 p-2">
+          <div role="menu" aria-label="Color schemes" className="ui-card absolute bottom-full right-0 z-[300] mb-2 min-w-48 p-2">
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Color scheme
             </p>
@@ -142,6 +156,7 @@ export function ColorSchemeToggle() {
                   <button
                     key={scheme.id}
                     type="button"
+                    role="menuitem"
                     onClick={() => { handleSchemeSelect(scheme.id); setOpen(false); }}
                     className={`flex items-center gap-3 rounded-lg px-2 py-2 text-left text-xs transition-colors ${
                       isActive

@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { AgentCreateModalSubmitPayload } from "@/features/agents/creation/types";
 import { AvatarSelector, buildDefaultAvatarSelectorValue, type AvatarSelectorHandle } from "@/features/agents/components/AvatarSelector";
 
@@ -37,6 +37,8 @@ const AgentCreateModalContent = ({
   const [name, setName] = useState(() => resolveInitialName(suggestedName));
   const [avatarValue, setAvatarValue] = useState(() => buildDefaultAvatarSelectorValue());
   const avatarRef = useRef<AvatarSelectorHandle | null>(null);
+  const dialogRef = useRef<HTMLFormElement | null>(null);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   const canSubmit = name.trim().length > 0;
 
@@ -54,6 +56,47 @@ const AgentCreateModalContent = ({
     });
   };
 
+  // Auto-focus the name input on mount
+  useEffect(() => {
+    nameInputRef.current?.focus();
+    nameInputRef.current?.select();
+  }, []);
+
+  // Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [busy, onClose]);
+
+  // Focus trap — keep Tab within the dialog
+  const handleFocusTrap = useCallback((event: React.KeyboardEvent) => {
+    if (event.key !== "Tab") return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-[120] flex items-center justify-center bg-background/80 p-4"
@@ -63,12 +106,14 @@ const AgentCreateModalContent = ({
       onClick={busy ? undefined : onClose}
     >
       <form
+        ref={dialogRef}
         className="ui-panel w-full max-w-2xl shadow-xs"
         onSubmit={(event) => {
           event.preventDefault();
           handleSubmit();
         }}
         onClick={(event) => event.stopPropagation()}
+        onKeyDown={handleFocusTrap}
         data-testid="agent-create-modal"
       >
         <div className="flex items-center justify-between border-b border-border/35 px-6 py-6">
@@ -93,6 +138,7 @@ const AgentCreateModalContent = ({
           <label className={labelClassName}>
             Name
             <input
+              ref={nameInputRef}
               aria-label="Agent name"
               value={name}
               onChange={(event) => setName(event.target.value)}

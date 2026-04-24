@@ -41,8 +41,18 @@ export function AvatarModeToggle() {
         setOpen(false);
       }
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+      }
+    };
     document.addEventListener("mousedown", onPointer);
-    return () => document.removeEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [open]);
 
   const handleSelect = (id: AvatarDisplayMode) => {
@@ -63,14 +73,17 @@ export function AvatarModeToggle() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+        className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+        aria-label={`Avatar mode: ${active.label}`}
+        aria-expanded={open}
+        aria-haspopup="true"
         title={`Avatar mode: ${active.label}`}
       >
         {iconMap[activeMode]}
       </button>
 
       {open ? (
-        <div className="ui-card absolute bottom-full right-0 z-[300] mb-2 min-w-52 p-2">
+        <div role="menu" aria-label="Avatar modes" className="ui-card absolute bottom-full right-0 z-[300] mb-2 min-w-52 p-2">
           <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
             Avatar mode
           </p>
@@ -81,6 +94,7 @@ export function AvatarModeToggle() {
                 <button
                   key={mode.id}
                   type="button"
+                  role="menuitem"
                   onClick={() => handleSelect(mode.id)}
                   className={`flex items-center gap-3 rounded-lg px-2 py-2 text-left text-xs transition-colors ${
                     isActive

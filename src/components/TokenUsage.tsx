@@ -136,6 +136,7 @@ export function TokenUsage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
 
   const fetchTokenMetrics = useCallback(async () => {
     try {
@@ -214,6 +215,7 @@ export function TokenUsage() {
           setMetrics(transformedMetrics);
           setLastUpdated(new Date());
           setError(null);
+          setUsingFallbackData(false);
           setLoading(false);
           return;
         }
@@ -223,12 +225,14 @@ export function TokenUsage() {
       console.log("[TokenUsage] API unavailable, using static data");
       setMetrics(STATIC_TOKEN_DATA);
       setLastUpdated(new Date());
+      setUsingFallbackData(true);
       setError(null);
     } catch (err) {
       console.log("[TokenUsage] API error, using static data:", err);
       // On any error, fall back to static data
       setMetrics(STATIC_TOKEN_DATA);
       setLastUpdated(new Date());
+      setUsingFallbackData(true);
       setError(null);
     } finally {
       setLoading(false);
@@ -244,10 +248,47 @@ export function TokenUsage() {
 
   if (loading) {
     return (
-      <div className="ui-panel p-4">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Coins className="w-4 h-4 animate-pulse" />
-          <span className="text-sm">Loading...</span>
+      <div className="ui-panel ui-depth-workspace p-4 space-y-4 animate-pulse">
+        {/* Header skeleton */}
+        <div className="flex items-center gap-2 pb-3 border-b border-border/50">
+          <div className="w-4 h-4 rounded bg-surface-2" />
+          <div className="w-24 h-4 rounded bg-surface-2" />
+          <div className="ml-auto w-16 h-3 rounded bg-surface-2" />
+        </div>
+        {/* Summary cards skeleton */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="ui-panel p-3 space-y-2">
+            <div className="w-12 h-3 rounded bg-surface-2" />
+            <div className="w-16 h-6 rounded bg-surface-2" />
+            <div className="w-32 h-3 rounded bg-surface-2" />
+          </div>
+          <div className="ui-panel p-3 space-y-2">
+            <div className="w-14 h-3 rounded bg-surface-2" />
+            <div className="w-16 h-6 rounded bg-surface-2" />
+            <div className="w-32 h-3 rounded bg-surface-2" />
+          </div>
+        </div>
+        {/* All Time skeleton */}
+        <div className="ui-panel p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-surface-2" />
+              <div className="w-16 h-4 rounded bg-surface-2" />
+            </div>
+            <div className="space-y-1">
+              <div className="w-16 h-5 rounded bg-surface-2 ml-auto" />
+              <div className="w-28 h-3 rounded bg-surface-2" />
+            </div>
+          </div>
+        </div>
+        {/* Agent breakdown skeleton */}
+        <div className="space-y-2">
+          <div className="w-20 h-3 rounded bg-surface-2" />
+          <div className="space-y-1">
+            <div className="h-8 rounded-lg bg-surface-1/50" />
+            <div className="h-8 rounded-lg bg-surface-1/50" />
+            <div className="h-8 rounded-lg bg-surface-1/50" />
+          </div>
         </div>
       </div>
     );
@@ -287,6 +328,20 @@ export function TokenUsage() {
           </span>
         )}
       </div>
+
+      {usingFallbackData && (
+        <div className="flex items-center gap-2 rounded-md bg-amber-500/15 border-2 border-amber-500/30 px-3 py-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
+          <div>
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+              Example data — not real usage
+            </p>
+            <p className="text-[10px] text-amber-600/80 dark:text-amber-400/70">
+              Usage API is unavailable. Numbers below are sample data for illustration only.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-2">

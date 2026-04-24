@@ -177,13 +177,16 @@ export function SettingsPanel() {
       </div>
 
       <div className="flex-1 space-y-6 p-6">
-        {/* Gateway Settings */}
-        <section className="ui-card space-y-4 p-5">
+        {/* Gateway Settings — view only, managed via Connection tab */}
+        <section className="ui-card space-y-4 p-5 opacity-75">
           <div className="flex items-center gap-3">
             <Server className="h-5 w-5 text-primary" />
             <h3 className="font-semibold text-foreground">Gateway Connection</h3>
+            <span className="ml-auto rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              Managed via Connection tab
+            </span>
           </div>
-          
+
           <div className="space-y-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
@@ -192,12 +195,12 @@ export function SettingsPanel() {
               <input
                 type="text"
                 value={settings.gateway.url}
-                onChange={(e) => updateSetting("gateway", { url: e.target.value })}
+                readOnly
                 placeholder="ws://localhost:18789"
-                className="h-10 w-full rounded-md border border-border bg-surface-2 px-3 text-sm text-foreground outline-none focus:border-primary"
+                className="h-10 w-full rounded-md border border-border bg-surface-2/50 px-3 text-sm text-muted-foreground outline-none cursor-not-allowed"
               />
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Zap className="h-4 w-4 text-muted-foreground" />
@@ -209,8 +212,8 @@ export function SettingsPanel() {
               <button
                 role="switch"
                 aria-checked={settings.gateway.autoStart}
-                onClick={() => updateSetting("gateway", { autoStart: !settings.gateway.autoStart })}
-                className={`ui-switch ${settings.gateway.autoStart ? "ui-switch--on" : ""}`}
+                disabled
+                className={`ui-switch cursor-not-allowed opacity-60 ${settings.gateway.autoStart ? "ui-switch--on" : ""}`}
               >
                 <span className="ui-switch-thumb" />
               </button>
@@ -218,13 +221,16 @@ export function SettingsPanel() {
           </div>
         </section>
 
-        {/* Model Settings */}
-        <section className="ui-card space-y-4 p-5">
+        {/* Model Settings — view only, managed per-agent via chat composer */}
+        <section className="ui-card space-y-4 p-5 opacity-75">
           <div className="flex items-center gap-3">
             <Cpu className="h-5 w-5 text-primary" />
             <h3 className="font-semibold text-foreground">Default Model</h3>
+            <span className="ml-auto rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              Configured per agent
+            </span>
           </div>
-          
+
           <div className="space-y-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
@@ -232,8 +238,8 @@ export function SettingsPanel() {
               </label>
               <select
                 value={settings.models.defaultModel}
-                onChange={(e) => updateSetting("models", { defaultModel: e.target.value })}
-                className="h-10 w-full rounded-md border border-border bg-surface-2 px-3 text-sm text-foreground outline-none focus:border-primary"
+                disabled
+                className="h-10 w-full rounded-md border border-border bg-surface-2/50 px-3 text-sm text-muted-foreground outline-none cursor-not-allowed"
               >
                 <option value="">Select model...</option>
                 <option value="ollama/minimax-m2.7:cloud">minimax-m2.7:cloud</option>
@@ -242,7 +248,7 @@ export function SettingsPanel() {
                 <option value="ollama/qwen2.5:7b">qwen2.5:7b</option>
               </select>
             </div>
-            
+
             <div className="space-y-1.5">
               <label className="flex items-center justify-between text-xs font-medium text-muted-foreground">
                 <span>Temperature</span>
@@ -254,15 +260,15 @@ export function SettingsPanel() {
                 max="2"
                 step="0.1"
                 value={settings.models.temperature}
-                onChange={(e) => updateSetting("models", { temperature: parseFloat(e.target.value) })}
-                className="h-2 w-full cursor-pointer rounded-full bg-surface-2"
+                disabled
+                className="h-2 w-full rounded-full bg-surface-2 cursor-not-allowed opacity-60"
               />
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>Precise</span>
                 <span>Creative</span>
               </div>
             </div>
-            
+
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
                 Max Tokens
@@ -273,20 +279,23 @@ export function SettingsPanel() {
                 max="128000"
                 step="256"
                 value={settings.models.maxTokens}
-                onChange={(e) => updateSetting("models", { maxTokens: parseInt(e.target.value) || 8192 })}
-                className="h-10 w-full rounded-md border border-border bg-surface-2 px-3 text-sm text-foreground outline-none focus:border-primary"
+                readOnly
+                className="h-10 w-full rounded-md border border-border bg-surface-2/50 px-3 text-sm text-muted-foreground outline-none cursor-not-allowed"
               />
             </div>
           </div>
         </section>
 
-        {/* Agent Settings */}
-        <section className="ui-card space-y-4 p-5">
+        {/* Agent Settings — view only */}
+        <section className="ui-card space-y-4 p-5 opacity-75">
           <div className="flex items-center gap-3">
             <FolderOpen className="h-5 w-5 text-primary" />
             <h3 className="font-semibold text-foreground">Agents</h3>
+            <span className="ml-auto rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              Configured per agent
+            </span>
           </div>
-          
+
           <div className="space-y-3">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
@@ -295,20 +304,20 @@ export function SettingsPanel() {
               <input
                 type="text"
                 value={settings.agents.defaultWorkspace}
-                onChange={(e) => updateSetting("agents", { defaultWorkspace: e.target.value })}
+                readOnly
                 placeholder="/path/to/workspace"
-                className="h-10 w-full rounded-md border border-border bg-surface-2 px-3 text-sm text-foreground outline-none focus:border-primary"
+                className="h-10 w-full rounded-md border border-border bg-surface-2/50 px-3 text-sm text-muted-foreground outline-none cursor-not-allowed"
               />
             </div>
-            
+
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
                 Timezone
               </label>
               <select
                 value={settings.agents.timezone}
-                onChange={(e) => updateSetting("agents", { timezone: e.target.value })}
-                className="h-10 w-full rounded-md border border-border bg-surface-2 px-3 text-sm text-foreground outline-none focus:border-primary"
+                disabled
+                className="h-10 w-full rounded-md border border-border bg-surface-2/50 px-3 text-sm text-muted-foreground outline-none cursor-not-allowed"
               >
                 {Intl.supportedValuesOf("timeZone").map((tz) => (
                   <option key={tz} value={tz}>{tz}</option>

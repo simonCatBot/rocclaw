@@ -7,7 +7,13 @@ import Image from "next/image";
 
 export const HeaderBar = () => {
   return (
-    <div className="ui-topbar border-none relative z-[180]">
+    <header className="ui-topbar border-none relative z-[180]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-[200] focus:rounded-md focus:bg-primary focus:px-3 focus:py-1.5 focus:text-xs focus:font-semibold focus:text-primary-foreground focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <div className="grid h-[7.5rem] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-3 sm:px-4 md:px-5">
         {/* Left — spacer */}
         <div className="flex items-center gap-2" />
@@ -29,6 +35,6 @@ export const HeaderBar = () => {
         {/* Right — spacer for balance */}
         <div className="flex items-center justify-end gap-2" />
       </div>
-    </div>
+    </header>
   );
 };

@@ -81,7 +81,7 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
   };
 
   return (
-    <footer className="grid h-auto grid-cols-[1fr_auto_1fr] items-center border-t border-border/60 bg-surface-1/70 px-5 py-3 text-xs text-muted-foreground">
+    <footer aria-label="Application status" className="grid h-auto grid-cols-[1fr_auto_1fr] items-center border-t border-border/60 bg-surface-1/70 px-5 py-3 text-xs text-muted-foreground">
       {/* Left — connection status + version */}
       <div className="flex items-center gap-2">
         <StatusDot status={status} />
@@ -89,7 +89,7 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
         {gatewayVersion && (
           <>
             <div className="h-4 w-px bg-border/60" />
-            <span className="whitespace-nowrap font-mono text-muted-foreground/60">OpenClaw Version:{gatewayVersion}</span>
+            <span className="whitespace-nowrap font-mono text-muted-foreground/60">OpenClaw Version: {gatewayVersion}</span>
           </>
         )}
       </div>
@@ -137,7 +137,8 @@ export function FooterBar({ status, gatewayVersion: initialVersion, onConnection
         <button
           type="button"
           onClick={onConnectionSettings}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface-2 text-muted-foreground hover:border-border/80 hover:text-foreground"
+          aria-label="Gateway connection settings"
           title="Gateway connection settings"
         >
           <Plug className="h-3.5 w-3.5" />

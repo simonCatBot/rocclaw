@@ -248,6 +248,9 @@ export const AgentChatTranscript = memo(function AgentChatTranscript({
     <div className="relative h-full min-h-0 overflow-hidden">
       <div
         ref={chatRef}
+        role="log"
+        aria-label="Chat messages"
+        aria-live="polite"
         data-testid="agent-chat-scroll"
         className={`ui-chat-scroll ui-chat-scroll-borderless h-full overflow-x-hidden overflow-y-auto p-3 sm:p-5 dark:sm:p-7 ${showJumpToLatest ? "pb-20" : ""}`}
         onScroll={() => updatePinnedFromScroll()}

@@ -175,6 +175,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           className="chat-composer-input min-h-[28px] max-h-[34vh] min-w-0 flex-1 resize-none border-0 bg-transparent px-0 py-1 text-[16px] leading-6 text-foreground outline-none shadow-none transition placeholder:text-muted-foreground/65 focus:outline-none focus-visible:outline-none focus-visible:ring-0 sm:text-[15px]"
           onChange={onChange}
           onKeyDown={onKeyDown}
+          aria-label="Message input"
           placeholder="type a message"
         />
         {running ? (
@@ -195,6 +196,7 @@ export const AgentChatComposer = memo(function AgentChatComposer({
           type="button"
           onClick={onSend}
           disabled={sendDisabled}
+          title={!canSend ? "Gateway disconnected" : undefined}
         >
           Send
         </button>

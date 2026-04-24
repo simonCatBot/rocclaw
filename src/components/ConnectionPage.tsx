@@ -102,7 +102,7 @@ export function ConnectionPage({
   }, [installContext, draftGatewayUrl, savedGatewayUrl]);
 
   const [activeTab, setActiveTab] = useState<ConnectionTab>(inferredTab);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(false);
 
   const localPort = useMemo(
@@ -134,6 +134,19 @@ export function ConnectionPage({
   }, [draftGatewayUrl, hasStoredToken, installContext, localGatewayDefaultsHasToken, activeTab]);
 
   const actionBusy = saving || testing || disconnecting;
+
+  // URL validation
+  const urlValidationError = (() => {
+    const url = draftGatewayUrl.trim();
+    if (!url) return null;
+    if (!/^wss?:\/\//i.test(url)) return "URL must start with ws:// or wss://";
+    try {
+      new URL(url);
+    } catch {
+      return "Invalid URL format";
+    }
+    return null;
+  })();
   const isConnected = status === "connected";
   
   const tokenHelper = hasStoredToken
@@ -145,11 +158,10 @@ export function ConnectionPage({
   const copyCommand = async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      setCopyStatus("copied");
-      window.setTimeout(() => setCopyStatus("idle"), 1200);
+      setCopiedCommand(value);
+      window.setTimeout(() => setCopiedCommand((prev) => prev === value ? null : prev), 1200);
     } catch {
-      setCopyStatus("failed");
-      window.setTimeout(() => setCopyStatus("idle"), 1800);
+      // Silently fail — clipboard API may not be available
     }
   };
 
@@ -183,7 +195,7 @@ export function ConnectionPage({
                 className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
                 onClick={() => void copyCommand(localGatewayCommand)}
               >
-                {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedCommand === localGatewayCommand ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -244,7 +256,7 @@ export function ConnectionPage({
                 className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
                 onClick={() => void copyCommand(gatewayServeCommand)}
               >
-                {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedCommand === gatewayServeCommand ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -271,7 +283,7 @@ export function ConnectionPage({
                 className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
                 onClick={() => void copyCommand(gatewayTunnelCommand)}
               >
-                {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedCommand === gatewayTunnelCommand ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
             <button
@@ -309,7 +321,7 @@ export function ConnectionPage({
                 className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
                 onClick={() => void copyCommand(rocclawServeCommand)}
               >
-                {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedCommand === rocclawServeCommand ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -336,7 +348,7 @@ export function ConnectionPage({
                 className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
                 onClick={() => void copyCommand(localGatewayCommand)}
               >
-                {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiedCommand === localGatewayCommand ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
             <div className="flex gap-2">
@@ -388,7 +400,7 @@ export function ConnectionPage({
                     className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
                     onClick={() => void copyCommand(rocclawTunnelCommand)}
                   >
-                    {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedCommand === rocclawTunnelCommand ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -403,7 +415,7 @@ export function ConnectionPage({
                     className="ui-btn-icon ui-command-copy h-8 w-8 shrink-0"
                     onClick={() => void copyCommand(gatewayTunnelCommand)}
                   >
-                    {copyStatus === "copied" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedCommand === gatewayTunnelCommand ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -439,7 +451,7 @@ export function ConnectionPage({
 
       {/* Tabs */}
       <div className="shrink-0 border-b border-border/50 px-4 sm:px-6 pt-3 sm:pt-4 overflow-x-auto">
-        <div className="flex gap-1 min-w-max">
+        <div role="tablist" aria-label="Connection methods" className="flex gap-1 min-w-max">
           {CONNECTION_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -447,6 +459,8 @@ export function ConnectionPage({
               <button
                 key={tab.id}
                 type="button"
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-t-lg text-xs font-medium transition-all whitespace-nowrap ${
                   isActive
@@ -535,9 +549,16 @@ export function ConnectionPage({
                       value={draftGatewayUrl}
                       onChange={(e) => onGatewayUrlChange(e.target.value)}
                       placeholder={activeTab === "local" ? `ws://localhost:${localPort}` : "wss://gateway.ts.net"}
-                      className="ui-input h-11 w-full rounded-md px-4 text-sm"
+                      className={`ui-input h-11 w-full rounded-md px-4 text-sm ${urlValidationError ? "border-red-500/60" : ""}`}
                       spellCheck={false}
+                      aria-invalid={!!urlValidationError}
+                      aria-describedby={urlValidationError ? "gateway-url-error" : undefined}
                     />
+                    {urlValidationError && (
+                      <p id="gateway-url-error" className="mt-1 text-xs text-red-500">
+                        {urlValidationError}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -556,6 +577,7 @@ export function ConnectionPage({
                       />
                       <button
                         type="button"
+                        aria-label={showToken ? "Hide token" : "Show token"}
                         className="absolute inset-y-0 right-0 my-auto h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
                         onClick={() => setShowToken((prev) => !prev)}
                       >
@@ -579,7 +601,7 @@ export function ConnectionPage({
                     type="button"
                     className="ui-btn-primary h-10 px-5 text-xs font-semibold tracking-wide"
                     onClick={() => void onSaveSettings()}
-                    disabled={actionBusy || !draftGatewayUrl.trim()}
+                    disabled={actionBusy || !draftGatewayUrl.trim() || !!urlValidationError}
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Save Settings
@@ -588,7 +610,7 @@ export function ConnectionPage({
                     type="button"
                     className="ui-btn-secondary h-10 px-5 text-xs font-semibold tracking-wide"
                     onClick={() => void onTestConnection()}
-                    disabled={actionBusy || !draftGatewayUrl.trim()}
+                    disabled={actionBusy || !draftGatewayUrl.trim() || !!urlValidationError}
                   >
                     {testing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Test Connection
@@ -623,7 +645,7 @@ export function ConnectionPage({
                     <p className="text-sm font-medium text-foreground">
                       {status === "connected" && "Connected to OpenClaw"}
                       {status === "connecting" && "Connecting..."}
-                      {status === "reconnecting" && "Reconnecting..."}
+                      {status === "reconnecting" && "Reconnecting — retrying automatically..."}
                       {status === "error" && "Connection Error"}
                       {status === "disconnected" && "Disconnected"}
                     </p>
@@ -652,7 +674,7 @@ export function ConnectionPage({
                     onConnect?.();
                   }
                 }}
-                disabled={actionBusy || (!draftGatewayUrl.trim() && !isConnected)}
+                disabled={actionBusy || (!draftGatewayUrl.trim() && !isConnected) || (!!urlValidationError && !isConnected)}
               >
                 {actionBusy ? (
                   <Loader2 className="h-5 w-5 animate-spin mx-auto" />

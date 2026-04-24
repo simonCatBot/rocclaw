@@ -598,6 +598,24 @@ export const AgentChatPanel = ({
           />
         </div>
 
+        {/* Connection / error status banners */}
+        {!canSend && (
+          <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-xs text-amber-700 dark:text-amber-400">
+              Gateway disconnected — reconnecting...
+            </span>
+          </div>
+        )}
+        {canSend && agent.status === "error" && (
+          <div className="mt-2 flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
+            <span className="text-xs text-red-700 dark:text-red-400">
+              Agent encountered an error. You can send a new message to continue.
+            </span>
+          </div>
+        )}
+
         <div className="relative z-20 mt-3">
           <AgentChatComposer
             value={draftValue}

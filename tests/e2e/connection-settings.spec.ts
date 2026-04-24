@@ -80,7 +80,7 @@ test("cloud tab uses local defaults when available", async ({ page }) => {
 
   await page.goto("/");
   // Connection tab is active by default - click Cloud tab
-  await page.getByRole("button", { name: /^Cloud$/ }).click();
+  await page.getByRole("tab", { name: /^Cloud$/ }).click();
   
   // Should show Cloud tab content
   await expect(page.getByText("Cloud Setup")).toBeVisible();
@@ -101,7 +101,7 @@ test("client tab warns about ws tailscale urls", async ({ page }) => {
 
   await page.goto("/");
   // Connection tab is active by default - click Client tab
-  await page.getByRole("button", { name: /^Client$/ }).click();
+  await page.getByRole("tab", { name: /^Client$/ }).click();
   await page.getByPlaceholder(/wss:\/\/gateway.ts.net/).fill("ws://gateway-host.ts.net");
   await expect(
     page.getByText(/Use wss:\/\/ for \.ts\.net gateway URLs\./i)
