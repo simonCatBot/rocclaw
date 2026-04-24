@@ -1,0 +1,46 @@
+--- /tmp/reachy_160_extracted/reachy_mini/media/camera_gstreamer.py	2026-03-27 13:05:38.000000000 -0700
++++ /home/kiriti/.openclaw/workspace/venv/lib/python3.12/site-packages/reachy_mini/media/camera_gstreamer.py	2026-04-23 17:19:55.345610502 -0700
+@@ -242,6 +242,11 @@
+ 
+     def open(self) -> None:
+         """Start the GStreamer pipeline and begin receiving frames."""
++        # Ensure any previous pipeline is fully stopped before restarting.
++        if self.pipeline.get_state(0).state != Gst.State.NULL:
++            self.logger.debug("Pipeline was not in NULL state — closing first.")
++            self._stop_pipeline()
++
+         self.pipeline.set_state(Gst.State.PLAYING)
+         self._thread_bus_calls = Thread(target=self._handle_bus_calls, daemon=True)
+         self._thread_bus_calls.start()
+@@ -267,11 +272,26 @@
+         data = get_sample(self._appsink_video, self.logger)
+         if data is None:
+             return None
+-        return np.frombuffer(data, dtype=np.uint8).reshape(
+-            (self.resolution[1], self.resolution[0], 3)
+-        )
++        try:
++            return np.frombuffer(data, dtype=np.uint8).reshape(
++                (self.resolution[1], self.resolution[0], 3)
++            )
++        except ValueError:
++            self.logger.warning(
++                "Frame buffer size mismatch — dropping frame. "
++                "The pipeline may be re-negotiating caps."
++            )
++            return None
++
++    def _stop_pipeline(self) -> None:
++        """Internal: stop the pipeline and bus loop cleanly."""
++        # Set the pipeline to NULL first, then stop the GLib loop.
++        # This ensures GStreamer can flush remaining buffers and
++        # deliver any final bus messages before we tear down the
++        # message pump.
++        self.pipeline.set_state(Gst.State.NULL)
++        self._loop.quit()
+ 
+     def close(self) -> None:
+         """Stop the pipeline and release resources."""
+-        self._loop.quit()
+-        self.pipeline.set_state(Gst.State.NULL)
++        self._stop_pipeline()
