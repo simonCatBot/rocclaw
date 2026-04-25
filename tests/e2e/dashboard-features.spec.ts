@@ -141,8 +141,8 @@ test.describe("Token Usage Dashboard", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Click on Tokens tab in the tab bar
-    await page.getByRole("tab", { name: "Tokens" }).click();
+    // Click on Tokens tab in the tab bar (toolbar toggle button)
+    await page.getByRole("button", { name: "Show Tokens" }).click();
     await expect(page.getByText("Tokens")).toBeVisible({ timeout: 5000 });
   });
 });
@@ -157,8 +157,8 @@ test.describe("Settings Panel", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Click on Settings tab - use exact match to avoid matching the gateway settings button
-    await page.getByRole("tab", { name: "Settings", exact: true }).click();
+    // Click on Settings tab (toolbar toggle button)
+    await page.getByRole("button", { name: "Show Settings" }).click();
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({ timeout: 5000 });
     // Should show gateway section with heading
     await expect(page.getByRole("heading", { name: "Gateway Connection" })).toBeVisible();
