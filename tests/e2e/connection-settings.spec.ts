@@ -32,7 +32,7 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   await page.locator('#gateway-token').fill('token-123');
 
   // Click Connect (renamed from "Save Settings")
-  await page.getByRole("button", { name: "Connect" }).click();
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
 
   // Verify the settings persisted
   const savedSettings = await page.evaluate(async () => {

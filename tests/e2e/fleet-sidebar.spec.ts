@@ -13,18 +13,26 @@ test.beforeEach(async ({ page }) => {
 test("shows_disconnected_connect_surface", async ({ page }) => {
   await page.goto("/");
 
+  // Footer button toggles the Connection tab
   await page.locator('button[title="Gateway connection settings"]').click();
-  await expect(page.getByTestId("gateway-connection-overlay")).toBeVisible();
-  await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: /^(Connect|Disconnect|Connecting…)$/ })).toBeVisible();
+  await expect(page.locator('#gateway-url')).toBeVisible();
+  await expect(page.getByRole("button", { name: /^(Connect|Disconnect|Connecting…)$/ }).first()).toBeVisible();
 });
 
 test("persists_gateway_fields_to_rocclaw_settings", async ({ page }) => {
+  await stubRuntimeRoutes(page, {
+    summary: {
+      status: "disconnected",
+      reason: null,
+      error: "Control-plane start failed: rocCLAW gateway token is not configured.",
+    },
+  });
   await page.goto("/");
 
-  await page.locator('button[title="Gateway connection settings"]').click();
-  await page.getByLabel(/Upstream (gateway )?URL/i).fill("ws://gateway.example:18789");
-  await page.getByLabel("Upstream token").fill("token-123");
+  // Connection tab should be visible when disconnected
+  await expect(page.getByText("Gateway URL & Token")).toBeVisible({ timeout: 5000 });
+  await page.locator('#gateway-url').fill("ws://gateway.example:18789");
+  await page.locator('#gateway-token').fill("token-123");
 
   const requestPromise = page.waitForRequest((req) => {
     if (!req.url().includes("/api/rocclaw") || req.method() !== "PUT") {
@@ -34,7 +42,8 @@ test("persists_gateway_fields_to_rocclaw_settings", async ({ page }) => {
     const gateway = (payload.gateway ?? {}) as { url?: string; token?: string };
     return gateway.url === "ws://gateway.example:18789" && gateway.token === "token-123";
   });
-  await page.getByRole("button", { name: "Save settings" }).click();
+  // "Connect" is the primary button when disconnected
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
   const request = await requestPromise;
 
   const payload = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
