@@ -11,7 +11,7 @@ test("loads focused rocclaw empty state", async ({ page }) => {
 
   await page.goto("/");
 
-  // Connection panel accessible via footer button
+  // Connection accessible via footer button which toggles the Connection tab
   await page.locator('button[title="Gateway connection settings"]').click();
-  await expect(page.getByTestId("gateway-connection-overlay")).toBeVisible();
+  await expect(page.getByText("Gateway URL & Token")).toBeVisible();
 });

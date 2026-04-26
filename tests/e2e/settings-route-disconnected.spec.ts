@@ -19,6 +19,7 @@ test("settings route shows connect UI while disconnected and can return to chat"
     })
     .toBe("/");
 
+  // Footer button toggles the Connection tab with the connection form
   await page.locator('button[title="Gateway connection settings"]').click();
-  await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toBeVisible();
+  await expect(page.locator('#gateway-url')).toBeVisible();
 });

@@ -10,7 +10,6 @@ import { AgentCreateModal } from "@/features/agents/components/AgentCreateModal"
 import { FleetSidebar } from "@/features/agents/components/FleetSidebar";
 import { HeaderBar } from "@/features/agents/components/HeaderBar";
 import { FooterBar } from "@/components/FooterBar";
-import { ConnectionPanel } from "@/features/agents/components/ConnectionPanel";
 import { EmptyStatePanel } from "@/features/agents/components/EmptyStatePanel";
 import { BootScreen } from "@/features/agents/components/BootScreen";
 import { LoadingScreen } from "@/features/agents/components/LoadingScreen";
@@ -165,6 +164,7 @@ const AgentROCclawPage = () => {
     setGatewayUrl,
     setToken,
     applyRuntimeStatusEvent,
+    clearGatewayError,
     gatewayStatus,
     gatewayConnected,
     gatewayConnectionStatus,
@@ -175,7 +175,6 @@ const AgentROCclawPage = () => {
   } = useGatewayConnectionOrchestrator();
 
   const { state, dispatch, hydrateAgents, setError, setLoading } = useAgentStore();
-  const [showConnectionPanel, setShowConnectionPanel] = useState(false);
   const [showConnectSetup, setShowConnectSetup] = useState(false);
   const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [focusedPreferencesLoaded, setFocusedPreferencesLoaded] = useState(false);
@@ -1212,7 +1211,6 @@ const AgentROCclawPage = () => {
     [dispatch, persistAvatarConfig]
   );
 
-  const connectionPanelVisible = showConnectionPanel;
   const hasAnyAgents = agents.length > 0;
   const configMutationStatusLine = activeConfigMutation
     ? `Applying config change: ${activeConfigMutation.label}`
@@ -1252,21 +1250,6 @@ const AgentROCclawPage = () => {
     }
   }, [gatewayError]);
 
-  // Close connection tab when connected (only auto-hide, don't prevent user from re-enabling)
-  const activeTabsRef = useRef(activeTabs);
-  activeTabsRef.current = activeTabs;
-  useEffect(() => {
-    if (!gatewayConnected) return;
-    const timer = setTimeout(() => {
-      if (activeTabsRef.current.includes("connection")) {
-        setActiveTabs((current) => 
-          current.includes("connection") ? current.filter((id) => id !== "connection") : current
-        );
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [gatewayConnected]);
-
   if (
     !agentsLoadedOnce &&
     !coreConnected &&
@@ -1276,6 +1259,7 @@ const AgentROCclawPage = () => {
     return (
       <BootScreen
         connecting={gatewayConnecting}
+        installContext={installContext}
         onEditSettings={() => setShowConnectSetup(true)}
       />
     );
@@ -1296,6 +1280,8 @@ const AgentROCclawPage = () => {
         installContext={installContext}
         status={gatewayStatus}
         statusReason={statusReason}
+        error={gatewayError}
+        testResult={testResult}
         saving={gatewaySaving}
         testing={gatewayTesting}
         disconnecting={gatewayDisconnecting}
@@ -1305,6 +1291,7 @@ const AgentROCclawPage = () => {
         onSaveSettings={() => void saveSettings()}
         onTestConnection={() => void testConnection()}
         onDisconnect={() => void disconnect()}
+        onClearError={clearGatewayError}
         onConnect={() => {
           setShowConnectSetup(false);
           void saveSettings();
@@ -1357,40 +1344,6 @@ const AgentROCclawPage = () => {
             </div>
           ) : (
             <>
-          {connectionPanelVisible ? (
-            <div className="fixed inset-0 z-[200]" data-testid="gateway-connection-overlay" role="dialog" aria-modal="true" aria-label="Gateway connection settings" onKeyDown={(e) => { if (e.key === "Escape") setShowConnectionPanel(false); }}>
-              <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={() => setShowConnectionPanel(false)}
-              />
-              <div className="absolute inset-x-0 bottom-8 top-auto flex justify-center px-3 sm:px-4 md:px-5 pointer-events-none">
-                <div className="glass-panel pointer-events-auto w-full max-w-4xl !bg-card px-4 py-4 sm:px-6 sm:py-6">
-                  <ConnectionPanel
-                    savedGatewayUrl={gatewayUrl}
-                    draftGatewayUrl={draftGatewayUrl}
-                    token={token}
-                    hasStoredToken={hasStoredToken}
-                    localGatewayDefaultsHasToken={localGatewayDefaultsHasToken}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                    status={gatewayStatus}
-                    statusReason={statusReason}
-                    error={gatewayError}
-                    testResult={testResult}
-                    saving={gatewaySaving}
-                    testing={gatewayTesting}
-                    disconnecting={gatewayDisconnecting}
-                    onGatewayUrlChange={setGatewayUrl}
-                    onTokenChange={setToken}
-                    onSaveSettings={() => void saveSettings()}
-                    onTestConnection={() => void testConnection()}
-                    onDisconnect={() => void disconnect()}
-                    onClose={() => setShowConnectionPanel(false)}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : null}
-
           {rocclawCliUpdateWarning ? (
             <div className="w-full">
               <div className="ui-alert-danger rounded-md px-4 py-2 text-sm">
@@ -1583,6 +1536,8 @@ const AgentROCclawPage = () => {
                       installContext={installContext}
                       status={gatewayStatus}
                       statusReason={statusReason}
+                      error={gatewayError}
+                      testResult={testResult}
                       saving={gatewaySaving}
                       testing={gatewayTesting}
                       disconnecting={gatewayDisconnecting}
@@ -1592,6 +1547,7 @@ const AgentROCclawPage = () => {
                       onSaveSettings={() => void saveSettings()}
                       onTestConnection={() => void testConnection()}
                       onDisconnect={() => void disconnect()}
+                      onClearError={clearGatewayError}
                       onConnect={() => void saveSettings()}
                     />
                   </div>
@@ -1631,7 +1587,17 @@ const AgentROCclawPage = () => {
             </>
           )}
         </main>
-        <FooterBar status={gatewayStatus} gatewayVersion={installContext?.localGateway?.runtimeVersion} onConnectionSettings={() => setShowConnectionPanel(true)} />
+        <FooterBar status={gatewayStatus} gatewayVersion={installContext?.localGateway?.runtimeVersion} onConnectionSettings={() => {
+          setActiveTabs((current) => {
+            // Toggle connection tab — remove exclusive tabs if present
+            const exclusiveTabs: TabId[] = ["tasks", "skills"];
+            if (current.includes("connection")) {
+              const next = current.filter((t) => t !== "connection");
+              return next.length === 0 ? getDefaultActiveTabs() : next;
+            }
+            return [...current.filter((t) => !exclusiveTabs.includes(t as TabId)), "connection"];
+          });
+        }} />
       </div>
       {createAgentModalOpen ? (
         <AgentCreateModal

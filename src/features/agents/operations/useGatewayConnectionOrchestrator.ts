@@ -35,6 +35,7 @@ export const useGatewayConnectionOrchestrator = () => {
     setGatewayUrl,
     setToken,
     applyRuntimeStatusEvent,
+    clearError: clearGatewayError,
   } = useROCclawGatewaySettings(settingsCoordinator);
 
   const gatewayStatus: GatewayStatus = status;
@@ -104,6 +105,7 @@ export const useGatewayConnectionOrchestrator = () => {
     setGatewayUrl,
     setToken,
     applyRuntimeStatusEvent,
+    clearGatewayError,
     gatewayStatus,
     gatewayConnected,
     gatewayConnectionStatus,

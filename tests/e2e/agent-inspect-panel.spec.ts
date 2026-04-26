@@ -13,9 +13,10 @@ test.beforeEach(async ({ page }) => {
 test("connection panel reflects disconnected state", async ({ page }) => {
   await page.goto("/");
 
+  // Footer button toggles the Connection tab
   await page.locator('button[title="Gateway connection settings"]').click();
-  await expect(page.getByLabel(/Upstream (gateway )?URL/i)).toBeVisible();
+  await expect(page.locator('#gateway-url')).toBeVisible();
   await expect(
-    page.getByRole("button", { name: /^(Connect|Disconnect)$/ })
+    page.getByRole("button", { name: /^(Connect|Disconnect)$/ }).first()
   ).toBeVisible();
 });

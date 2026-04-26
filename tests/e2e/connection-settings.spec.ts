@@ -18,21 +18,21 @@ test("connection settings save to the rocclaw settings API", async ({ page }) =>
   });
 
   await page.goto("/");
-  
+
   // Connection tab should be visible when disconnected
   await page.waitForLoadState("networkidle");
-  
+
   // Wait for the form to be visible - Connection tab auto-shows when disconnected
   await expect(page.getByText("Gateway URL & Token")).toBeVisible({ timeout: 5000 });
-  
+
   // Fill URL input - use CSS id selector
   await page.locator('#gateway-url').fill('ws://gateway.example:18789');
-  
+
   // Fill token input
   await page.locator('#gateway-token').fill('token-123');
 
-  // Click save
-  await page.getByRole("button", { name: "Save Settings" }).click();
+  // Click Connect (primary button when disconnected)
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
 
   // Verify the settings persisted
   const savedSettings = await page.evaluate(async () => {
@@ -79,14 +79,14 @@ test("cloud tab uses local defaults when available", async ({ page }) => {
   });
 
   await page.goto("/");
-  // Connection tab is active by default - click Cloud tab
+  // Click Cloud tab
   await page.getByRole("tab", { name: /^Cloud$/ }).click();
-  
+
   // Should show Cloud tab content
   await expect(page.getByText("Cloud Setup")).toBeVisible();
   await page.getByRole("button", { name: "Use Local Defaults" }).click();
-  // The Gateway URL input is in the right column - when Cloud tab is active, placeholder is wss://gateway.ts.net
-  await expect(page.getByPlaceholder(/wss:\/\/gateway.ts.net/)).toHaveValue("ws://localhost:18789");
+  // The Gateway URL input should have the local defaults applied
+  await expect(page.locator('#gateway-url')).toHaveValue("ws://localhost:18789");
 });
 
 test("client tab warns about ws tailscale urls", async ({ page }) => {
@@ -100,9 +100,9 @@ test("client tab warns about ws tailscale urls", async ({ page }) => {
   });
 
   await page.goto("/");
-  // Connection tab is active by default - click Client tab
+  // Click Client tab
   await page.getByRole("tab", { name: /^Client$/ }).click();
-  await page.getByPlaceholder(/wss:\/\/gateway.ts.net/).fill("ws://gateway-host.ts.net");
+  await page.locator('#gateway-url').fill("ws://gateway-host.ts.net");
   await expect(
     page.getByText(/Use wss:\/\/ for \.ts\.net gateway URLs\./i)
   ).toBeVisible();
