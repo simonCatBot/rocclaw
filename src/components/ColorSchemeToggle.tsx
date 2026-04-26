@@ -38,6 +38,7 @@ function applyScheme(id: ColorSchemeId) {
 function applyTheme(mode: ThemeMode) {
   document.documentElement.classList.toggle("dark", mode === "dark");
   localStorage.setItem(THEME_KEY, mode);
+  window.dispatchEvent(new Event("rocclaw-theme-change"));
 }
 
 // Apply stored values before first paint — avoids flash of wrong theme
@@ -74,6 +75,13 @@ export function ColorSchemeToggle() {
   const [activeScheme, setActiveScheme] = useState<ColorSchemeId>(getInitialScheme);
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // Sync with external theme changes (e.g. from SettingsPanel)
+  useEffect(() => {
+    const sync = () => setTheme(getInitialTheme());
+    window.addEventListener("rocclaw-theme-change", sync);
+    return () => window.removeEventListener("rocclaw-theme-change", sync);
+  }, []);
 
   useEffect(() => {
     if (!open) return;

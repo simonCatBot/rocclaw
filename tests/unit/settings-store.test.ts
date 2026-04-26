@@ -150,10 +150,10 @@ describe("settings-store", () => {
       expect(result.gateway).toEqual({ url: "ws://custom-host:9999", token: "local-token" });
     });
 
-    it("should throw for malformed JSON", () => {
+    it("should fall back to defaults for malformed JSON", () => {
       tempDir = makeTempDir("rocclaw-settings-malformed");
       process.env.OPENCLAW_STATE_DIR = tempDir;
-      
+
       const settingsDir = path.join(tempDir, "openclaw-rocclaw");
       fs.mkdirSync(settingsDir, { recursive: true });
       fs.writeFileSync(
@@ -162,14 +162,16 @@ describe("settings-store", () => {
         "utf8"
       );
 
-      // This should throw due to JSON.parse error
-      expect(() => loadROCclawSettings()).toThrow();
+      // Corrupt JSON should gracefully fall back to defaults
+      const result = loadROCclawSettings();
+      expect(result.version).toBe(1);
+      expect(result.gatewayAutoStart).toBe(true);
     });
 
-    it("should throw for empty settings file", () => {
+    it("should fall back to defaults for empty settings file", () => {
       tempDir = makeTempDir("rocclaw-settings-empty");
       process.env.OPENCLAW_STATE_DIR = tempDir;
-      
+
       const settingsDir = path.join(tempDir, "openclaw-rocclaw");
       fs.mkdirSync(settingsDir, { recursive: true });
       fs.writeFileSync(
@@ -178,8 +180,10 @@ describe("settings-store", () => {
         "utf8"
       );
 
-      // Empty file should throw
-      expect(() => loadROCclawSettings()).toThrow();
+      // Empty file should gracefully fall back to defaults
+      const result = loadROCclawSettings();
+      expect(result.version).toBe(1);
+      expect(result.gatewayAutoStart).toBe(true);
     });
   });
 

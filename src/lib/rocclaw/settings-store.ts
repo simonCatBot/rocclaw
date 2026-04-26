@@ -76,8 +76,17 @@ export const loadROCclawSettings = (): ROCclawSettings => {
     const gateway = loadLocalGatewayDefaults();
     return gateway ? { ...defaults, gateway } : defaults;
   }
-  const raw = fs.readFileSync(settingsPath, "utf8");
-  const parsed = JSON.parse(raw) as unknown;
+  let parsed: unknown;
+  try {
+    const raw = fs.readFileSync(settingsPath, "utf8");
+    parsed = JSON.parse(raw);
+  } catch {
+    // Corrupt or truncated settings file — fall back to defaults
+    console.warn("[rocclaw] Failed to parse settings file, using defaults:", settingsPath);
+    const defaults = defaultROCclawSettings();
+    const gateway = loadLocalGatewayDefaults();
+    return gateway ? { ...defaults, gateway } : defaults;
+  }
   const settings = normalizeROCclawSettings(parsed);
   if (!settings.gateway?.token) {
     const gateway = loadLocalGatewayDefaults();

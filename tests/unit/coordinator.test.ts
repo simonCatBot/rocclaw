@@ -320,7 +320,7 @@ describe("ROCclawSettingsCoordinator", () => {
       const next: ROCclawSettingsPatch = {
         avatars: { "ws://host:18789": null },
       };
-      
+
       coordinator.schedulePatch(current);
       coordinator.schedulePatch(next);
       await vi.advanceTimersByTimeAsync(350);
@@ -330,6 +330,44 @@ describe("ROCclawSettingsCoordinator", () => {
           "ws://host:18789": null,
         }),
       }));
+    });
+
+    it("should propagate gatewayAutoStart through merge", async () => {
+      const current: ROCclawSettingsPatch = { gateway: { url: "ws://host:18789" } };
+      const next: ROCclawSettingsPatch = { gatewayAutoStart: false };
+
+      coordinator.schedulePatch(current);
+      coordinator.schedulePatch(next);
+      await vi.advanceTimersByTimeAsync(350);
+
+      const call = mockTransport.updateSettings.mock.calls[0][0] as ROCclawSettingsPatch;
+      expect(call.gateway).toEqual({ url: "ws://host:18789" });
+      expect(call.gatewayAutoStart).toBe(false);
+    });
+
+    it("should propagate avatarSources through merge", async () => {
+      const current: ROCclawSettingsPatch = { gateway: { url: "ws://host:18789" } };
+      const next: ROCclawSettingsPatch = { avatarSources: { "ws://host:18789": { "agent-1": { source: "custom" } } } };
+
+      coordinator.schedulePatch(current);
+      coordinator.schedulePatch(next);
+      await vi.advanceTimersByTimeAsync(350);
+
+      const call = mockTransport.updateSettings.mock.calls[0][0] as ROCclawSettingsPatch;
+      expect(call.gateway).toEqual({ url: "ws://host:18789" });
+      expect(call.avatarSources).toEqual({ "ws://host:18789": { "agent-1": { source: "custom" } } });
+    });
+
+    it("should use last-write-wins for avatarSources", async () => {
+      const current: ROCclawSettingsPatch = { avatarSources: { "ws://host:18789": { "agent-1": { source: "auto" } } } };
+      const next: ROCclawSettingsPatch = { avatarSources: { "ws://host:18789": { "agent-1": { source: "custom" } } } };
+
+      coordinator.schedulePatch(current);
+      coordinator.schedulePatch(next);
+      await vi.advanceTimersByTimeAsync(350);
+
+      const call = mockTransport.updateSettings.mock.calls[0][0] as ROCclawSettingsPatch;
+      expect(call.avatarSources).toEqual({ "ws://host:18789": { "agent-1": { source: "custom" } } });
     });
   });
 

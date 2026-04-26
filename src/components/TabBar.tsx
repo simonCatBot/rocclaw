@@ -29,7 +29,7 @@ interface TabConfig {
 const AVAILABLE_TABS: TabConfig[] = [
   { id: "agents", label: "Agents", icon: Users, defaultActive: true },
   { id: "chat", label: "Chat", icon: MessageSquare, defaultActive: false },
-  { id: "connection", label: "Connection", icon: Link, defaultActive: true },
+  { id: "connection", label: "Connection", icon: Link, defaultActive: false },
   { id: "skills", label: "Skills", icon: Puzzle, defaultActive: false },
   { id: "system", label: "System", icon: Server, defaultActive: true },
   { id: "graph", label: "System Graph", icon: TrendingUp, defaultActive: true },
@@ -80,7 +80,7 @@ export function TabBar({ activeTabs, onTabToggle }: TabBarProps) {
   return (
     <nav aria-label="Dashboard navigation" className="border-b border-border bg-surface-1/50 px-3 py-2 sm:px-4 md:px-5">
       <div
-        role="tablist"
+        role="toolbar"
         aria-label="Dashboard panels"
         className="flex items-center gap-1 overflow-x-auto scrollbar-hide"
       >
@@ -98,9 +98,8 @@ export function TabBar({ activeTabs, onTabToggle }: TabBarProps) {
                   tabRefs.current.delete(tab.id);
                 }
               }}
-              role="tab"
-              aria-selected={isActive}
-              tabIndex={isActive ? 0 : -1}
+              aria-pressed={isActive}
+              tabIndex={0}
               onClick={() => onTabToggle(tab.id)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               className={`
@@ -111,7 +110,7 @@ export function TabBar({ activeTabs, onTabToggle }: TabBarProps) {
                   : "text-muted-foreground hover:text-foreground hover:bg-surface-2"
                 }
               `}
-              aria-label={tab.label}
+              aria-label={isActive ? `Hide ${tab.label}` : `Show ${tab.label}`}
               title={isActive ? `Hide ${tab.label}` : `Show ${tab.label}`}
             >
               <Icon className="w-3.5 h-3.5" />

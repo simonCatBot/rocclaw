@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useAgentStore } from "@/features/agents/state/store";
 import {
   sortCronJobsByUpdatedAt,
@@ -256,7 +256,7 @@ interface CronJobTileProps {
   onRun: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string) => void;
-  runBusy: boolean;
+  runBusy: string | null;
   deleteBusy: boolean;
   isDragOverlay?: boolean;
   compact?: boolean;
@@ -385,7 +385,7 @@ function CronJobTile({
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onRun(job.id); }}
-            disabled={runBusy || !job.enabled}
+            disabled={runBusy === job.id || !job.enabled}
             className="flex items-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-surface-3 hover:text-foreground disabled:opacity-30"
           >
             <Zap className="h-3 w-3" /> Run
@@ -789,13 +789,20 @@ function CreateCronModal({ agentId: defaultAgentId, agents, onClose, onCreated }
   }, [name, message, jobType, runAtDate, runAtTime]);
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Create Task"
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+    >
       <div className="flex h-[90vh] w-full max-w-lg flex-col rounded-xl border border-border bg-surface-1 p-5 shadow-2xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">Create Task</h3>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
           >
             <X className="h-5 w-5" />
@@ -1088,7 +1095,7 @@ function TaskDetailPanel({
   onRun: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string) => void;
-  runBusy: boolean;
+  runBusy: string | null;
   deleteBusy: boolean;
 }) {
   const state = job.state;
@@ -1096,7 +1103,13 @@ function TaskDetailPanel({
   const payloadStr = formatCronPayload(job.payload);
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Task details: ${job.name}`}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+    >
       <div className="flex h-[80vh] w-full max-w-lg flex-col rounded-xl border border-border bg-surface-1 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -1116,6 +1129,7 @@ function TaskDetailPanel({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
           >
             <X className="h-5 w-5" />
@@ -1189,7 +1203,7 @@ function TaskDetailPanel({
           )}
           <button
             onClick={() => onRun(job.id)}
-            disabled={runBusy || !job.enabled}
+            disabled={runBusy === job.id || !job.enabled}
             className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             <Zap className="h-4 w-4" /> Run Now
@@ -1219,7 +1233,7 @@ export function TasksDashboard() {
   const [cronJobs, setCronJobs] = useState<CronJobSummary[]>([]);
   const [cronLoading, setCronLoading] = useState(true);
   const [cronError, setCronError] = useState<string | null>(null);
-  const [runBusy, setRunBusy] = useState(false);
+  const [runBusy, setRunBusy] = useState<string | null>(null);
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [search, setSearch] = useState("");
@@ -1233,7 +1247,7 @@ export function TasksDashboard() {
   const [prioritySort, setPrioritySort] = useState(false);
   const [pendingExecutions, setPendingExecutions] = useState<Map<string, PendingRunEntry>>(new Map());
   const [activeId, setActiveId] = useState<string | null>(null);
-  const dragOverColumnRef = useRef<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
   // ── Auto-refresh ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1480,18 +1494,18 @@ export function TasksDashboard() {
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over } = event;
-    if (!over) { dragOverColumnRef.current = null; return; }
+    if (!over) { setDragOverColumn(null); return; }
     const overId = over.id as string;
-    if (isColumnId(overId)) { dragOverColumnRef.current = overId; return; }
+    if (isColumnId(overId)) { setDragOverColumn(overId); return; }
     const parsed = parseTileId(overId);
-    if (parsed) dragOverColumnRef.current = parsed.colId;
+    if (parsed) setDragOverColumn(parsed.colId);
   }, []);
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
       setActiveId(null);
-      dragOverColumnRef.current = null;
+      setDragOverColumn(null);
       if (!over) return;
 
       const activeParsed = parseTileId(active.id as string);
@@ -1525,26 +1539,29 @@ export function TasksDashboard() {
         return next;
       });
 
-      setRunBusy(true);
+      setRunBusy(job.id);
       try {
         await fetch("/api/cron/run?id=" + encodeURIComponent(job.id), { method: "POST" });
         await fetchCronJobs();
       } catch {
         setPendingExecutions((prev) => { const next = new Map(prev); next.delete(runId); return next; });
+        setCronError("Failed to run cron job.");
       } finally {
-        setRunBusy(false);
+        setRunBusy(null);
       }
     },
     [cronJobs, agents, fetchCronJobs]
   );
 
   const handleRun = async (id: string) => {
-    setRunBusy(true);
+    setRunBusy(id);
     try {
       await fetch("/api/cron/run?id=" + encodeURIComponent(id), { method: "POST" });
       await fetchCronJobs();
-    } catch {} finally {
-      setRunBusy(false);
+    } catch {
+      setCronError("Failed to run cron job.");
+    } finally {
+      setRunBusy(null);
     }
   };
 
@@ -1557,7 +1574,9 @@ export function TasksDashboard() {
       });
       if (!res.ok) throw new Error();
       await fetchCronJobs();
-    } catch {}
+    } catch {
+      setCronError("Failed to toggle cron job.");
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -1565,7 +1584,9 @@ export function TasksDashboard() {
     try {
       await fetch("/api/cron/jobs?id=" + encodeURIComponent(id), { method: "DELETE" });
       await fetchCronJobs();
-    } catch {} finally {
+    } catch {
+      setCronError("Failed to delete cron job.");
+    } finally {
       setDeleteBusy(null);
     }
   };
@@ -1798,7 +1819,7 @@ export function TasksDashboard() {
         <div className="flex flex-1 gap-3 overflow-x-auto px-4 py-4">
 
           {/* ── Queued ── */}
-          <ColumnZone id="queued" isDropTarget={dragOverColumnRef.current === "queued"} count={queuedJobs.length}>
+          <ColumnZone id="queued" isDropTarget={dragOverColumn ==="queued"} count={queuedJobs.length}>
             <ColumnHeader label="Queued" Icon={Loader} accent="text-purple-400" count={queuedJobs.length} />
             <SortableContext items={queuedJobs.map((j) => tileId("queued", j.id))}>
               <div className="space-y-2">
@@ -1833,7 +1854,7 @@ export function TasksDashboard() {
           {/* ── Executing ── */}
           <ColumnZone
             id="executing"
-            isDropTarget={dragOverColumnRef.current === "executing"}
+            isDropTarget={dragOverColumn ==="executing"}
             wipLimit={WIP_LIMIT_EXECUTING}
             count={executingRuns.length + pendingRunEntries.length}
           >
@@ -1892,7 +1913,7 @@ export function TasksDashboard() {
           </ColumnZone>
 
           {/* ── Pending ── */}
-          <ColumnZone id="pending" isDropTarget={dragOverColumnRef.current === "pending"} count={pendingJobs.length}>
+          <ColumnZone id="pending" isDropTarget={dragOverColumn ==="pending"} count={pendingJobs.length}>
             <ColumnHeader label="Pending" Icon={Calendar} accent="text-amber-400" count={pendingJobs.length} />
             <SortableContext items={pendingJobs.map((j) => tileId("pending", j.id))}>
               <div className="space-y-2">
@@ -1925,7 +1946,7 @@ export function TasksDashboard() {
           </ColumnZone>
 
           {/* ── Done ── */}
-          <ColumnZone id="done" isDropTarget={dragOverColumnRef.current === "done"} count={doneRuns.length + doneJobs.length}>
+          <ColumnZone id="done" isDropTarget={dragOverColumn ==="done"} count={doneRuns.length + doneJobs.length}>
             <ColumnHeader label="Done" Icon={CheckCircle} accent="text-green-400" count={doneRuns.length + doneJobs.length} />
             <SortableContext items={[]}>
               <div className="space-y-3">
@@ -2071,7 +2092,7 @@ interface SortableCronJobTileProps {
   onRun: (id: string) => void;
   onToggle: (id: string, enabled: boolean) => void;
   onDelete: (id: string) => void;
-  runBusy: boolean;
+  runBusy: string | null;
   deleteBusy: boolean;
   compact?: boolean;
 }

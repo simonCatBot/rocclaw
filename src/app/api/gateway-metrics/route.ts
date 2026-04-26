@@ -19,6 +19,8 @@ import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstr
 import { detectROCm, ROCmGPUInfo } from "@/lib/system/rocm";
 import { detectBasicGPU, BasicGPUInfo } from "@/lib/system/gpu-fallback";
 
+export const runtime = "nodejs";
+
 // Cache to remember when gateway doesn't support system.metrics
 // Set once on first detection, not checked again until server restart
 let gatewayMetricsUnsupported: boolean = false;
@@ -364,7 +366,7 @@ export async function GET(): Promise<NextResponse> {
     );
   }
   if (bootstrap.kind !== "ready") {
-    return NextResponse.json({ error: "Gateway not available", details: bootstrap }, { status: 503 });
+    return NextResponse.json({ error: "Gateway not available", kind: (bootstrap as { kind?: string }).kind }, { status: 503 });
   }
 
   const controlPlane = bootstrap.runtime;

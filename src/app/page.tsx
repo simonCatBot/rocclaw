@@ -315,7 +315,9 @@ const AgentROCclawPage = () => {
       return "New Agent";
     }
   }, [state.agents]);
-  const errorMessage = state.error ?? gatewayError ?? gatewayModelsError;
+  const rawErrorMessage = state.error ?? gatewayError ?? gatewayModelsError;
+  const [dismissedError, setDismissedError] = useState<string | null>(null);
+  const errorMessage = rawErrorMessage && rawErrorMessage !== dismissedError ? rawErrorMessage : null;
   const rocclawCliUpdateWarning = useMemo(() => {
     const rocclawCli = installContext.rocclawCli;
     if (!rocclawCli.installed || !rocclawCli.updateAvailable) return null;
@@ -1331,7 +1333,7 @@ const AgentROCclawPage = () => {
             // Tasks and Skills tabs are exclusive — selecting one replaces everything
             const exclusiveTabs: TabId[] = ["tasks", "skills"];
             if (exclusiveTabs.includes(tabId)) {
-              return current.includes(tabId) ? [] : [tabId];
+              return current.includes(tabId) ? getDefaultActiveTabs() : [tabId];
             }
             // Non-exclusive tabs: remove any exclusive tab if present, then normal toggle
             let next = current.includes(tabId)
@@ -1356,7 +1358,7 @@ const AgentROCclawPage = () => {
           ) : (
             <>
           {connectionPanelVisible ? (
-            <div className="fixed inset-0 z-[200]" data-testid="gateway-connection-overlay">
+            <div className="fixed inset-0 z-[200]" data-testid="gateway-connection-overlay" role="dialog" aria-modal="true" aria-label="Gateway connection settings" onKeyDown={(e) => { if (e.key === "Escape") setShowConnectionPanel(false); }}>
               <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                 onClick={() => setShowConnectionPanel(false)}
@@ -1399,8 +1401,11 @@ const AgentROCclawPage = () => {
 
           {errorMessage ? (
             <div className="w-full">
-              <div className="ui-alert-danger rounded-md px-4 py-2 text-sm">
-                {errorMessage}
+              <div className="ui-alert-danger flex items-center justify-between rounded-md px-4 py-2 text-sm">
+                <span>{errorMessage}</span>
+                <button type="button" onClick={() => setDismissedError(errorMessage)} aria-label="Dismiss error" className="ml-3 shrink-0 rounded p-0.5 opacity-60 hover:opacity-100">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
               </div>
             </div>
           ) : null}
@@ -1592,19 +1597,15 @@ const AgentROCclawPage = () => {
                   </div>
                 ) : null}
 
-                {/* System Tab */}
-                {activeTabs.includes("system") ? (
-                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <SystemMetricsDashboard />
-                  </div>
-                ) : null}
+                {/* System Tab — kept mounted so metrics data survives tab toggles */}
+                <div className={`flex h-full min-h-0 flex-1 flex-col overflow-hidden ${activeTabs.includes("system") ? "" : "hidden"}`}>
+                  <SystemMetricsDashboard />
+                </div>
 
-                {/* Graph Tab */}
-                {activeTabs.includes("graph") ? (
-                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <SystemGraphView />
-                  </div>
-                ) : null}
+                {/* Graph Tab — kept mounted so history data survives tab toggles */}
+                <div className={`flex h-full min-h-0 flex-1 flex-col overflow-hidden ${activeTabs.includes("graph") ? "" : "hidden"}`}>
+                  <SystemGraphView />
+                </div>
 
                 {/* Tasks Tab */}
                 {activeTabs.includes("tasks") ? (
@@ -1613,12 +1614,10 @@ const AgentROCclawPage = () => {
                   </div>
                 ) : null}
 
-                {/* Tokens Tab */}
-                {activeTabs.includes("tokens") ? (
-                  <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-                    <TokenUsageDashboard />
-                  </div>
-                ) : null}
+                {/* Tokens Tab — kept mounted so usage data survives tab toggles */}
+                <div className={`flex h-full min-h-0 flex-1 flex-col overflow-hidden ${activeTabs.includes("tokens") ? "" : "hidden"}`}>
+                  <TokenUsageDashboard />
+                </div>
 
                 {/* Settings Tab */}
                 {activeTabs.includes("settings") ? (

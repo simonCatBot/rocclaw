@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 
 import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstrap";
 
+export const runtime = "nodejs";
+
 // GET /api/usage - Fetch token usage data from gateway
 export async function GET(request: Request) {
   const runtimeBootstrap = await bootstrapDomainRuntime();
@@ -92,9 +94,8 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("[usage] Failed to fetch usage data:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
-      { error: "Failed to fetch usage data", details: errorMessage, stack: errorStack },
+      { error: "Failed to fetch usage data", details: errorMessage },
       { status: 500 }
     );
   }
@@ -225,7 +226,9 @@ function aggregateUsage(sessions: SessionInfo[]): AggregatedUsage {
       result.byModel[model].inputTokens += muInput;
       result.byModel[model].outputTokens += muOutput;
       result.byModel[model].totalTokens += muTotal;
-      result.byModel[model].messageCount += messageCount;
+      // Distribute messageCount proportionally across models to avoid double-counting
+      const modelMessageShare = modelUsage.length > 0 ? Math.round(messageCount / modelUsage.length) : 0;
+      result.byModel[model].messageCount += modelMessageShare;
       result.byModel[model].cost += muCost;
     }
     

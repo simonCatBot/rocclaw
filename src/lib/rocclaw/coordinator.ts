@@ -77,20 +77,34 @@ const mergeROCclawPatch = (
   if (!current) {
     return {
       ...(next.gateway !== undefined ? { gateway: next.gateway } : {}),
+      ...(next.gatewayAutoStart !== undefined ? { gatewayAutoStart: next.gatewayAutoStart } : {}),
       ...(next.focused ? { focused: { ...next.focused } } : {}),
       ...(next.avatars ? { avatars: { ...next.avatars } } : {}),
+      ...(next.avatarSources ? { avatarSources: { ...next.avatarSources } } : {}),
     };
   }
   const focused = mergeFocusedPatch(current.focused, next.focused);
   const avatars = mergeAvatarsPatch(current.avatars, next.avatars);
+  // For avatarSources, last-write-wins (same as gateway)
+  const avatarSources = next.avatarSources !== undefined
+    ? next.avatarSources
+    : current.avatarSources !== undefined
+      ? current.avatarSources
+      : undefined;
   return {
     ...(next.gateway !== undefined
       ? { gateway: next.gateway }
       : current.gateway !== undefined
         ? { gateway: current.gateway }
         : {}),
+    ...(next.gatewayAutoStart !== undefined
+      ? { gatewayAutoStart: next.gatewayAutoStart }
+      : current.gatewayAutoStart !== undefined
+        ? { gatewayAutoStart: current.gatewayAutoStart }
+        : {}),
     ...(focused ? { focused } : {}),
     ...(avatars ? { avatars } : {}),
+    ...(avatarSources ? { avatarSources } : {}),
   };
 };
 

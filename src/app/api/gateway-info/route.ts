@@ -4,6 +4,8 @@
 import { NextResponse } from "next/server";
 import { bootstrapDomainRuntime } from "@/lib/controlplane/runtime-route-bootstrap";
 
+export const runtime = "nodejs";
+
 // GET /api/gateway-info - Fetch gateway system-presence info
 export async function GET() {
   const runtimeBootstrap = await bootstrapDomainRuntime();
@@ -18,7 +20,7 @@ export async function GET() {
     return NextResponse.json({ error: "Runtime start failed", details: runtimeBootstrap.message }, { status: 503 });
   }
   if (runtimeBootstrap.kind !== "ready") {
-    return NextResponse.json({ error: "Gateway not available", details: runtimeBootstrap }, { status: 503 });
+    return NextResponse.json({ error: "Gateway not available", kind: (runtimeBootstrap as { kind?: string }).kind }, { status: 503 });
   }
   
   const controlPlane = runtimeBootstrap.runtime;

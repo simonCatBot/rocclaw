@@ -4,16 +4,52 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { 
-  Server, 
-  Cpu, 
-  Globe, 
-  Shield, 
-  Zap, 
+import {
+  Server,
+  Cpu,
+  Globe,
+  Shield,
+  Zap,
   FolderOpen,
-  Save,
   Loader2
 } from "lucide-react";
+
+const THEME_KEY = "theme";
+const COMPACT_KEY = "rocclaw-compact-mode";
+type ThemeChoice = "light" | "dark" | "system";
+
+function resolveSystemTheme(): "light" | "dark" {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyThemeChoice(choice: ThemeChoice) {
+  const effective = choice === "system" ? resolveSystemTheme() : choice;
+  document.documentElement.classList.toggle("dark", effective === "dark");
+  if (choice === "system") {
+    localStorage.removeItem(THEME_KEY);
+  } else {
+    localStorage.setItem(THEME_KEY, choice);
+  }
+  // Notify other components (e.g. ColorSchemeToggle) about the change
+  window.dispatchEvent(new Event("rocclaw-theme-change"));
+}
+
+function getStoredThemeChoice(): ThemeChoice {
+  if (typeof window === "undefined") return "system";
+  const stored = localStorage.getItem(THEME_KEY);
+  if (stored === "light" || stored === "dark") return stored;
+  return "system";
+}
+
+function applyCompactMode(enabled: boolean) {
+  document.documentElement.classList.toggle("compact", enabled);
+  localStorage.setItem(COMPACT_KEY, enabled ? "1" : "0");
+}
+
+function getStoredCompactMode(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(COMPACT_KEY) === "1";
+}
 
 interface SettingsState {
   // Gateway settings
@@ -27,14 +63,14 @@ interface SettingsState {
     temperature: number;
     maxTokens: number;
   };
-  // Agent settings  
+  // Agent settings
   agents: {
     defaultWorkspace: string;
     timezone: string;
   };
   // UI settings
   ui: {
-    theme: "light" | "dark" | "system";
+    theme: ThemeChoice;
     compactMode: boolean;
   };
 }
@@ -62,83 +98,62 @@ const DEFAULT_SETTINGS: SettingsState = {
 export function SettingsPanel() {
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Load settings from gateway config
+  // Load settings from gateway config and localStorage
   useEffect(() => {
     const loadSettings = async () => {
       try {
         setLoading(true);
-        setError(null);
-        
+
         // Fetch gateway config
         const configResponse = await fetch("/api/runtime/config", {
           signal: AbortSignal.timeout(5000),
         });
-        
+
         if (configResponse.ok) {
           // Config data available but not yet integrated
           // const configData = await configResponse.json();
         }
-        
-        // Load from localStorage for UI preferences
-        const savedUi = localStorage.getItem("rocclaw-ui-settings");
-        if (savedUi) {
-          try {
-            const parsed = JSON.parse(savedUi);
-            setSettings(prev => ({
-              ...prev,
-              ui: { ...prev.ui, ...parsed },
-            }));
-          } catch {
-            // Ignore parse errors
-          }
-        }
+
+        // Load UI preferences from the actual theme system
+        setSettings(prev => ({
+          ...prev,
+          ui: {
+            theme: getStoredThemeChoice(),
+            compactMode: getStoredCompactMode(),
+          },
+        }));
       } catch (err) {
         console.error("[Settings] Failed to load:", err);
       } finally {
         setLoading(false);
       }
     };
-    
+
     loadSettings();
   }, []);
 
-  // Save handler
-  const handleSave = useCallback(async () => {
-    try {
-      setSaving(true);
-      setSaved(false);
-      setError(null);
-      
-      // Save UI preferences to localStorage
-      localStorage.setItem("rocclaw-ui-settings", JSON.stringify(settings.ui));
-      
-      // Gateway settings would need to be saved via the settings API
-      // For now, UI preferences are saved locally
-      
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save settings");
-    } finally {
-      setSaving(false);
-    }
-  }, [settings]);
+  // Listen for system theme changes when "system" is selected
+  useEffect(() => {
+    if (settings.ui.theme !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => applyThemeChoice("system");
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [settings.ui.theme]);
 
-  // Update handlers
-  const updateSetting = <K extends keyof SettingsState>(
-    section: K,
-    updates: Partial<SettingsState[K]>
-  ) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: { ...prev[section], ...updates },
-    }));
-    setSaved(false);
-  };
+  const handleThemeChange = useCallback((theme: ThemeChoice) => {
+    setSettings(prev => ({ ...prev, ui: { ...prev.ui, theme } }));
+    applyThemeChoice(theme);
+  }, []);
+
+  const handleCompactToggle = useCallback(() => {
+    setSettings(prev => {
+      const next = !prev.ui.compactMode;
+      applyCompactMode(next);
+      return { ...prev, ui: { ...prev.ui, compactMode: next } };
+    });
+  }, []);
 
   if (loading) {
     return (
@@ -151,29 +166,7 @@ export function SettingsPanel() {
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <div className="border-b border-border/50 bg-surface-1/30 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Settings</h2>
-          <div className="flex items-center gap-2">
-            {saved && (
-              <span className="text-xs text-green-500">Saved!</span>
-            )}
-            {error && (
-              <span className="text-xs text-red-500">{error}</span>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="ui-btn-primary flex items-center gap-2 px-3 py-1.5 font-mono text-[10px] font-semibold tracking-[0.06em] disabled:opacity-60"
-            >
-              {saving ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Save className="h-3 w-3" />
-              )}
-              Save
-            </button>
-          </div>
-        </div>
+        <h2 className="text-lg font-semibold text-foreground">Settings</h2>
       </div>
 
       <div className="flex-1 space-y-6 p-6">
@@ -343,10 +336,11 @@ export function SettingsPanel() {
                 {(["light", "dark", "system"] as const).map((theme) => (
                   <button
                     key={theme}
-                    onClick={() => updateSetting("ui", { theme })}
+                    onClick={() => handleThemeChange(theme)}
+                    aria-pressed={settings.ui.theme === theme}
                     className={`ui-card px-3 py-2 text-center text-xs font-medium capitalize transition ${
-                      settings.ui.theme === theme 
-                        ? "ui-selected" 
+                      settings.ui.theme === theme
+                        ? "ui-selected"
                         : "bg-surface-2/60 hover:bg-surface-3/90"
                     }`}
                   >
@@ -355,7 +349,7 @@ export function SettingsPanel() {
                 ))}
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground">Compact mode</p>
@@ -364,7 +358,7 @@ export function SettingsPanel() {
               <button
                 role="switch"
                 aria-checked={settings.ui.compactMode}
-                onClick={() => updateSetting("ui", { compactMode: !settings.ui.compactMode })}
+                onClick={handleCompactToggle}
                 className={`ui-switch ${settings.ui.compactMode ? "ui-switch--on" : ""}`}
               >
                 <span className="ui-switch-thumb" />
@@ -390,7 +384,8 @@ export function SettingsPanel() {
                 onClick={() => {
                   if (confirm("Are you sure you want to reset all settings?")) {
                     setSettings(DEFAULT_SETTINGS);
-                    localStorage.removeItem("rocclaw-ui-settings");
+                    applyThemeChoice("system");
+                    applyCompactMode(false);
                   }
                 }}
                 className="ui-btn-danger rounded-md px-3 py-1.5 font-mono text-[10px] font-semibold tracking-[0.06em]"

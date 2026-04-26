@@ -14,85 +14,82 @@ const buildProps = (overrides?: Partial<Parameters<typeof TabBar>[0]>) => ({
 });
 
 describe("TabBar", () => {
-  it("renders all 9 tabs", () => {
+  it("renders all 9 tab buttons", () => {
     render(createElement(TabBar, buildProps()));
-    const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(9);
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(9);
   });
 
-  it("marks active tabs with aria-selected=true", () => {
+  it("marks active tabs with aria-pressed=true", () => {
     render(createElement(TabBar, buildProps({ activeTabs: ["agents", "chat"] })));
-    const tabs = screen.getAllByRole("tab");
-    const agentsTab = tabs.find((t) => t.getAttribute("aria-label") === "Agents");
-    const chatTab = tabs.find((t) => t.getAttribute("aria-label") === "Chat");
-    const systemTab = tabs.find((t) => t.getAttribute("aria-label") === "System");
-    expect(agentsTab).toHaveAttribute("aria-selected", "true");
-    expect(chatTab).toHaveAttribute("aria-selected", "true");
-    expect(systemTab).toHaveAttribute("aria-selected", "false");
+    const agentsBtn = screen.getByTitle("Hide Agents");
+    const chatBtn = screen.getByTitle("Hide Chat");
+    const systemBtn = screen.getByTitle("Show System");
+    expect(agentsBtn).toHaveAttribute("aria-pressed", "true");
+    expect(chatBtn).toHaveAttribute("aria-pressed", "true");
+    expect(systemBtn).toHaveAttribute("aria-pressed", "false");
   });
 
   it("calls onTabToggle when a tab is clicked", () => {
     const onTabToggle = vi.fn();
     render(createElement(TabBar, buildProps({ onTabToggle })));
-    const tabs = screen.getAllByRole("tab");
-    const settingsTab = tabs.find((t) => t.getAttribute("aria-label") === "Settings");
-    fireEvent.click(settingsTab!);
+    const settingsBtn = screen.getByTitle("Show Settings");
+    fireEvent.click(settingsBtn);
     expect(onTabToggle).toHaveBeenCalledWith("settings");
   });
 
-  it("has role=tablist on the container", () => {
+  it("has role=toolbar on the container", () => {
     render(createElement(TabBar, buildProps()));
-    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    expect(screen.getByRole("toolbar")).toBeInTheDocument();
   });
 
-  it("sets tabIndex=0 on active tabs and -1 on inactive", () => {
+  it("sets tabIndex=0 on all buttons", () => {
     render(createElement(TabBar, buildProps({ activeTabs: ["agents"] })));
-    const tabs = screen.getAllByRole("tab");
-    const agentsTab = tabs.find((t) => t.getAttribute("aria-label") === "Agents");
-    const chatTab = tabs.find((t) => t.getAttribute("aria-label") === "Chat");
-    expect(agentsTab).toHaveAttribute("tabindex", "0");
-    expect(chatTab).toHaveAttribute("tabindex", "-1");
+    const buttons = screen.getAllByRole("button");
+    for (const btn of buttons) {
+      expect(btn).toHaveAttribute("tabindex", "0");
+    }
   });
 
   it("moves focus on ArrowRight key", () => {
     render(createElement(TabBar, buildProps({ activeTabs: ["agents"] })));
-    const tabs = screen.getAllByRole("tab");
-    tabs[0].focus();
-    fireEvent.keyDown(tabs[0], { key: "ArrowRight" });
-    expect(document.activeElement).toBe(tabs[1]);
+    const buttons = screen.getAllByRole("button");
+    buttons[0].focus();
+    fireEvent.keyDown(buttons[0], { key: "ArrowRight" });
+    expect(document.activeElement).toBe(buttons[1]);
   });
 
   it("wraps focus from last to first on ArrowRight", () => {
     render(createElement(TabBar, buildProps({ activeTabs: ["settings"] })));
-    const tabs = screen.getAllByRole("tab");
-    const lastTab = tabs[tabs.length - 1];
-    lastTab.focus();
-    fireEvent.keyDown(lastTab, { key: "ArrowRight" });
-    expect(document.activeElement).toBe(tabs[0]);
+    const buttons = screen.getAllByRole("button");
+    const lastBtn = buttons[buttons.length - 1];
+    lastBtn.focus();
+    fireEvent.keyDown(lastBtn, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(buttons[0]);
   });
 
   it("moves focus on ArrowLeft key", () => {
     render(createElement(TabBar, buildProps({ activeTabs: ["chat"] })));
-    const tabs = screen.getAllByRole("tab");
-    tabs[1].focus();
-    fireEvent.keyDown(tabs[1], { key: "ArrowLeft" });
-    expect(document.activeElement).toBe(tabs[0]);
+    const buttons = screen.getAllByRole("button");
+    buttons[1].focus();
+    fireEvent.keyDown(buttons[1], { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(buttons[0]);
   });
 
   it("jumps to first tab on Home key", () => {
     render(createElement(TabBar, buildProps()));
-    const tabs = screen.getAllByRole("tab");
-    tabs[4].focus();
-    fireEvent.keyDown(tabs[4], { key: "Home" });
-    expect(document.activeElement).toBe(tabs[0]);
+    const buttons = screen.getAllByRole("button");
+    buttons[4].focus();
+    fireEvent.keyDown(buttons[4], { key: "Home" });
+    expect(document.activeElement).toBe(buttons[0]);
   });
 
   it("jumps to last tab on End key", () => {
     render(createElement(TabBar, buildProps()));
-    const tabs = screen.getAllByRole("tab");
-    tabs[0].focus();
-    fireEvent.keyDown(tabs[0], { key: "End" });
-    expect(document.activeElement).toBe(tabs[tabs.length - 1]);
+    const buttons = screen.getAllByRole("button");
+    buttons[0].focus();
+    fireEvent.keyDown(buttons[0], { key: "End" });
+    expect(document.activeElement).toBe(buttons[buttons.length - 1]);
   });
 
   it("wraps in a nav element", () => {
@@ -103,6 +100,12 @@ describe("TabBar", () => {
   it("has aria-label on the nav element", () => {
     render(createElement(TabBar, buildProps()));
     expect(screen.getByRole("navigation")).toHaveAttribute("aria-label", "Dashboard navigation");
+  });
+
+  it("shows Hide label for active tabs and Show for inactive", () => {
+    render(createElement(TabBar, buildProps({ activeTabs: ["agents"] })));
+    expect(screen.getByTitle("Hide Agents")).toBeInTheDocument();
+    expect(screen.getByTitle("Show Chat")).toBeInTheDocument();
   });
 });
 

@@ -18,10 +18,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "name is required." }, { status: 400 });
   }
 
-  // agentId is optional - gateway will use default if not provided
-  if (bodyOrError.agentId && typeof bodyOrError.agentId === "string") {
-    bodyOrError.agentId = bodyOrError.agentId.trim();
-  }
+  const agentId = typeof bodyOrError.agentId === "string" ? bodyOrError.agentId.trim() : undefined;
 
-  return await executeGatewayIntent("cron.add", bodyOrError);
+  // Whitelist only known fields to prevent arbitrary data being forwarded
+  const payload: Record<string, unknown> = { name };
+  if (agentId) payload.agentId = agentId;
+  if (bodyOrError.schedule !== undefined) payload.schedule = bodyOrError.schedule;
+  if (bodyOrError.message !== undefined) payload.message = bodyOrError.message;
+  if (bodyOrError.enabled !== undefined) payload.enabled = bodyOrError.enabled;
+  if (bodyOrError.payload !== undefined) payload.payload = bodyOrError.payload;
+
+  return await executeGatewayIntent("cron.add", payload);
 }

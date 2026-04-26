@@ -282,6 +282,11 @@ export class OpenClawGatewayAdapter {
     } else {
       ws?.terminate();
     }
+    // Swallow the startPromise rejection caused by the close handler
+    // settling the connect promise during stop.
+    if (this.startPromise) {
+      await this.startPromise.catch(() => {});
+    }
     if (!this.preserveConnectProfileOnStop) {
       this.connectProfileId = "backend-local";
     }
@@ -434,7 +439,13 @@ export class OpenClawGatewayAdapter {
       });
 
       ws.on("close", () => {
-        if (this.stopping) return;
+        if (this.stopping) {
+          // Ensure the connect promise settles so startPromise is cleared via .finally()
+          if (!settled) {
+            settle(() => reject(new Error("Control-plane adapter stopped during connect.")));
+          }
+          return;
+        }
         if (!settled) {
           settle(() =>
             reject(
