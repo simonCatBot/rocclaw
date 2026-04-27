@@ -18,9 +18,9 @@ Monitor, chat, configure, and schedule your OpenClaw agents — from any browser
 
 ## Why rocCLAW?
 
-OpenClaw is powerful — but it's headless. You manage agents from the terminal, check logs in the shell, and approve commands by pasting tokens. That works fine on your workstation. It falls apart when your gateway is on a VPS, a Raspberry Pi, or another room.
+OpenClaw agents run on your terms — terminal-driven, scriptable, headless. That's the strength. But when your gateway lives on a VPS, a Pi, or another room, managing agents over SSH gets old fast.
 
-**rocCLAW gives your agents a face.** Point your browser at any OpenClaw gateway — local, Tailscale, or SSH-tunneled — and everything is right there.
+**rocCLAW is the browser interface for OpenClaw.** Point it at any gateway — local, Tailscale, or SSH-tunneled — and your entire agent fleet is right there. Chat, configure, monitor, schedule. No SSH required.
 
 ---
 
@@ -32,24 +32,32 @@ Real-time streaming conversations with thinking traces, tool call visibility, an
 
 ### 🧠 Make agents smarter with skills
 
-Browse and install skills from **ClawHub** — a curated marketplace of pre-built agent capabilities — right from the dashboard. Assign skills per-agent with one click. No editing config files, no restarting.
+Browse and install skills from [**ClawHub**](https://clawhub.ai) — the public skill registry for OpenClaw — right from the dashboard. Assign skills per-agent with one click. No editing config files, no restarting the gateway.
 
-**Featured skills include:**
+Skills are **per-agent** — give your main agent Proactive Agent and your dev agent Team Code. Mix and match for the behavior you want.
 
-| Skill | What it does |
-|-------|-------------|
-| 🦞 **Proactive Agent** | Turns task-followers into proactive partners — anticipates needs, self-schedules crons, maintains a working buffer |
-| 🔄 **Self-Improving Agent** | Self-reflection, self-criticism, self-learning, self-organizing memory. Agents evaluate their own work and improve permanently |
-| 📋 **Plan First** | Generates a detailed plan before execution. Based on Plan-and-Solve research — breaks complex tasks into validated steps |
-| 🔁 **ReAct Loop** | Interleaves reasoning with actions, observing results to inform next steps. Great for debugging, research, and data analysis |
-| ⚖️ **Agent Debate** | Multiple agents independently answer, then critique each other's responses to reduce hallucinations and explore viewpoints |
-| 🔍 **Self-Critique** | Structured self-review against quality criteria before finalizing output. Based on Constitutional AI research |
-| 👨‍💻 **Team Code** | Coordinate multiple agents as a development team working in parallel on different parts of your codebase |
-| 🤝 **Multi-Agent Collaboration** | Intent recognition, intelligent routing, reflection mechanisms, and user adaptation across agent teams |
-| 🛠️ **Skill Creator** | Create, edit, improve, or audit AgentSkills. Build new skills from scratch validated against the spec |
-| 🐙 **GitHub** | Issues, PRs, CI runs, code review, and API queries via `gh` CLI. Essential for any development workflow |
+**Agent Behavior**
+- 🦞 **Proactive Agent** — Anticipates needs, self-schedules crons, maintains a working buffer. Turns task-followers into proactive partners
+- 🔄 **Self-Improving Agent** — Self-reflection, self-criticism, self-learning. Evaluates its own work and improves permanently
 
-Skills are **per-agent** — assign Proactive Agent to your main agent and Team Code to your dev agent. Mix and match for the behavior you want.
+**Problem Solving**
+- 📋 **Plan First** — Generates a detailed plan before execution. Based on Plan-and-Solve research
+- 🔁 **ReAct Loop** — Interleaves reasoning with actions, observing results to inform next steps
+
+**Quality & Accuracy**
+- ⚖️ **Agent Debate** — Multiple agents independently answer, then critique each other to reduce hallucinations
+- 🔍 **Self-Critique** — Structured self-review against quality criteria before finalizing. Based on Constitutional AI research
+
+**Development**
+- 👨‍💻 **Team Code** — Coordinate multiple agents as a dev team working in parallel on your codebase
+- 🛠️ **Skill Creator** — Build new skills from scratch, validated against the AgentSkills spec
+- 🐙 **GitHub** — Issues, PRs, CI runs, code review via `gh` CLI
+
+**Multi-Agent**
+- 🎯 **Agent Team Orchestration** — Defined roles, task lifecycles, handoff protocols, review workflows
+- 🤝 **Multi-Agent Collaboration** — Intent recognition, intelligent routing, reflection across agent teams
+
+Browse the full catalog at [clawhub.ai](https://clawhub.ai).
 
 ### 📊 Monitor your fleet at a glance
 
@@ -92,7 +100,7 @@ Get your token:
 openclaw config get gateway.auth.token
 ```
 
-That's it. You're in.
+That's it.
 
 ---
 
@@ -181,7 +189,7 @@ Keep the terminal open, then connect rocCLAW to `ws://localhost:18789`.
 
 ## Dashboard Overview
 
-rocCLAW provides 8 toggleable tabs that can be shown side-by-side:
+rocCLAW provides 9 toggleable tabs that can be shown side-by-side:
 
 | Tab | What it's for |
 |-----|--------------|
@@ -199,39 +207,17 @@ rocCLAW provides 8 toggleable tabs that can be shown side-by-side:
 
 ## Agent Personality Files
 
-Each agent is shaped by 7 personality files you can edit directly in the dashboard:
+Every agent has 7 personality files that define its behavior — all editable from the dashboard:
 
-| File | What it defines |
-|------|----------------|
-| `IDENTITY.md` | Name, creature type, vibe, emoji, avatar |
-| `SOUL.md` | Core truths, boundaries, personality, continuity |
-| `USER.md` | Context about you — name, pronouns, timezone, preferences |
-| `AGENTS.md` | Operating rules, workflows, conventions |
-| `TOOLS.md` | Tool usage guidelines and local notes |
-| `HEARTBEAT.md` | Periodic check configuration |
-| `MEMORY.md` | Persistent memory and learned context |
+`IDENTITY.md` → name, creature type, vibe, emoji, avatar · `SOUL.md` → core truths, boundaries, personality · `USER.md` → context about you (name, pronouns, timezone) · `AGENTS.md` → operating rules and workflows · `TOOLS.md` → tool usage guidelines · `HEARTBEAT.md` → periodic check configuration · `MEMORY.md` → persistent memory and learned context
 
 ---
 
 ## Permissions & Security
 
-rocCLAW keeps your gateway safe at three layers:
+Three layers keep your gateway safe: **network policy** (refuses public binding without access token), **access gate** (cookie-based auth on all routes), and **gateway adapter** (method allowlist + token redaction + rate limiting). Ed25519 device identity provides cryptographic authentication. Your tokens never leave the server — the browser only sees `hasToken: true`.
 
-| Layer | What it does |
-|-------|-------------|
-| **Network Policy** | Refuses public IP binding without `ROCCLAW_ACCESS_TOKEN` |
-| **Access Gate** | Cookie-based auth for all API routes and WebSocket upgrades |
-| **Gateway Adapter** | 29-method allowlist, token redaction, per-IP rate limiting |
-
-Per-agent security settings:
-
-- **Exec Mode** — Conservative / Collaborative / Autonomous
-- **Sandbox** — Off / Non-main / All
-- **Workspace Access** — None / Read-only / Read-write
-- **Tools Profile** — Minimal / Coding / Messaging / Full
-- **Exec Security** — Deny / Allowlist / Full
-
-See [Permissions & Sandboxing](docs/permissions-sandboxing.md) for details.
+Per-agent controls: exec mode · sandbox isolation · workspace access · tools profile · command security. See [Permissions & Sandboxing](docs/permissions-sandboxing.md) for the full model.
 
 ---
 
