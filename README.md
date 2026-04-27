@@ -276,3 +276,7 @@ See [Contributing](docs/CONTRIBUTING.md) for full development setup.
 ---
 
 > **Disclaimer:** rocCLAW is a community project and is not affiliated with, endorsed by, or an official product of AMD.
+
+## Acknowledgments
+
+Built with help from [Ollama](https://ollama.com) models — [Kimi K2](https://huggingface.co/moonshotai/Kimi-K2), [GLM 5.1](https://huggingface.co/THUDM/GLM-5.1), and [Claude](https://www.anthropic.com/claude).
