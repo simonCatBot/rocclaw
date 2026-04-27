@@ -221,6 +221,21 @@ Per-agent controls: exec mode · sandbox isolation · workspace access · tools 
 
 ---
 
+## Tested GPU Configurations
+
+rocCLAW supports AMD GPU monitoring with ROCm-first detection and a sysfs fallback for systems without ROCm installed.
+
+| APU / GPU | Architecture | Detection | Notes |
+|-----------|-------------|-----------|-------|
+| **Ryzen AI MAX+ 395** (Strix Halo) | RDNA 3.5 (gfx1151) | ROCm + device ID | 40 CU variant auto-detected as 8060S; 32 CU as 8050S |
+| **Ryzen AI 300 series** (Strix Point) | RDNA 3.5 (gfx1150) | ROCm + device ID | 16 CU → 890M, 12 CU → 880M; handles rocm-smi index mismatches |
+| **Radeon RX 7900 XTX** | RDNA 3 (gfx1100) | ROCm | Full VRAM, temp, power, and clock metrics |
+| **Other AMD GPUs** | Varies | ROCm or sysfs fallback | `lspci` + DRM sysfs on Linux when ROCm is unavailable |
+
+ROCm is checked first (`rocminfo` + `rocm-smi`). If unavailable, rocCLAW falls back to `lspci` + DRM sysfs for basic GPU info — no ROCm install required.
+
+---
+
 ## Development
 
 ```bash
