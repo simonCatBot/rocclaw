@@ -24,13 +24,54 @@ OpenClaw agents run on your terms — terminal-driven, scriptable, headless. Tha
 
 ---
 
+## Quick Start
+
+**Prerequisites:** Node.js 20.9+ and a running OpenClaw gateway.
+
+```bash
+git clone https://github.com/simonCatBot/rocclaw.git
+cd rocclaw
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000), enter your gateway URL (`ws://127.0.0.1:18789`), paste your token, and click **Save Settings**.
+
+```bash
+openclaw config get gateway.auth.token   # Get your token
+```
+
+Other install options: [npm](#installation) · [pre-built package](#installation) · [setup guides →](#setup-guides)
+
+---
+
 ## What You Can Do
 
 ### 💬 Chat with any agent
 
 Real-time streaming conversations with thinking traces, tool call visibility, and inline exec approvals. Approve or deny shell commands right in the chat — allow-once, allow-always, or deny. No context switching, no copy-pasting tokens.
 
-### 🧠 Make agents smarter with skills
+### ⏰ Put agents on autopilot
+
+Schedule cron jobs with drag-and-drop. Interval, daily, or cron expression — your agents run on your schedule. No crontab editing required.
+
+### ⚙️ Configure without SSH
+
+Edit any agent's 7 personality files (SOUL, IDENTITY, USER, AGENTS, TOOLS, HEARTBEAT, MEMORY) directly in the browser. Adjust permissions — exec mode, sandbox, workspace access, tool profiles — without touching the terminal.
+
+### 🖥️ Access from anywhere
+
+Connect to any OpenClaw gateway via LAN, Tailscale, or SSH tunnel. Your gateway stays secure; you stay mobile.
+
+### 🔒 Stay in control
+
+Three-layer security: network policy refuses public binding without an access token, cookie-based auth guards all API routes, and a method allowlist on the gateway adapter prevents unauthorized operations. Ed25519 device identity provides cryptographic authentication. Your tokens never leave the server — the browser only sees `hasToken: true`.
+
+Per-agent controls: exec mode · sandbox isolation · workspace access · tools profile · command security. See [Permissions & Sandboxing](docs/permissions-sandboxing.md) for details.
+
+---
+
+## 🧠 Make Agents Smarter with Skills
 
 Browse and install skills from [**ClawHub**](https://clawhub.ai) — the public skill registry for OpenClaw — right from the dashboard. Assign skills per-agent with one click. No editing config files, no restarting the gateway.
 
@@ -59,7 +100,9 @@ Skills are **per-agent** — give your main agent Proactive Agent and your dev a
 
 Browse the full catalog at [clawhub.ai](https://clawhub.ai).
 
-### 🏗️ Run a hybrid local + cloud fleet
+---
+
+## 🏗️ Run a Hybrid Local + Cloud Fleet
 
 Not every task needs a cloud model. rocCLAW lets you build a **hybrid agent fleet** — local LLMs handle routine work, cloud models step in for complex reasoning — and manage it all from one dashboard.
 
@@ -73,52 +116,23 @@ Not every task needs a cloud model. rocCLAW lets you build a **hybrid agent flee
 
 4. **Token usage dashboards** show you exactly where your spend goes — per agent, per model. No surprise bills.
 
-The result: **maximum hardware utilization, minimum cloud spend.** Your local GPUs run warm instead of idle. Your cloud tokens go to tasks that actually need them.
+**The result: maximum hardware utilization, minimum cloud spend.** Your local GPUs run warm instead of idle. Your cloud tokens go to tasks that actually need them.
 
 ---
 
-### 📊 Monitor your fleet at a glance
+## 📊 System Monitoring
 
-Live CPU, memory, GPU (AMD ROCm + fallback), disk, and network metrics with time-series graph views. Per-agent token usage dashboards. Works for local machines **and** remote gateways — see "Remote" vs "Local" labels automatically.
+Live CPU, memory, GPU (AMD ROCm + fallback), disk, and network metrics with time-series graph views. Works for local machines **and** remote gateways — see "Remote" vs "Local" labels automatically.
 
-### ⏰ Put agents on autopilot
-
-Schedule cron jobs with drag-and-drop. Interval, daily, or cron expression — your agents run on your schedule. No crontab editing required.
-
-### ⚙️ Configure without SSH
-
-Edit any agent's 7 personality files (SOUL, IDENTITY, USER, AGENTS, TOOLS, HEARTBEAT, MEMORY) directly in the browser. Adjust permissions — exec mode, sandbox, workspace access, tool profiles — without touching the terminal.
-
-### 🖥️ Access from anywhere
-
-Connect to any OpenClaw gateway via LAN, Tailscale, or SSH tunnel. Your gateway stays secure; you stay mobile. Three setup modes cover every deployment pattern.
-
-### 🔒 Stay in control
-
-Three-layer security: network policy refuses public binding without an access token, cookie-based auth guards all API routes, and a 29-method allowlist on the gateway adapter prevents unauthorized operations. Ed25519 device identity provides cryptographic authentication. Your tokens never leave the server — the browser only sees `hasToken: true`.
+Per-agent and aggregate token usage dashboards so you know exactly what each agent is costing you.
 
 ---
 
-## Quick Start
+## Dashboard Overview
 
-**Prerequisites:** Node.js 20.9+ and a running OpenClaw gateway.
+9 toggleable tabs, shown side-by-side:
 
-```bash
-git clone https://github.com/simonCatBot/rocclaw.git
-cd rocclaw
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000), enter your gateway URL (`ws://127.0.0.1:18789`), paste your token, and click **Save Settings**.
-
-Get your token:
-
-```bash
-openclaw config get gateway.auth.token
-```
-
-That's it.
+**Agents** · **Chat** · **Skills** · **Connection** · **System** · **Graph** · **Tasks** · **Tokens** · **Settings**
 
 ---
 
@@ -205,37 +219,11 @@ Keep the terminal open, then connect rocCLAW to `ws://localhost:18789`.
 
 ---
 
-## Dashboard Overview
-
-rocCLAW provides 9 toggleable tabs that can be shown side-by-side:
-
-| Tab | What it's for |
-|-----|--------------|
-| **Agents** | Fleet sidebar — search, filter, status, avatars, identity names |
-| **Chat** | Streaming conversations with thinking traces and tool calls |
-| **Skills** | ClawHub marketplace + per-agent skill assignment + install management |
-| **Connection** | Gateway URL, token, connection testing |
-| **System** | Live CPU, memory, GPU, disk, and network metrics |
-| **Graph** | Time-series charts for system metrics (5m/10m/30m ranges) |
-| **Tasks** | Cron job management — schedule, reorder, manual run |
-| **Tokens** | Per-agent and aggregate token usage |
-| **Settings** | Application preferences |
-
----
-
 ## Agent Personality Files
 
 Every agent has 7 personality files that define its behavior — all editable from the dashboard:
 
 `IDENTITY.md` → name, creature type, vibe, emoji, avatar · `SOUL.md` → core truths, boundaries, personality · `USER.md` → context about you (name, pronouns, timezone) · `AGENTS.md` → operating rules and workflows · `TOOLS.md` → tool usage guidelines · `HEARTBEAT.md` → periodic check configuration · `MEMORY.md` → persistent memory and learned context
-
----
-
-## Permissions & Security
-
-Three layers keep your gateway safe: **network policy** (refuses public binding without access token), **access gate** (cookie-based auth on all routes), and **gateway adapter** (method allowlist + token redaction + rate limiting). Ed25519 device identity provides cryptographic authentication. Your tokens never leave the server — the browser only sees `hasToken: true`.
-
-Per-agent controls: exec mode · sandbox isolation · workspace access · tools profile · command security. See [Permissions & Sandboxing](docs/permissions-sandboxing.md) for the full model.
 
 ---
 
@@ -320,6 +308,4 @@ See [Contributing](docs/CONTRIBUTING.md) for full development setup.
 
 > **Disclaimer:** rocCLAW is a community project and is not affiliated with, endorsed by, or an official product of AMD.
 
-## Acknowledgments
-
-Built with help from [Ollama](https://ollama.com) models — [Kimi K2](https://huggingface.co/moonshotai/Kimi-K2), [GLM 5.1](https://huggingface.co/THUDM/GLM-5.1), and [Claude](https://www.anthropic.com/claude).
+**Acknowledgments:** Built with help from [Ollama](https://ollama.com) models — [Kimi K2](https://huggingface.co/moonshotai/Kimi-K2), [GLM 5.1](https://huggingface.co/THUDM/GLM-5.1), and [Claude](https://www.anthropic.com/claude).
