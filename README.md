@@ -221,7 +221,17 @@ Per-agent controls: exec mode · sandbox isolation · workspace access · tools 
 
 ---
 
-## Tested GPU Configurations
+## Tested Configurations
+
+### Operating Systems
+
+| OS | Version | Status |
+|----|---------|--------|
+| **Ubuntu** | 24.04 LTS (Noble Numbat) | ✅ Tested |
+| **Ubuntu** | 22.04 LTS (Jammy Jellyfish) | ✅ Tested |
+| Linux (generic) | Kernel 6.x+ | ✅ GPU fallback via sysfs |
+
+### GPU Configurations
 
 rocCLAW supports AMD GPU monitoring with ROCm-first detection and a sysfs fallback for systems without ROCm installed.
 
