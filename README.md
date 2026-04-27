@@ -272,3 +272,7 @@ See [Contributing](docs/CONTRIBUTING.md) for full development setup.
 [Documentation](docs/) &middot; [Issues](../../issues) &middot; [Discord](https://discord.gg/EFkFHbZw)
 
 </div>
+
+---
+
+> **Disclaimer:** rocCLAW is a community project and is not affiliated with, endorsed by, or an official product of AMD.
