@@ -59,6 +59,24 @@ Skills are **per-agent** — give your main agent Proactive Agent and your dev a
 
 Browse the full catalog at [clawhub.ai](https://clawhub.ai).
 
+### 🏗️ Run a hybrid local + cloud fleet
+
+Not every task needs a cloud model. rocCLAW lets you build a **hybrid agent fleet** — local LLMs handle routine work, cloud models step in for complex reasoning — and manage it all from one dashboard.
+
+**How it works:**
+
+1. **Local agents** run on your hardware with open-weight models (via Ollama, vLLM, or any local provider). They handle the daily load — file operations, simple queries, monitoring, cron tasks. Zero token cost.
+
+2. **Cloud agents** use high-capability models for the hard stuff — complex reasoning, multi-step planning, code generation that needs deep context. You only pay when you need the horsepower.
+
+3. **Per-agent skills** route the right work to the right tier. Assign Plan First and Agent Debate to your cloud agent. Give ReAct Loop and GitHub to your local agent. Skills + model selection = automatic workload tiering.
+
+4. **Token usage dashboards** show you exactly where your spend goes — per agent, per model. No surprise bills.
+
+The result: **maximum hardware utilization, minimum cloud spend.** Your local GPUs run warm instead of idle. Your cloud tokens go to tasks that actually need them.
+
+---
+
 ### 📊 Monitor your fleet at a glance
 
 Live CPU, memory, GPU (AMD ROCm + fallback), disk, and network metrics with time-series graph views. Per-agent token usage dashboards. Works for local machines **and** remote gateways — see "Remote" vs "Local" labels automatically.
